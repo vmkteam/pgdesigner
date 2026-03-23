@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pgd version="1" pg-version="18" default-schema="public">
+  <schema name="public">
+    <table name="users">
+      <column name="id" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="name" type="varchar" length="255" nullable="false"></column>
+      <column name="createdAt" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="pk_users">
+        <column name="id"></column>
+      </pk>
+    </table>
+  </schema>
+</pgd>

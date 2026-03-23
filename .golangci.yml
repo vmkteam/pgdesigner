@@ -1,0 +1,67 @@
+version: "2"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gocritic
+    - misspell
+    - unconvert
+    - unparam
+    - whitespace
+    - gocognit
+    - gocyclo
+    - cyclop
+    - nestif
+    - predeclared
+    - perfsprint
+    - wastedassign
+    - intrange
+    - copyloopvar
+    - makezero
+    - nilerr
+    - durationcheck
+    - errname
+    - errorlint
+    - testifylint
+    - usetesting
+  settings:
+    cyclop:
+      max-complexity: 30
+      package-average: 10.0
+    gocognit:
+      min-complexity: 50
+    errcheck:
+      check-type-assertions: true
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+    staticcheck:
+      checks:
+        - all
+        - -ST1000
+        - -ST1016
+        - -QF1008
+    perfsprint:
+      strconcat: false
+  exclusions:
+    warn-unused: false
+    presets:
+      - std-error-handling
+      - common-false-positives
+    rules:
+      - path: '_test\.go'
+        linters:
+          - dupl
+          - errcheck
+          - funlen
+          - goconst
+          - unparam
+
+formatters:
+  enable:
+    - gofmt

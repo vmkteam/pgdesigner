@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pgd version="1" pg-version="18" default-schema="public">
+  <schema name="public">
+    <table name="products">
+      <column name="productId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="name" type="varchar" length="255" nullable="false"></column>
+      <column name="rating" type="numeric" precision="3" scale="1" nullable="false" default="0"></column>
+      <pk name="pk_products">
+        <column name="productId"></column>
+      </pk>
+    </table>
+    <table name="reviews">
+      <column name="reviewId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="productId" type="integer" nullable="false"></column>
+      <column name="comment" type="text"></column>
+      <pk name="pk_reviews">
+        <column name="reviewId"></column>
+      </pk>
+    </table>
+  </schema>
+</pgd>

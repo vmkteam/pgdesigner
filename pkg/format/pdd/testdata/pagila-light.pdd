@@ -1,0 +1,917 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+
+<DBMODEL Version="1.92" TYPE="PostgreSQL">
+
+<MODELSETTINGS MDDVERSION="1.16.0 (build 1173)" ModelProject="Pagila" ModelName="Noname3" ModelCompany="pgfoundry.org" ModelAuthor="Christopher Kings-Lynne, Robert Treat, Mike Hillyer" ModelCopyright="BSD license" ModelVersion="0.51" ModelVersionAI="1" ModelSaveScriptsWithVersion="0" ModelCreated="2009-04-08 15:34:32" ModelUpdated="2021-07-19 13:42:21" Description="" Annotation="" ZoomFac="36.00" XPos="0" YPos="0" PrintLink="" GenSettings="object _1: TGenSettings\n  TextCharCase = tccMixed\n  ModelCheck = True\n  DropIfExists = True\n  NotValidConstraints = False\n  ConcurrentlyIndexes = False\n  ISQL = False\n  ExecuteAfterGeneration = True\n  DBOptions = [dbgoCreate, dbgoBeginScript, dbgoEndScript]\n  ViewOptions = [viewgoCreate, viewgoCreateRule]\n  SPOptions = [spgoCreate]\n  TableOptions = [tblgoCreate, tblgoBeginScript, tblgoEndScript, tblgoComment, tblgoCreatePK, tblgoCreateFK, tblgoCreateIndex, tblgoCreateRule, tblgoCreateTrigger]\n  OwnerOptions = [owngoSchema, owngoTable, owngoView, owngoSP, owngoSequence, owngoUDT]\n  ACLOptions = [aclgoSchema, aclgoTable, aclgoView, aclgoSP, aclgoSequence]\n  ModifyOptions = [mgoKeepTbls, mgoBackupTbls, mgoTraceRenaming]\n  RoleCreate = True\n  RoleWhenCreate = rocrInScript\n  SQLTypeNames = False\nend\n" DisplaySettings="object DisplaySettings1: TDisplaySettings\n  ObjectsDisplay = [edoColumns, edoInhColumns, edoIndices, edoConstraints, edoRules, edoColTypes, edoFKs, rdoRefName, spdoParameters, spdoResult, spdoParamTypes, spdoParamKind, vdoAttributes, vdoTargets, vdoRules]\n  Color = clWhite\n  ShowIcons = True\n  SnapGrid = True\n  DisplaySnap = True\n  SnapSize = 10\n  ShowPages = True\n  EntityFillColor = clWhite\n  EntityLineColor = clNavy\n  EntityFontColor = clBlack\n  SPFillColor = 13499135\n  SPLineColor = clNavy\n  SPFontColor = clBlack\n  ViewFillColor = 3329434\n  ViewLineColor = clNavy\n  ViewFontColor = clBlack\n  RefNotation = 0\n  RefColor = clNavy\n  RefLabelColor = clWhite\n  RefLabelFontColor = clBlack\n  MinimapShapesStyle = mmssFillAndBorder\n  MinimapVisibleAreaStyle = mmvasBitmapShading\n  MinimapBackColor = clWhite\nend\n" DefaultDelete="3" DefaultUpdate="3" DefaultDataType="23" DefaultSchemaID="0" NamePatterns="" QueryDelimiter=";" DBQuoteCharacter="\A" EncloseNames="1" PKColumnsFirst="0" HPageCount="4" VPageCount="3" />
+
+<DATABASE Name="Database_1" CharacterSet="" Collate="" CType="" Tablespace="" Owner="" Template="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="0" />
+
+<STAMPS>
+<STAMP ID="137451" ModelName="ModelProps_01" XPos="70" YPos="800" BackColor="16777215" LineColor="0" />
+
+</STAMPS>
+
+<ROLES>
+</ROLES>
+
+<SCHEMAS>
+<SCHEMA ID="0" Name="public" Owner="" Generate="0" Comments="" System="1" ACL=""></SCHEMA>
+</SCHEMAS>
+
+<SEQUENCES>
+</SEQUENCES>
+
+<DOMAINS>
+<DOMAIN ID="137143" Name="year" SchemaName="public" OwnerName="" DataType="23" Type="int4" Width="0" Prec="0" NotNull="0" DefaultValue="" QuoteDefVal="1" CheckConstraints="\Ayear_check=(((VALUE \g= 1901) AND (VALUE \k= 2155)))\A" Comments=""></DOMAIN>
+</DOMAINS>
+
+<COMPOSITES>
+<COMPOSITE ID="137165" Name="actor" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137131">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="137166" Name="address" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137183">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="137167" Name="category" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137149">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="137168" Name="city" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137190">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="137169" Name="country" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137197">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="137170" Name="customer" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137204">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="137171" Name="film" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137156">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="137172" Name="film_actor" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137168">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="137173" Name="film_category" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137172">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="137174" Name="inventory" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137223">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="137175" Name="language" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137230">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="137176" Name="payment" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137242">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="137177" Name="rental" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137278">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="137178" Name="staff" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137290">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="137179" Name="store" SchemaName="public" OwnerName="" Comments="" MasterTableOID="137301">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+</COMPOSITES>
+
+<SCALARS>
+</SCALARS>
+
+<ENUMS>
+<ENUM ID="137137" Name="mpaa_rating" SchemaName="public" Values="G,PG,PG-13,R,NC-17" Comments="" OwnerName=""></ENUM>
+</ENUMS>
+
+<TABLESPACES>
+</TABLESPACES>
+
+<METADATA>
+<ENTITIES>
+<ENTITY ID="137131" Name="actor" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="1740" YPos="190" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1334" Name="actor_id" Pos="1" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="nextval(\aactor_actor_id_seq\a::regclass)" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1335" Name="first_name" Pos="2" Datatype="1043" Type="varchar" Width="45" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1336" Name="last_name" Pos="3" Datatype="1043" Type="varchar" Width="45" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1337" Name="last_update" Pos="4" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_BEGIN>
+		<REFERENCE_BEGIN ID="137424" />
+	</REFERENCES_BEGIN>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137325" Name="actor_pkey" Kind="2" Expression="" ReferenceIndex="137465" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1334"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137355" Name="idx_actor_last_name" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="last_name"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137465" Name="actor_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137325" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="actor_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+	<TRIGGERS>
+		<TRIGGER ID="137390" Name="last_updated" TriggerTime="BEFORE" TriggerEvent="UPDATE " Generate="1" TriggerProc="\Alast_updated\A" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+	</TRIGGERS>
+</ENTITY>
+
+<ENTITY ID="137183" Name="address" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="80" YPos="60" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1338" Name="address_id" Pos="1" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="nextval(\aaddress_address_id_seq\a::regclass)" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1339" Name="address" Pos="2" Datatype="1043" Type="varchar" Width="50" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1340" Name="address2" Pos="3" Datatype="1043" Type="varchar" Width="50" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1341" Name="district" Pos="4" Datatype="1043" Type="varchar" Width="20" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1342" Name="city_id" Pos="5" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1343" Name="postal_code" Pos="6" Datatype="1043" Type="varchar" Width="10" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1344" Name="phone" Pos="7" Datatype="1043" Type="varchar" Width="20" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1345" Name="last_update" Pos="8" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_BEGIN>
+		<REFERENCE_BEGIN ID="137414" />
+		<REFERENCE_BEGIN ID="137584" />
+		<REFERENCE_BEGIN ID="137594" />
+	</REFERENCES_BEGIN>
+	<REFERENCES_END>
+		<REFERENCE_END ID="137404" />
+	</REFERENCES_END>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137327" Name="address_pkey" Kind="2" Expression="" ReferenceIndex="137487" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1338"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137357" Name="idx_fk_city_id" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="city_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137487" Name="address_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137327" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="address_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+	<TRIGGERS>
+		<TRIGGER ID="137391" Name="last_updated" TriggerTime="BEFORE" TriggerEvent="UPDATE " Generate="1" TriggerProc="\Alast_updated\A" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+	</TRIGGERS>
+</ENTITY>
+
+<ENTITY ID="137149" Name="category" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="920" YPos="650" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1346" Name="category_id" Pos="1" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="nextval(\acategory_category_id_seq\a::regclass)" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1347" Name="name" Pos="2" Datatype="1043" Type="varchar" Width="25" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1348" Name="last_update" Pos="3" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_BEGIN>
+		<REFERENCE_BEGIN ID="137434" />
+	</REFERENCES_BEGIN>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137329" Name="category_pkey" Kind="2" Expression="" ReferenceIndex="137469" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1346"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137469" Name="category_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137329" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="category_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+	<TRIGGERS>
+		<TRIGGER ID="137392" Name="last_updated" TriggerTime="BEFORE" TriggerEvent="UPDATE " Generate="1" TriggerProc="\Alast_updated\A" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+	</TRIGGERS>
+</ENTITY>
+
+<ENTITY ID="137190" Name="city" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="90" YPos="370" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1349" Name="city_id" Pos="1" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="nextval(\acity_city_id_seq\a::regclass)" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1350" Name="city" Pos="2" Datatype="1043" Type="varchar" Width="50" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1351" Name="country_id" Pos="3" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1352" Name="last_update" Pos="4" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_BEGIN>
+		<REFERENCE_BEGIN ID="137404" />
+	</REFERENCES_BEGIN>
+	<REFERENCES_END>
+		<REFERENCE_END ID="137409" />
+	</REFERENCES_END>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137331" Name="city_pkey" Kind="2" Expression="" ReferenceIndex="137458" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1349"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137358" Name="idx_fk_country_id" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="country_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137458" Name="city_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137331" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="city_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+	<TRIGGERS>
+		<TRIGGER ID="137393" Name="last_updated" TriggerTime="BEFORE" TriggerEvent="UPDATE " Generate="1" TriggerProc="\Alast_updated\A" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+	</TRIGGERS>
+</ENTITY>
+
+<ENTITY ID="137197" Name="country" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="140" YPos="620" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1353" Name="country_id" Pos="1" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="nextval(\acountry_country_id_seq\a::regclass)" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1354" Name="country" Pos="2" Datatype="1043" Type="varchar" Width="50" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1355" Name="last_update" Pos="3" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_BEGIN>
+		<REFERENCE_BEGIN ID="137409" />
+	</REFERENCES_BEGIN>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137333" Name="country_pkey" Kind="2" Expression="" ReferenceIndex="137457" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1353"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137457" Name="country_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137333" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="country_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+	<TRIGGERS>
+		<TRIGGER ID="137394" Name="last_updated" TriggerTime="BEFORE" TriggerEvent="UPDATE " Generate="1" TriggerProc="\Alast_updated\A" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+	</TRIGGERS>
+</ENTITY>
+
+<ENTITY ID="137204" Name="customer" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="900" YPos="1020" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1356" Name="customer_id" Pos="1" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="nextval(\acustomer_customer_id_seq\a::regclass)" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1357" Name="store_id" Pos="2" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1358" Name="first_name" Pos="3" Datatype="1043" Type="varchar" Width="45" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1359" Name="last_name" Pos="4" Datatype="1043" Type="varchar" Width="45" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1360" Name="email" Pos="5" Datatype="1043" Type="varchar" Width="50" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1361" Name="address_id" Pos="6" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1362" Name="activebool" Pos="7" Datatype="16" Type="bool" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="true" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1363" Name="create_date" Pos="8" Datatype="1082" Type="date" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="(\anow\a::text)::date" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1364" Name="last_update" Pos="9" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1365" Name="active" Pos="10" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_BEGIN>
+		<REFERENCE_BEGIN ID="137464" />
+		<REFERENCE_BEGIN ID="137569" />
+	</REFERENCES_BEGIN>
+	<REFERENCES_END>
+		<REFERENCE_END ID="137414" />
+		<REFERENCE_END ID="137419" />
+	</REFERENCES_END>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137335" Name="customer_pkey" Kind="2" Expression="" ReferenceIndex="137480" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1356"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137356" Name="idx_fk_address_id" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="address_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137377" Name="idx_fk_store_id" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="store_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137378" Name="idx_last_name" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="last_name"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137480" Name="customer_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137335" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="customer_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+	<TRIGGERS>
+		<TRIGGER ID="137395" Name="last_updated" TriggerTime="BEFORE" TriggerEvent="UPDATE " Generate="1" TriggerProc="\Alast_updated\A" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+	</TRIGGERS>
+</ENTITY>
+
+<ENTITY ID="137156" Name="film" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="1210" YPos="400" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1366" Name="film_id" Pos="1" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="nextval(\afilm_film_id_seq\a::regclass)" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1367" Name="title" Pos="2" Datatype="1043" Type="varchar" Width="255" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1368" Name="description" Pos="3" Datatype="25" Type="text" Width="0" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1369" Name="release_year" Pos="4" Datatype="137143" Type="year" Width="0" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1370" Name="language_id" Pos="5" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1371" Name="original_language_id" Pos="6" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1372" Name="rental_duration" Pos="7" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="3" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1373" Name="rental_rate" Pos="8" Datatype="1700" Type="numeric" Width="4" Prec="2" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="4.99" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1374" Name="length" Pos="9" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1375" Name="replacement_cost" Pos="10" Datatype="1700" Type="numeric" Width="5" Prec="2" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="19.99" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1376" Name="rating" Pos="11" Datatype="137137" Type="mpaa_rating" Width="0" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="\aG\a::mpaa_rating" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1377" Name="last_update" Pos="12" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1378" Name="special_features" Pos="13" Datatype="1009" Type="text[]" Width="0" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1379" Name="fulltext" Pos="14" Datatype="3614" Type="tsvector" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_BEGIN>
+		<REFERENCE_BEGIN ID="137429" />
+		<REFERENCE_BEGIN ID="137439" />
+		<REFERENCE_BEGIN ID="137454" />
+	</REFERENCES_BEGIN>
+	<REFERENCES_END>
+		<REFERENCE_END ID="137444" />
+		<REFERENCE_END ID="137449" />
+	</REFERENCES_END>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137341" Name="film_pkey" Kind="2" Expression="" ReferenceIndex="137471" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1366"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137354" Name="film_fulltext_idx" Unique="0" Method="4" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="fulltext"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137362" Name="idx_fk_language_id" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="language_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137363" Name="idx_fk_original_language_id" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="original_language_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137380" Name="idx_title" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="title"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137471" Name="film_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137341" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="film_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+	<TRIGGERS>
+		<TRIGGER ID="137389" Name="film_fulltext_trigger" TriggerTime="BEFORE" TriggerEvent="INSERT OR UPDATE " Generate="1" TriggerProc="" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+		<TRIGGER ID="137396" Name="last_updated" TriggerTime="BEFORE" TriggerEvent="UPDATE " Generate="1" TriggerProc="\Alast_updated\A" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+	</TRIGGERS>
+</ENTITY>
+
+<ENTITY ID="137168" Name="film_actor" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="1550" YPos="360" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1380" Name="actor_id" Pos="1" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1381" Name="film_id" Pos="2" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1382" Name="last_update" Pos="3" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_END>
+		<REFERENCE_END ID="137424" />
+		<REFERENCE_END ID="137429" />
+	</REFERENCES_END>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137337" Name="film_actor_pkey" Kind="2" Expression="" ReferenceIndex="137468" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1380,1381"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137360" Name="idx_fk_film_id" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="film_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137468" Name="film_actor_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137337" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="actor_id,film_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+	<TRIGGERS>
+		<TRIGGER ID="137397" Name="last_updated" TriggerTime="BEFORE" TriggerEvent="UPDATE " Generate="1" TriggerProc="\Alast_updated\A" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+	</TRIGGERS>
+</ENTITY>
+
+<ENTITY ID="137172" Name="film_category" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="920" YPos="480" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1383" Name="film_id" Pos="1" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1384" Name="category_id" Pos="2" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1385" Name="last_update" Pos="3" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_END>
+		<REFERENCE_END ID="137434" />
+		<REFERENCE_END ID="137439" />
+	</REFERENCES_END>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137339" Name="film_category_pkey" Kind="2" Expression="" ReferenceIndex="137432" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1383,1384"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137432" Name="film_category_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137339" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="film_id,category_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+	<TRIGGERS>
+		<TRIGGER ID="137398" Name="last_updated" TriggerTime="BEFORE" TriggerEvent="UPDATE " Generate="1" TriggerProc="\Alast_updated\A" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+	</TRIGGERS>
+</ENTITY>
+
+<ENTITY ID="137223" Name="inventory" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="1280" YPos="220" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1386" Name="inventory_id" Pos="1" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="nextval(\ainventory_inventory_id_seq\a::regclass)" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1387" Name="film_id" Pos="2" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1388" Name="store_id" Pos="3" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1389" Name="last_update" Pos="4" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_BEGIN>
+		<REFERENCE_BEGIN ID="137574" />
+	</REFERENCES_BEGIN>
+	<REFERENCES_END>
+		<REFERENCE_END ID="137454" />
+		<REFERENCE_END ID="137459" />
+	</REFERENCES_END>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137343" Name="inventory_pkey" Kind="2" Expression="" ReferenceIndex="137482" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1386"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137379" Name="idx_store_id_film_id" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="store_id,film_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137482" Name="inventory_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137343" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="inventory_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+	<TRIGGERS>
+		<TRIGGER ID="137399" Name="last_updated" TriggerTime="BEFORE" TriggerEvent="UPDATE " Generate="1" TriggerProc="\Alast_updated\A" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+	</TRIGGERS>
+</ENTITY>
+
+<ENTITY ID="137230" Name="language" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="930" YPos="760" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1390" Name="language_id" Pos="1" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="nextval(\alanguage_language_id_seq\a::regclass)" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1391" Name="name" Pos="2" Datatype="1042" Type="char" Width="20" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1392" Name="last_update" Pos="3" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_BEGIN>
+		<REFERENCE_BEGIN ID="137444" />
+		<REFERENCE_BEGIN ID="137449" />
+	</REFERENCES_BEGIN>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137345" Name="language_pkey" Kind="2" Expression="" ReferenceIndex="137427" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1390"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137427" Name="language_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137345" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="language_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+	<TRIGGERS>
+		<TRIGGER ID="137400" Name="last_updated" TriggerTime="BEFORE" TriggerEvent="UPDATE " Generate="1" TriggerProc="\Alast_updated\A" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+	</TRIGGERS>
+</ENTITY>
+
+<ENTITY ID="137242" Name="payment" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="330" YPos="220" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1393" Name="payment_id" Pos="0" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="nextval(\apayment_payment_id_seq\a::regclass)" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1394" Name="customer_id" Pos="1" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1395" Name="staff_id" Pos="2" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1396" Name="rental_id" Pos="3" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1397" Name="amount" Pos="4" Datatype="1700" Type="numeric" Width="5" Prec="2" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1398" Name="payment_date" Pos="5" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_END>
+		<REFERENCE_END ID="137464" />
+		<REFERENCE_END ID="137559" />
+		<REFERENCE_END ID="137564" />
+	</REFERENCES_END>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137347" Name="payment_pkey" Kind="2" Expression="" ReferenceIndex="137479" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1393"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137359" Name="idx_fk_customer_id" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="customer_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137376" Name="idx_fk_staff_id" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="staff_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137479" Name="payment_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137347" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="payment_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+</ENTITY>
+
+<ENTITY ID="137278" Name="rental" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="620" YPos="410" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1399" Name="rental_id" Pos="1" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="nextval(\arental_rental_id_seq\a::regclass)" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1400" Name="rental_date" Pos="2" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1401" Name="inventory_id" Pos="3" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1402" Name="customer_id" Pos="4" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1403" Name="return_date" Pos="5" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1404" Name="staff_id" Pos="6" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1405" Name="last_update" Pos="7" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_BEGIN>
+		<REFERENCE_BEGIN ID="137559" />
+	</REFERENCES_BEGIN>
+	<REFERENCES_END>
+		<REFERENCE_END ID="137569" />
+		<REFERENCE_END ID="137574" />
+		<REFERENCE_END ID="137579" />
+	</REFERENCES_END>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137349" Name="rental_pkey" Kind="2" Expression="" ReferenceIndex="137484" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1399"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137361" Name="idx_fk_inventory_id" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="inventory_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137382" Name="idx_unq_rental_rental_date_inventory_id_customer_id" Unique="1" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="rental_date,inventory_id,customer_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137484" Name="rental_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137349" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="rental_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+	<TRIGGERS>
+		<TRIGGER ID="137401" Name="last_updated" TriggerTime="BEFORE" TriggerEvent="UPDATE " Generate="1" TriggerProc="\Alast_updated\A" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+	</TRIGGERS>
+</ENTITY>
+
+<ENTITY ID="137290" Name="staff" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="890" YPos="110" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1406" Name="staff_id" Pos="1" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="nextval(\astaff_staff_id_seq\a::regclass)" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1407" Name="first_name" Pos="2" Datatype="1043" Type="varchar" Width="45" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1408" Name="last_name" Pos="3" Datatype="1043" Type="varchar" Width="45" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1409" Name="address_id" Pos="4" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1410" Name="email" Pos="5" Datatype="1043" Type="varchar" Width="50" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1411" Name="store_id" Pos="6" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1412" Name="active" Pos="7" Datatype="16" Type="bool" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="true" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1413" Name="username" Pos="8" Datatype="1043" Type="varchar" Width="16" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1414" Name="password" Pos="9" Datatype="1043" Type="varchar" Width="40" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1415" Name="last_update" Pos="10" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1416" Name="picture" Pos="11" Datatype="17" Type="bytea" Width="0" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_BEGIN>
+		<REFERENCE_BEGIN ID="137564" />
+		<REFERENCE_BEGIN ID="137579" />
+		<REFERENCE_BEGIN ID="137599" />
+	</REFERENCES_BEGIN>
+	<REFERENCES_END>
+		<REFERENCE_END ID="137584" />
+		<REFERENCE_END ID="137589" />
+	</REFERENCES_END>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137351" Name="staff_pkey" Kind="2" Expression="" ReferenceIndex="137444" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1406"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137444" Name="staff_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137351" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="staff_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+	<TRIGGERS>
+		<TRIGGER ID="137402" Name="last_updated" TriggerTime="BEFORE" TriggerEvent="UPDATE " Generate="1" TriggerProc="\Alast_updated\A" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+	</TRIGGERS>
+</ENTITY>
+
+<ENTITY ID="137301" Name="store" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="1900" YPos="40" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="OIDS=False\n" >
+	<COLUMNS>
+		<COLUMN ID="1417" Name="store_id" Pos="1" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="nextval(\astore_store_id_seq\a::regclass)" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1418" Name="manager_staff_id" Pos="2" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1419" Name="address_id" Pos="3" Datatype="21" Type="int2" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="1420" Name="last_update" Pos="4" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_BEGIN>
+		<REFERENCE_BEGIN ID="137419" />
+		<REFERENCE_BEGIN ID="137459" />
+		<REFERENCE_BEGIN ID="137589" />
+	</REFERENCES_BEGIN>
+	<REFERENCES_END>
+		<REFERENCE_END ID="137594" />
+		<REFERENCE_END ID="137599" />
+	</REFERENCES_END>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="137353" Name="store_pkey" Kind="2" Expression="" ReferenceIndex="137489" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="1417"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
+	<INDEXES>
+		<INDEX ID="137381" Name="idx_unq_manager_staff_id" Unique="1" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="manager_staff_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+		<INDEX ID="137489" Name="store_pkey_idx_pk" Unique="1" Method="0" Predicate="" TablespaceID="0" ReferenceConstraint="137353" StorageParams="FILLFACTOR=0" Comments="">
+			<INDEXCOLUMNS COMMATEXT="store_id"></INDEXCOLUMNS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
+		</INDEX>
+	</INDEXES>
+	<TRIGGERS>
+		<TRIGGER ID="137403" Name="last_updated" TriggerTime="BEFORE" TriggerEvent="UPDATE " Generate="1" TriggerProc="\Alast_updated\A" TriggerForEachRow="1" TriggerWhen="" Comments="">
+			<TRIGGERCOLUMNS COMMATEXT=""></TRIGGERCOLUMNS>
+		</TRIGGER>
+	</TRIGGERS>
+</ENTITY>
+
+</ENTITIES>
+
+<REFERENCES>
+<REFERENCE ID="137404" Name="address_city_id_fkey" SOURCE="137190" DESTINATION="137183" FKIDS="1349=1342\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137331" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137409" Name="city_country_id_fkey" SOURCE="137197" DESTINATION="137190" FKIDS="1353=1351\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137333" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137414" Name="customer_address_id_fkey" SOURCE="137183" DESTINATION="137204" FKIDS="1338=1361\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137327" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137419" Name="customer_store_id_fkey" SOURCE="137301" DESTINATION="137204" FKIDS="1417=1357\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137353" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137444" Name="film_language_id_fkey" SOURCE="137230" DESTINATION="137156" FKIDS="1390=1370\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137345" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137449" Name="film_original_language_id_fkey" SOURCE="137230" DESTINATION="137156" FKIDS="1390=1371\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137345" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137424" Name="film_actor_actor_id_fkey" SOURCE="137131" DESTINATION="137168" FKIDS="1334=1380\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137325" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137429" Name="film_actor_film_id_fkey" SOURCE="137156" DESTINATION="137168" FKIDS="1366=1381\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137341" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137434" Name="film_category_category_id_fkey" SOURCE="137149" DESTINATION="137172" FKIDS="1346=1384\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137329" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137439" Name="film_category_film_id_fkey" SOURCE="137156" DESTINATION="137172" FKIDS="1366=1383\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137341" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137454" Name="inventory_film_id_fkey" SOURCE="137156" DESTINATION="137223" FKIDS="1366=1387\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137341" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137459" Name="inventory_store_id_fkey" SOURCE="137301" DESTINATION="137223" FKIDS="1417=1388\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137353" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137464" Name="payment_customer_id_fkey" SOURCE="137204" DESTINATION="137242" FKIDS="1356=1394\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137335" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137559" Name="payment_rental_id_fkey" SOURCE="137278" DESTINATION="137242" FKIDS="1399=1396\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="2" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137349" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137564" Name="payment_staff_id_fkey" SOURCE="137290" DESTINATION="137242" FKIDS="1406=1395\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137351" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137569" Name="rental_customer_id_fkey" SOURCE="137204" DESTINATION="137278" FKIDS="1356=1402\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137335" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137574" Name="rental_inventory_id_fkey" SOURCE="137223" DESTINATION="137278" FKIDS="1386=1401\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137343" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137579" Name="rental_staff_id_fkey" SOURCE="137290" DESTINATION="137278" FKIDS="1406=1404\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137351" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137584" Name="staff_address_id_fkey" SOURCE="137183" DESTINATION="137290" FKIDS="1338=1409\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137327" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137589" Name="staff_store_id_fkey" SOURCE="137301" DESTINATION="137290" FKIDS="1417=1411\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="3" OnUpdate="3" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137353" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137594" Name="store_address_id_fkey" SOURCE="137183" DESTINATION="137301" FKIDS="1338=1419\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137327" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="137599" Name="store_manager_staff_id_fkey" SOURCE="137290" DESTINATION="137301" FKIDS="1406=1418\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="0" OnUpdate="1" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="137351" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+</REFERENCES>
+
+<NOTES>
+<NOTE ID="137452" Name="Note_01" XPos="1430" YPos="1070" Text="Pagila is a port of the Sakila example database available for MySQL, which was  \noriginally developed by Mike Hillyer of the MySQL AB documentation team. It  \nis intended to provide a standard schema that can be used for examples in \nbooks, tutorials, articles, samples, etc.\n" BackColor="13499135" LineColor="0" FontColor="0" />
+<NOTE ID="137453" Name="Note_02" XPos="1430" YPos="1160" Text="The schema and data for the Sakila database were made available under the BSD license \nwhich can be found at http://www.opensource.org/licenses/bsd-license.php. The pagila \ndatabase is made available under this license as well.  \n" BackColor="15794175" LineColor="0" FontColor="0" />
+<NOTE ID="137454" Name="Note_03" XPos="1430" YPos="1240" Text="The following articles make use of pagila to showcase various PostgreSQL features:\n\n* Showcasing REST in PostgreSQL - The PreQuel\nhttp://www.postgresonline.com/journal/index.php?/archives/32-Showcasing-REST-in-PostgreSQL-The-PreQuel.html#extended\n\n* PostgreSQL 8.3 Features: Enum Datatype\nhttp://people.planetpostgresql.org/xzilla/index.php?/archives/320-PostgreSQL-8.3-Features-Enum-Datatype.html\n\n* Email Validation with pl/PHP\nhttp://people.planetpostgresql.org/xzilla/index.php?/archives/261-Re-inventing-Gregs-method-to-prevent-re-inventing.html\n\n* Getting Started with PostgreSQL for Windows\nhttp://www.charltonlopez.com/index.php?option=com_content\+task=view\+id=56\+Itemid=38\n\n* RATIO_TO_REPORT in PostgreSQL\nhttp://people.planetpostgresql.org/xzilla/index.php?/search/pagila/P3.html\n\n* The postmaster and postgres Processes\nhttp://www.charltonlopez.com/index.php?option=com_content\+task=view\+id=57\+Itemid=38\n\n* Building Rails to Legacy Applications :: Take Control of Active Record\nhttp://people.planetpostgresql.org/xzilla/index.php?/archives/220-Building-Rails-to-Legacy-Applications-Take-Control-of-Active-Record.html\n\n* Building Rails to Legacy Applications :: Masking the Database\nhttp://people.planetpostgresql.org/xzilla/index.php?/archives/213-Building-Rails-to-Legacy-Applications-Masking-the-Database.html\n" BackColor="16775408" LineColor="0" FontColor="0" />
+</NOTES>
+
+<STOREDPROCES>
+<STOREDPROC ID="137322" Name="last_updated" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="540" YPos="1420" LineColor="8388608" BackColor="13499135" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Secure="0" SFBody="\nBEGIN\n    NEW.last_update = CURRENT_TIMESTAMP;\n    RETURN NEW;\nEND \n" BodyBrackets="$BODY$" Language="plpgsql" ReturnSet="0" Returns="trigger" ReturnsOID="2279" ObjectFile="" LinkSymbol="" Generate="1" Strict="0" Window="0" LeakProof="0" EvaluationType="2" ResultRows="0" ExecutionCost="0" ParallelType="0" >
+<PARAMETERS>
+</PARAMETERS>
+</STOREDPROC>
+
+<STOREDPROC ID="137145" Name="_group_concat" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="290" YPos="1740" LineColor="8388608" BackColor="13499135" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Secure="0" SFBody="\nSELECT CASE\n  WHEN $2 IS NULL THEN $1\n  WHEN $1 IS NULL THEN $2\n  ELSE $1 || \a, \a || $2\nEND\n" BodyBrackets="$BODY$" Language="sql" ReturnSet="0" Returns="text" ReturnsOID="25" ObjectFile="" LinkSymbol="" Generate="1" Strict="0" Window="0" LeakProof="0" EvaluationType="2" ResultRows="0" ExecutionCost="100" ParallelType="0" >
+<PARAMETERS>
+<PARAMETER ID="1421" Name="" Pos="1" ParamType="0" Datatype="25" Type="text" Default="" >
+</PARAMETER>
+<PARAMETER ID="1422" Name="" Pos="2" ParamType="0" Datatype="25" Type="text" Default="" >
+</PARAMETER>
+</PARAMETERS>
+</STOREDPROC>
+
+<STOREDPROC ID="137146" Name="group_concat" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="540" YPos="1660" LineColor="8388608" BackColor="13499135" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Secure="0" SFBody="" BodyBrackets="$BODY$" Language="internal" ReturnSet="0" Returns="text" ReturnsOID="25" ObjectFile="" LinkSymbol="" Generate="1" Strict="0" Window="0" LeakProof="0" EvaluationType="2" ResultRows="0" ExecutionCost="1" ParallelType="0" >
+<PARAMETERS>
+<PARAMETER ID="1423" Name="" Pos="1" ParamType="0" Datatype="25" Type="text" Default="" >
+</PARAMETER>
+</PARAMETERS>
+</STOREDPROC>
+
+<STOREDPROC ID="137316" Name="film_in_stock" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="40" YPos="1840" LineColor="8388608" BackColor="13499135" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Secure="0" SFBody="\n     SELECT inventory_id\n     FROM inventory\n     WHERE film_id = $1\n     AND store_id = $2\n     AND inventory_in_stock(inventory_id);\n" BodyBrackets="$BODY$" Language="sql" ReturnSet="1" Returns="int4" ReturnsOID="23" ObjectFile="" LinkSymbol="" Generate="1" Strict="0" Window="0" LeakProof="0" EvaluationType="2" ResultRows="1000" ExecutionCost="100" ParallelType="0" >
+<PARAMETERS>
+<PARAMETER ID="1424" Name="p_film_id" Pos="1" ParamType="0" Datatype="23" Type="int4" Default="" >
+</PARAMETER>
+<PARAMETER ID="1425" Name="p_store_id" Pos="2" ParamType="0" Datatype="23" Type="int4" Default="" >
+</PARAMETER>
+<PARAMETER ID="1426" Name="p_film_count" Pos="3" ParamType="1" Datatype="23" Type="int4" Default="" >
+</PARAMETER>
+</PARAMETERS>
+</STOREDPROC>
+
+<STOREDPROC ID="137317" Name="film_not_in_stock" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="200" YPos="1840" LineColor="8388608" BackColor="13499135" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Secure="0" SFBody="\n    SELECT inventory_id\n    FROM inventory\n    WHERE film_id = $1\n    AND store_id = $2\n    AND NOT inventory_in_stock(inventory_id);\n" BodyBrackets="$BODY$" Language="sql" ReturnSet="1" Returns="int4" ReturnsOID="23" ObjectFile="" LinkSymbol="" Generate="1" Strict="0" Window="0" LeakProof="0" EvaluationType="2" ResultRows="1000" ExecutionCost="100" ParallelType="0" >
+<PARAMETERS>
+<PARAMETER ID="1427" Name="p_film_id" Pos="1" ParamType="0" Datatype="23" Type="int4" Default="" >
+</PARAMETER>
+<PARAMETER ID="1428" Name="p_store_id" Pos="2" ParamType="0" Datatype="23" Type="int4" Default="" >
+</PARAMETER>
+<PARAMETER ID="1429" Name="p_film_count" Pos="3" ParamType="1" Datatype="23" Type="int4" Default="" >
+</PARAMETER>
+</PARAMETERS>
+</STOREDPROC>
+
+<STOREDPROC ID="137318" Name="get_customer_balance" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="410" YPos="1740" LineColor="8388608" BackColor="13499135" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Secure="0" SFBody="\n       --#OK, WE NEED TO CALCULATE THE CURRENT BALANCE GIVEN A CUSTOMER_ID AND A DATE\n       --#THAT WE WANT THE BALANCE TO BE EFFECTIVE FOR. THE BALANCE IS:\n       --#   1) RENTAL FEES FOR ALL PREVIOUS RENTALS\n       --#   2) ONE DOLLAR FOR EVERY DAY THE PREVIOUS RENTALS ARE OVERDUE\n       --#   3) IF A FILM IS MORE THAN RENTAL_DURATION * 2 OVERDUE, CHARGE THE REPLACEMENT_COST\n       --#   4) SUBTRACT ALL PAYMENTS MADE BEFORE THE DATE SPECIFIED\nDECLARE\n    v_rentfees DECIMAL(5,2); --#FEES PAID TO RENT THE VIDEOS INITIALLY\n    v_overfees INTEGER;      --#LATE FEES FOR PRIOR RENTALS\n    v_payments DECIMAL(5,2); --#SUM OF PAYMENTS MADE PREVIOUSLY\nBEGIN\n    SELECT COALESCE(SUM(film.rental_rate),0) INTO v_rentfees\n    FROM film, inventory, rental\n    WHERE film.film_id = inventory.film_id\n      AND inventory.inventory_id = rental.inventory_id\n      AND rental.rental_date \k= p_effective_date\n      AND rental.customer_id = p_customer_id;\n\n    SELECT COALESCE(SUM(IF((rental.return_date - rental.rental_date) \g (film.rental_duration * \a1 day\a::interval),\n        ((rental.return_date - rental.rental_date) - (film.rental_duration * \a1 day\a::interval)),0)),0) INTO v_overfees\n    FROM rental, inventory, film\n    WHERE film.film_id = inventory.film_id\n      AND inventory.inventory_id = rental.inventory_id\n      AND rental.rental_date \k= p_effective_date\n      AND rental.customer_id = p_customer_id;\n\n    SELECT COALESCE(SUM(payment.amount),0) INTO v_payments\n    FROM payment\n    WHERE payment.payment_date \k= p_effective_date\n    AND payment.customer_id = p_customer_id;\n\n    RETURN v_rentfees + v_overfees - v_payments;\nEND\n" BodyBrackets="$BODY$" Language="plpgsql" ReturnSet="0" Returns="numeric" ReturnsOID="1700" ObjectFile="" LinkSymbol="" Generate="1" Strict="0" Window="0" LeakProof="0" EvaluationType="2" ResultRows="0" ExecutionCost="100" ParallelType="0" >
+<PARAMETERS>
+<PARAMETER ID="1430" Name="p_customer_id" Pos="1" ParamType="0" Datatype="23" Type="int4" Default="" >
+</PARAMETER>
+<PARAMETER ID="1431" Name="p_effective_date" Pos="2" ParamType="0" Datatype="1114" Type="timestamp" Default="" >
+</PARAMETER>
+</PARAMETERS>
+</STOREDPROC>
+
+<STOREDPROC ID="137319" Name="inventory_held_by_customer" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="40" YPos="1660" LineColor="8388608" BackColor="13499135" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Secure="0" SFBody="\nDECLARE\n    v_customer_id INTEGER;\nBEGIN\n\n  SELECT customer_id INTO v_customer_id\n  FROM rental\n  WHERE return_date IS NULL\n  AND inventory_id = p_inventory_id;\n\n  RETURN v_customer_id;\nEND \n" BodyBrackets="$BODY$" Language="plpgsql" ReturnSet="0" Returns="int4" ReturnsOID="23" ObjectFile="" LinkSymbol="" Generate="1" Strict="0" Window="0" LeakProof="0" EvaluationType="2" ResultRows="0" ExecutionCost="100" ParallelType="0" >
+<PARAMETERS>
+<PARAMETER ID="1432" Name="p_inventory_id" Pos="1" ParamType="0" Datatype="23" Type="int4" Default="" >
+</PARAMETER>
+</PARAMETERS>
+</STOREDPROC>
+
+<STOREDPROC ID="137320" Name="inventory_in_stock" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="250" YPos="1660" LineColor="8388608" BackColor="13499135" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Secure="0" SFBody="\nDECLARE\n    v_rentals INTEGER;\n    v_out     INTEGER;\nBEGIN\n    -- AN ITEM IS IN-STOCK IF THERE ARE EITHER NO ROWS IN THE rental TABLE\n    -- FOR THE ITEM OR ALL ROWS HAVE return_date POPULATED\n\n    SELECT count(*) INTO v_rentals\n    FROM rental\n    WHERE inventory_id = p_inventory_id;\n\n    IF v_rentals = 0 THEN\n      RETURN TRUE;\n    END IF;\n\n    SELECT COUNT(rental_id) INTO v_out\n    FROM inventory LEFT JOIN rental USING(inventory_id)\n    WHERE inventory.inventory_id = p_inventory_id\n    AND rental.return_date IS NULL;\n\n    IF v_out \g 0 THEN\n      RETURN FALSE;\n    ELSE\n      RETURN TRUE;\n    END IF;\nEND \n" BodyBrackets="$BODY$" Language="plpgsql" ReturnSet="0" Returns="bool" ReturnsOID="16" ObjectFile="" LinkSymbol="" Generate="1" Strict="0" Window="0" LeakProof="0" EvaluationType="2" ResultRows="0" ExecutionCost="100" ParallelType="0" >
+<PARAMETERS>
+<PARAMETER ID="1433" Name="p_inventory_id" Pos="1" ParamType="0" Datatype="23" Type="int4" Default="" >
+</PARAMETER>
+</PARAMETERS>
+</STOREDPROC>
+
+<STOREDPROC ID="137321" Name="last_day" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="410" YPos="1660" LineColor="8388608" BackColor="13499135" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Secure="0" SFBody="\n  SELECT CASE\n    WHEN EXTRACT(MONTH FROM $1) = 12 THEN\n      (((EXTRACT(YEAR FROM $1) + 1) operator(pg_catalog.||) \a-01-01\a)::date - INTERVAL \a1 day\a)::date\n    ELSE\n      ((EXTRACT(YEAR FROM $1) operator(pg_catalog.||) \a-\a operator(pg_catalog.||) (EXTRACT(MONTH FROM $1) + 1) operator(pg_catalog.||) \a-01\a)::date - INTERVAL \a1 day\a)::date\n    END\n" BodyBrackets="$BODY$" Language="sql" ReturnSet="0" Returns="date" ReturnsOID="1082" ObjectFile="" LinkSymbol="" Generate="1" Strict="1" Window="0" LeakProof="0" EvaluationType="2" ResultRows="0" ExecutionCost="100" ParallelType="0" >
+<PARAMETERS>
+<PARAMETER ID="1434" Name="" Pos="1" ParamType="0" Datatype="1114" Type="timestamp" Default="" >
+</PARAMETER>
+</PARAMETERS>
+</STOREDPROC>
+
+<STOREDPROC ID="137323" Name="rewards_report" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="40" YPos="1740" LineColor="8388608" BackColor="13499135" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Secure="1" SFBody="\nDECLARE\n    last_month_start DATE;\n    last_month_end DATE;\nrr RECORD;\ntmpSQL TEXT;\nBEGIN\n\n    /* Some sanity checks... */\n    IF min_monthly_purchases = 0 THEN\n        RAISE EXCEPTION \aMinimum monthly purchases parameter must be \g 0\a;\n    END IF;\n    IF min_dollar_amount_purchased = 0.00 THEN\n        RAISE EXCEPTION \aMinimum monthly dollar amount purchased parameter must be \g $0.00\a;\n    END IF;\n\n    last_month_start := CURRENT_DATE - \a3 month\a::interval;\n    last_month_start := to_date((extract(YEAR FROM last_month_start) || \a-\a || extract(MONTH FROM last_month_start) || \a-01\a),\aYYYY-MM-DD\a);\n    last_month_end := LAST_DAY(last_month_start);\n\n    /*\n    Create a temporary storage area for Customer IDs.\n    */\n    CREATE TEMPORARY TABLE tmpCustomer (customer_id INTEGER NOT NULL PRIMARY KEY);\n\n    /*\n    Find all customers meeting the monthly purchase requirements\n    */\n\n    tmpSQL := \aINSERT INTO tmpCustomer (customer_id)\n        SELECT p.customer_id\n        FROM payment AS p\n        WHERE DATE(p.payment_date) BETWEEN \a||quote_literal(last_month_start) ||\a AND \a|| quote_literal(last_month_end) || \a\n        GROUP BY customer_id\n        HAVING SUM(p.amount) \g \a|| min_dollar_amount_purchased || \a\n        AND COUNT(customer_id) \g \a ||min_monthly_purchases ;\n\n    EXECUTE tmpSQL;\n\n    /*\n    Output ALL customer information of matching rewardees.\n    Customize output as needed.\n    */\n    FOR rr IN EXECUTE \aSELECT c.* FROM tmpCustomer AS t INNER JOIN customer AS c ON t.customer_id = c.customer_id\a LOOP\n        RETURN NEXT rr;\n    END LOOP;\n\n    /* Clean up */\n    tmpSQL := \aDROP TABLE tmpCustomer\a;\n    EXECUTE tmpSQL;\n\nRETURN;\nEND\n" BodyBrackets="$BODY$" Language="plpgsql" ReturnSet="1" Returns="int4" ReturnsOID="23" ObjectFile="" LinkSymbol="" Generate="1" Strict="0" Window="0" LeakProof="0" EvaluationType="2" ResultRows="1000" ExecutionCost="100" ParallelType="0" >
+<PARAMETERS>
+<PARAMETER ID="1435" Name="min_monthly_purchases" Pos="1" ParamType="0" Datatype="23" Type="int4" Default="" >
+</PARAMETER>
+<PARAMETER ID="1436" Name="min_dollar_amount_purchased" Pos="2" ParamType="0" Datatype="1700" Type="numeric" Default="" >
+</PARAMETER>
+</PARAMETERS>
+</STOREDPROC>
+
+</STOREDPROCES>
+
+<VIEWS>
+<VIEW ID="137176" Name="actor_info" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="410" YPos="1060" LineColor="8388608" BackColor="3329434" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" SQLQuery="SELECT a.actor_id, a.first_name, a.last_name, group_concat(DISTINCT (((c.name)::text || \a: \a::text) || (SELECT group_concat((f.title)::text) AS group_concat FROM ((film f JOIN film_category fc ON ((f.film_id = fc.film_id))) JOIN film_actor fa ON ((f.film_id = fa.film_id))) WHERE ((fc.category_id = c.category_id) AND (fa.actor_id = a.actor_id)) GROUP BY fa.actor_id))) AS film_info FROM (((actor a LEFT JOIN film_actor fa ON ((a.actor_id = fa.actor_id))) LEFT JOIN film_category fc ON ((fa.film_id = fc.film_id))) LEFT JOIN category c ON ((fc.category_id = c.category_id))) GROUP BY a.actor_id, a.first_name, a.last_name" Columns="a.actor_id,a.first_name,a.last_name,film_info" Tables="\Afilm f\A,\Afilm_category fc\A,\Afilm_actor fa\A,\Aactor a\A,\Afilm_actor fa\A,\Afilm_category fc\A,\Acategory c\A" Temporary="0" SecurityBarrier="0" Recursive="0" Materialized="0" NoData="0" TablespaceID="0" Generate="1" ACL="" >
+</VIEW>
+
+<VIEW ID="137211" Name="customer_list" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="340" YPos="1360" LineColor="8388608" BackColor="3329434" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" SQLQuery="SELECT cu.customer_id AS id, (((cu.first_name)::text || \a \a::text) || (cu.last_name)::text) AS name, a.address, a.postal_code AS \Azip code\A, a.phone, city.city, country.country, CASE WHEN cu.activebool THEN \aactive\a::text ELSE \a\a::text END AS notes, cu.store_id AS sid FROM (((customer cu JOIN address a ON ((cu.address_id = a.address_id))) JOIN city ON ((a.city_id = city.city_id))) JOIN country ON ((city.country_id = country.country_id)))" Columns="id,name,a.address,\A\A\Azip code\A\A\A,a.phone,city.city,country.country,notes,sid" Tables="\Acustomer cu\A,\Aaddress a\A,city,country" Temporary="0" SecurityBarrier="0" Recursive="0" Materialized="0" NoData="0" TablespaceID="0" Generate="1" ACL="" >
+</VIEW>
+
+<VIEW ID="137216" Name="film_list" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="540" YPos="1060" LineColor="8388608" BackColor="3329434" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" SQLQuery="SELECT film.film_id AS fid, film.title, film.description, category.name AS category, film.rental_rate AS price, film.length, film.rating, group_concat((((actor.first_name)::text || \a \a::text) || (actor.last_name)::text)) AS actors FROM ((((category LEFT JOIN film_category ON ((category.category_id = film_category.category_id))) LEFT JOIN film ON ((film_category.film_id = film.film_id))) JOIN film_actor ON ((film.film_id = film_actor.film_id))) JOIN actor ON ((film_actor.actor_id = actor.actor_id))) GROUP BY film.film_id, film.title, film.description, category.name, film.rental_rate, film.length, film.rating" Columns="fid,film.title,film.description,category,price,film.length,film.rating,actors" Tables="category,film_category,film,film_actor,actor" Temporary="0" SecurityBarrier="0" Recursive="0" Materialized="0" NoData="0" TablespaceID="0" Generate="1" ACL="" >
+</VIEW>
+
+<VIEW ID="137235" Name="nicer_but_slower_film_list" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="50" YPos="1060" LineColor="8388608" BackColor="3329434" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" SQLQuery="SELECT film.film_id AS fid, film.title, film.description, category.name AS category, film.rental_rate AS price, film.length, film.rating, group_concat((((upper(\Asubstring\A((actor.first_name)::text, 1, 1)) || lower(\Asubstring\A((actor.first_name)::text, 2))) || upper(\Asubstring\A((actor.last_name)::text, 1, 1))) || lower(\Asubstring\A((actor.last_name)::text, 2)))) AS actors FROM ((((category LEFT JOIN film_category ON ((category.category_id = film_category.category_id))) LEFT JOIN film ON ((film_category.film_id = film.film_id))) JOIN film_actor ON ((film.film_id = film_actor.film_id))) JOIN actor ON ((film_actor.actor_id = actor.actor_id))) GROUP BY film.film_id, film.title, film.description, category.name, film.rental_rate, film.length, film.rating" Columns="fid,film.title,film.description,category,price,film.length,film.rating,actors" Tables="category,film_category,film,film_actor,actor" Temporary="0" SecurityBarrier="0" Recursive="0" Materialized="0" NoData="0" TablespaceID="0" Generate="1" ACL="" >
+</VIEW>
+
+<VIEW ID="137283" Name="sales_by_film_category" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="220" YPos="1060" LineColor="8388608" BackColor="3329434" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" SQLQuery="SELECT c.name AS category, sum(p.amount) AS total_sales FROM (((((payment p JOIN rental r ON ((p.rental_id = r.rental_id))) JOIN inventory i ON ((r.inventory_id = i.inventory_id))) JOIN film f ON ((i.film_id = f.film_id))) JOIN film_category fc ON ((f.film_id = fc.film_id))) JOIN category c ON ((fc.category_id = c.category_id))) GROUP BY c.name ORDER BY sum(p.amount) DESC" Columns="category,total_sales" Tables="\Apayment p\A,\Arental r\A,\Ainventory i\A,\Afilm f\A,\Afilm_category fc\A,\Acategory c\A" Temporary="0" SecurityBarrier="0" Recursive="0" Materialized="0" NoData="0" TablespaceID="0" Generate="1" ACL="" >
+</VIEW>
+
+<VIEW ID="137306" Name="sales_by_store" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="190" YPos="1360" LineColor="8388608" BackColor="3329434" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" SQLQuery="SELECT (((c.city)::text || \a,\a::text) || (cy.country)::text) AS store, (((m.first_name)::text || \a \a::text) || (m.last_name)::text) AS manager, sum(p.amount) AS total_sales FROM (((((((payment p JOIN rental r ON ((p.rental_id = r.rental_id))) JOIN inventory i ON ((r.inventory_id = i.inventory_id))) JOIN store s ON ((i.store_id = s.store_id))) JOIN address a ON ((s.address_id = a.address_id))) JOIN city c ON ((a.city_id = c.city_id))) JOIN country cy ON ((c.country_id = cy.country_id))) JOIN staff m ON ((s.manager_staff_id = m.staff_id))) GROUP BY cy.country, c.city, s.store_id, m.first_name, m.last_name ORDER BY cy.country, c.city" Columns="store,manager,total_sales" Tables="\Apayment p\A,\Arental r\A,\Ainventory i\A,\Astore s\A,\Aaddress a\A,\Acity c\A,\Acountry cy\A,\Astaff m\A" Temporary="0" SecurityBarrier="0" Recursive="0" Materialized="0" NoData="0" TablespaceID="0" Generate="1" ACL="" >
+</VIEW>
+
+<VIEW ID="137311" Name="staff_list" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" XPos="40" YPos="1360" LineColor="8388608" BackColor="3329434" FontColor="0" Comments="" Description="" Annotation="" BeginScript="" EndScript="" SQLQuery="SELECT s.staff_id AS id, (((s.first_name)::text || \a \a::text) || (s.last_name)::text) AS name, a.address, a.postal_code AS \Azip code\A, a.phone, city.city, country.country, s.store_id AS sid FROM (((staff s JOIN address a ON ((s.address_id = a.address_id))) JOIN city ON ((a.city_id = city.city_id))) JOIN country ON ((city.country_id = country.country_id)))" Columns="id,name,a.address,\A\A\Azip code\A\A\A,a.phone,city.city,country.country,sid" Tables="\Astaff s\A,\Aaddress a\A,city,country" Temporary="0" SecurityBarrier="0" Recursive="0" Materialized="0" NoData="0" TablespaceID="0" Generate="1" ACL="" >
+</VIEW>
+
+</VIEWS>
+
+</METADATA>
+</DBMODEL>

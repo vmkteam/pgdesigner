@@ -1,0 +1,16 @@
+
+# Internal test data (not for public distribution)
+demo-fst/
+*.bak
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+
+# Go binary
+pgdesigner
+
+# Frontend
+node_modules/

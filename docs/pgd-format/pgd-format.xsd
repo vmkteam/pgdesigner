@@ -1,0 +1,1140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="qualified"
+           version="1.0">
+
+  <!-- ============================================================
+       PGD Format XSD — PostgreSQL Designer Project File
+       Covers PG18 DDL: tables, indexes, types, sequences, views,
+       functions, triggers, policies, roles, extensions, grants,
+       comments, and diagram layouts.
+       ============================================================ -->
+
+  <!-- ============================================================
+       Shared Simple Types (enumerations)
+       ============================================================ -->
+
+  <!-- Naming convention for identifiers -->
+  <xs:simpleType name="NamingConventionType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="camelCase"/>
+      <xs:enumeration value="snake_case"/>
+      <xs:enumeration value="PascalCase"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- FK/reference actions -->
+  <xs:simpleType name="ReferentialActionType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="restrict"/>
+      <xs:enumeration value="cascade"/>
+      <xs:enumeration value="set-null"/>
+      <xs:enumeration value="set-default"/>
+      <xs:enumeration value="no action"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- MATCH type for FK -->
+  <xs:simpleType name="MatchType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="simple"/>
+      <xs:enumeration value="full"/>
+      <xs:enumeration value="partial"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- DEFERRABLE INITIALLY -->
+  <xs:simpleType name="DeferrableInitiallyType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="immediate"/>
+      <xs:enumeration value="deferred"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- GENERATED ALWAYS | BY DEFAULT (for identity columns) -->
+  <xs:simpleType name="IdentityGeneratedType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="always"/>
+      <xs:enumeration value="by-default"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Column STORAGE mode -->
+  <xs:simpleType name="StorageModeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="plain"/>
+      <xs:enumeration value="external"/>
+      <xs:enumeration value="extended"/>
+      <xs:enumeration value="main"/>
+      <xs:enumeration value="default"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Column COMPRESSION method -->
+  <xs:simpleType name="CompressionMethodType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="lz4"/>
+      <xs:enumeration value="pglz"/>
+      <xs:enumeration value="default"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Index access method (USING) -->
+  <xs:simpleType name="IndexMethodType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="btree"/>
+      <xs:enumeration value="hash"/>
+      <xs:enumeration value="gist"/>
+      <xs:enumeration value="spgist"/>
+      <xs:enumeration value="gin"/>
+      <xs:enumeration value="brin"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Index column sort order -->
+  <xs:simpleType name="SortOrderType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="asc"/>
+      <xs:enumeration value="desc"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Index column NULLS placement -->
+  <xs:simpleType name="NullsPlacementType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="first"/>
+      <xs:enumeration value="last"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Function volatility -->
+  <xs:simpleType name="VolatilityType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="immutable"/>
+      <xs:enumeration value="stable"/>
+      <xs:enumeration value="volatile"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Function / trigger SECURITY -->
+  <xs:simpleType name="SecurityType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="invoker"/>
+      <xs:enumeration value="definer"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Function PARALLEL safety -->
+  <xs:simpleType name="ParallelSafetyType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="unsafe"/>
+      <xs:enumeration value="restricted"/>
+      <xs:enumeration value="safe"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Trigger timing -->
+  <xs:simpleType name="TriggerTimingType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="before"/>
+      <xs:enumeration value="after"/>
+      <xs:enumeration value="instead-of"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Trigger for-each granularity -->
+  <xs:simpleType name="TriggerForEachType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="row"/>
+      <xs:enumeration value="statement"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- RLS policy type -->
+  <xs:simpleType name="PolicyTypeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="permissive"/>
+      <xs:enumeration value="restrictive"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- RLS policy command -->
+  <xs:simpleType name="PolicyCommandType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="all"/>
+      <xs:enumeration value="select"/>
+      <xs:enumeration value="insert"/>
+      <xs:enumeration value="update"/>
+      <xs:enumeration value="delete"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- PARTITION BY type -->
+  <xs:simpleType name="PartitionByTypeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="range"/>
+      <xs:enumeration value="list"/>
+      <xs:enumeration value="hash"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- GRANT ON target type -->
+  <xs:simpleType name="GrantOnType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="schema"/>
+      <xs:enumeration value="table"/>
+      <xs:enumeration value="all-tables-in-schema"/>
+      <xs:enumeration value="sequence"/>
+      <xs:enumeration value="all-sequences-in-schema"/>
+      <xs:enumeration value="function"/>
+      <xs:enumeration value="all-functions-in-schema"/>
+      <xs:enumeration value="type"/>
+      <xs:enumeration value="database"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- COMMENT ON target type -->
+  <xs:simpleType name="CommentOnType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="schema"/>
+      <xs:enumeration value="table"/>
+      <xs:enumeration value="column"/>
+      <xs:enumeration value="index"/>
+      <xs:enumeration value="sequence"/>
+      <xs:enumeration value="view"/>
+      <xs:enumeration value="materialized-view"/>
+      <xs:enumeration value="function"/>
+      <xs:enumeration value="trigger"/>
+      <xs:enumeration value="policy"/>
+      <xs:enumeration value="type"/>
+      <xs:enumeration value="domain"/>
+      <xs:enumeration value="extension"/>
+      <xs:enumeration value="role"/>
+      <xs:enumeration value="database"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ============================================================
+       Shared Complex Types (reusable building blocks)
+       ============================================================ -->
+
+  <!-- A column reference by name (used in PK, FK, UNIQUE, INDEX) -->
+  <xs:complexType name="ColumnRefType">
+    <xs:attribute name="name" type="xs:string" use="required"/>
+    <!-- For FK column mappings: the referenced column name in the target table -->
+    <xs:attribute name="references" type="xs:string" use="optional"/>
+    <!-- For index columns: sort order -->
+    <xs:attribute name="order" type="SortOrderType" use="optional"/>
+    <!-- For index columns: NULLS FIRST | LAST -->
+    <xs:attribute name="nulls" type="NullsPlacementType" use="optional"/>
+    <!-- For index columns: opclass, e.g. "jsonb_path_ops" -->
+    <xs:attribute name="opclass" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Sequence options (used inside identity and standalone sequence) -->
+  <xs:complexType name="SequenceOptionsType">
+    <xs:attribute name="start"     type="xs:long" use="optional"/>
+    <xs:attribute name="increment" type="xs:long" use="optional"/>
+    <xs:attribute name="min"       type="xs:long" use="optional"/>
+    <xs:attribute name="max"       type="xs:long" use="optional"/>
+    <xs:attribute name="cache"     type="xs:long" use="optional"/>
+    <xs:attribute name="cycle"     type="xs:boolean" use="optional" default="false"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Root Element
+       ============================================================ -->
+
+  <xs:element name="pgd">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="project"      type="ProjectType"      minOccurs="0"/>
+        <xs:element name="database"     type="DatabaseType"     minOccurs="0"/>
+        <xs:element name="roles"        type="RolesType"        minOccurs="0"/>
+        <xs:element name="tablespaces"  type="TablespacesType"  minOccurs="0"/>
+        <xs:element name="extensions"   type="ExtensionsType"   minOccurs="0"/>
+        <xs:element name="types"        type="TypesType"        minOccurs="0"/>
+        <xs:element name="sequences"    type="SequencesType"    minOccurs="0"/>
+        <xs:element name="schema"       type="SchemaType"       minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element name="views"        type="ViewsType"        minOccurs="0"/>
+        <xs:element name="functions"    type="FunctionsType"    minOccurs="0"/>
+        <xs:element name="triggers"     type="TriggersType"     minOccurs="0"/>
+        <xs:element name="rules"        type="RulesType"        minOccurs="0"/>
+        <xs:element name="policies"     type="PoliciesType"     minOccurs="0"/>
+        <xs:element name="comments"     type="CommentsType"     minOccurs="0"/>
+        <xs:element name="grants"       type="GrantsType"       minOccurs="0"/>
+        <xs:element name="layouts"      type="LayoutsType"      minOccurs="0"/>
+      </xs:sequence>
+      <!-- Format version (e.g. "1") -->
+      <xs:attribute name="version"        type="xs:positiveInteger" use="required"/>
+      <!-- Target PostgreSQL major version (e.g. "18") -->
+      <xs:attribute name="pg-version"     type="xs:positiveInteger" use="optional"/>
+      <!-- Default schema when schema is omitted (e.g. "public") -->
+      <xs:attribute name="default-schema" type="xs:string"          use="optional" default="public"/>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ============================================================
+       Project
+       ============================================================ -->
+
+  <xs:complexType name="ProjectType">
+    <xs:sequence>
+      <xs:element name="settings" type="ProjectSettingsType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="name"        type="xs:string" use="required"/>
+    <xs:attribute name="description" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <xs:complexType name="ProjectSettingsType">
+    <xs:sequence>
+      <xs:element name="naming"   type="NamingSettingsType"   minOccurs="0" maxOccurs="1"/>
+      <xs:element name="defaults" type="DefaultSettingsType"  minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Naming convention for generated identifiers -->
+  <xs:complexType name="NamingSettingsType">
+    <xs:attribute name="convention" type="NamingConventionType" use="optional" default="camelCase"/>
+    <!-- Table name number convention: plural (users) or singular (user) -->
+    <xs:attribute name="tables" use="optional">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="plural"/>
+          <xs:enumeration value="singular"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:complexType>
+
+  <!-- Project-wide defaults applied when attributes are omitted -->
+  <xs:complexType name="DefaultSettingsType">
+    <xs:attribute name="nullable"   type="xs:boolean"           use="optional" default="true"/>
+    <xs:attribute name="on-delete"  type="ReferentialActionType" use="optional" default="restrict"/>
+    <xs:attribute name="on-update"  type="ReferentialActionType" use="optional" default="restrict"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Roles
+       ============================================================ -->
+
+  <xs:complexType name="DatabaseType">
+    <xs:attribute name="name"       type="xs:string" use="required"/>
+    <xs:attribute name="encoding"   type="xs:string" use="optional"/>
+    <xs:attribute name="collation"  type="xs:string" use="optional"/>
+    <xs:attribute name="ctype"      type="xs:string" use="optional"/>
+    <xs:attribute name="icu-locale" type="xs:string" use="optional"/>
+    <xs:attribute name="locale"     type="xs:string" use="optional"/>
+    <xs:attribute name="template"   type="xs:string" use="optional"/>
+    <xs:attribute name="tablespace" type="xs:string" use="optional"/>
+    <xs:attribute name="owner"      type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <xs:complexType name="TablespacesType">
+    <xs:sequence>
+      <xs:element name="tablespace" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="name"     type="xs:string" use="required"/>
+          <xs:attribute name="location" type="xs:string" use="required"/>
+          <xs:attribute name="owner"    type="xs:string" use="optional"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="RulesType">
+    <xs:sequence>
+      <xs:element name="rule" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType mixed="true">
+          <xs:attribute name="name"    type="xs:string" use="required"/>
+          <xs:attribute name="schema"  type="xs:string" use="optional"/>
+          <xs:attribute name="table"   type="xs:string" use="required"/>
+          <xs:attribute name="event"   type="xs:string" use="required"/>
+          <xs:attribute name="instead" type="xs:string" use="optional"/>
+          <xs:attribute name="where"   type="xs:string" use="optional"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="RolesType">
+    <xs:sequence>
+      <xs:element name="role" type="RoleType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="RoleType">
+    <xs:sequence>
+      <!-- GRANT role TO this role (IN ROLE) -->
+      <xs:element name="in-role" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="name" type="xs:string" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="name"               type="xs:string"          use="required"/>
+    <xs:attribute name="login"              type="xs:boolean"          use="optional" default="false"/>
+    <xs:attribute name="inherit"            type="xs:boolean"          use="optional" default="true"/>
+    <xs:attribute name="createdb"           type="xs:boolean"          use="optional" default="false"/>
+    <xs:attribute name="createrole"         type="xs:boolean"          use="optional" default="false"/>
+    <xs:attribute name="superuser"          type="xs:boolean"          use="optional" default="false"/>
+    <xs:attribute name="replication"        type="xs:boolean"          use="optional" default="false"/>
+    <xs:attribute name="bypassrls"          type="xs:boolean"          use="optional" default="false"/>
+    <!-- CONNECTION LIMIT; -1 = unlimited -->
+    <xs:attribute name="connection-limit"   type="xs:integer"          use="optional" default="-1"/>
+    <!-- Whether the password is stored encrypted -->
+    <xs:attribute name="password-encrypted" type="xs:boolean"          use="optional" default="true"/>
+    <!-- VALID UNTIL timestamp as ISO 8601 date string -->
+    <xs:attribute name="valid-until"        type="xs:string"           use="optional"/>
+    <!-- Plain-text password (will be hashed); avoid storing in VCS -->
+    <xs:attribute name="password"           type="xs:string"           use="optional"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Extensions
+       ============================================================ -->
+
+  <xs:complexType name="ExtensionsType">
+    <xs:sequence>
+      <xs:element name="extension" type="ExtensionType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ExtensionType">
+    <xs:attribute name="name"    type="xs:string" use="required"/>
+    <xs:attribute name="schema"  type="xs:string" use="optional"/>
+    <xs:attribute name="version" type="xs:string" use="optional"/>
+    <!-- If true, also install any required extensions automatically -->
+    <xs:attribute name="cascade" type="xs:boolean" use="optional" default="false"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Types (enum, composite, domain, range)
+       ============================================================ -->
+
+  <xs:complexType name="TypesType">
+    <xs:sequence>
+      <xs:element name="enum"      type="EnumType"      minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="composite" type="CompositeType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="domain"    type="DomainType"    minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="range"     type="RangeType"     minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- CREATE TYPE name AS ENUM ('label', ...) -->
+  <xs:complexType name="EnumType">
+    <xs:sequence>
+      <xs:element name="label" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name"   type="xs:string" use="required"/>
+    <xs:attribute name="schema" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- CREATE TYPE name AS (field type, ...) -->
+  <xs:complexType name="CompositeType">
+    <xs:sequence>
+      <xs:element name="field" minOccurs="1" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="name"      type="xs:string"          use="required"/>
+          <xs:attribute name="type"      type="xs:string"          use="required"/>
+          <xs:attribute name="length"    type="xs:positiveInteger"  use="optional"/>
+          <xs:attribute name="collation" type="xs:string"          use="optional"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="name"   type="xs:string" use="required"/>
+    <xs:attribute name="schema" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- CREATE DOMAIN name [AS] type [COLLATE c] [DEFAULT expr] [NOT NULL] [CHECK (...)] -->
+  <xs:complexType name="DomainType">
+    <xs:sequence>
+      <!-- Named CHECK constraints on the domain -->
+      <xs:element name="constraint" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType mixed="true">
+          <xs:attribute name="name" type="xs:string" use="optional"/>
+        </xs:complexType>
+      </xs:element>
+      <!-- NOT NULL marker (presence of this element means NOT NULL) -->
+      <xs:element name="not-null" minOccurs="0" maxOccurs="1">
+        <xs:complexType/>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="name"      type="xs:string"         use="required"/>
+    <xs:attribute name="schema"    type="xs:string"         use="optional"/>
+    <!-- Base type of the domain -->
+    <xs:attribute name="type"      type="xs:string"         use="required"/>
+    <xs:attribute name="length"    type="xs:positiveInteger" use="optional"/>
+    <xs:attribute name="precision" type="xs:positiveInteger" use="optional"/>
+    <xs:attribute name="scale"     type="xs:nonNegativeInteger" use="optional"/>
+    <xs:attribute name="collation" type="xs:string"         use="optional"/>
+    <!-- DEFAULT expression (raw SQL) -->
+    <xs:attribute name="default"   type="xs:string"         use="optional"/>
+  </xs:complexType>
+
+  <!-- CREATE TYPE name AS RANGE (SUBTYPE = type, ...) -->
+  <xs:complexType name="RangeType">
+    <xs:attribute name="name"            type="xs:string" use="required"/>
+    <xs:attribute name="schema"          type="xs:string" use="optional"/>
+    <xs:attribute name="subtype"         type="xs:string" use="required"/>
+    <xs:attribute name="subtype-opclass" type="xs:string" use="optional"/>
+    <xs:attribute name="collation"       type="xs:string" use="optional"/>
+    <xs:attribute name="canonical"       type="xs:string" use="optional"/>
+    <xs:attribute name="subtype-diff"    type="xs:string" use="optional"/>
+    <!-- PG14+: multirange type name -->
+    <xs:attribute name="multirange-type-name" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Standalone Sequences
+       ============================================================ -->
+
+  <xs:complexType name="SequencesType">
+    <xs:sequence>
+      <xs:element name="sequence" type="StandaloneSequenceType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="StandaloneSequenceType">
+    <xs:attribute name="name"      type="xs:string"          use="required"/>
+    <xs:attribute name="schema"    type="xs:string"          use="optional"/>
+    <!-- Underlying integer type: smallint, integer, bigint -->
+    <xs:attribute name="as"        type="xs:string"          use="optional"/>
+    <xs:attribute name="start"     type="xs:long"            use="optional" default="1"/>
+    <xs:attribute name="increment" type="xs:long"            use="optional" default="1"/>
+    <xs:attribute name="min"       type="xs:long"            use="optional"/>
+    <xs:attribute name="max"       type="xs:long"            use="optional"/>
+    <xs:attribute name="cache"     type="xs:long"            use="optional" default="1"/>
+    <xs:attribute name="cycle"     type="xs:boolean"         use="optional" default="false"/>
+    <!-- OWNED BY table.column (empty string means NONE) -->
+    <xs:attribute name="owned-by"  type="xs:string"          use="optional"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Schema (contains tables and indexes)
+       ============================================================ -->
+
+  <xs:complexType name="SchemaType">
+    <xs:sequence>
+      <xs:element name="table" type="TableType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="index" type="IndexType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Table
+       ============================================================ -->
+
+  <xs:complexType name="TableType">
+    <xs:sequence>
+      <!-- Column definitions (must come first) -->
+      <xs:element name="column"    type="ColumnType"    minOccurs="0" maxOccurs="unbounded"/>
+      <!-- Constraints, storage, partitioning — any order -->
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="pk"        type="PKType"/>
+        <xs:element name="fk"        type="FKType"/>
+        <xs:element name="unique"    type="UniqueType"/>
+        <xs:element name="check"     type="CheckType"/>
+        <xs:element name="exclude"   type="ExcludeType"/>
+        <xs:element name="with"      type="WithType"/>
+        <xs:element name="partition-by"    type="PartitionByType"/>
+        <xs:element name="partition-bound" type="PartitionBoundType"/>
+        <xs:element name="partition"       type="PartitionType"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="name"                   type="xs:string"  use="required"/>
+    <!-- UNLOGGED table -->
+    <xs:attribute name="unlogged"               type="xs:boolean" use="optional" default="false"/>
+    <!-- TABLESPACE -->
+    <xs:attribute name="tablespace"             type="xs:string"  use="optional"/>
+    <!-- Table-level comment (short form; use <comments> section for long form) -->
+    <xs:attribute name="comment"                type="xs:string"  use="optional"/>
+    <!-- Enable Row-Level Security -->
+    <xs:attribute name="row-level-security"     type="xs:boolean" use="optional" default="false"/>
+    <!-- FORCE ROW LEVEL SECURITY (applies even to table owner) -->
+    <xs:attribute name="force-row-level-security" type="xs:boolean" use="optional" default="false"/>
+    <!-- PARTITION OF parent-table: name of the parent partitioned table -->
+    <xs:attribute name="partition-of"           type="xs:string"  use="optional"/>
+    <!-- INHERITS: comma-separated list of parent table names -->
+    <xs:attribute name="inherits"               type="xs:string"  use="optional"/>
+    <!-- Table access method (USING), e.g. "heap", "columnar" -->
+    <xs:attribute name="using"                  type="xs:string"  use="optional"/>
+    <!-- pgdesigner: "false" to skip DDL generation -->
+    <xs:attribute name="generate"               type="xs:string"  use="optional"/>
+    <!-- pgdesigner: comma-separated lint rule codes to ignore for this table -->
+    <xs:attribute name="lint-ignore"            type="xs:string"  use="optional"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Column
+       ============================================================ -->
+
+  <xs:complexType name="ColumnType">
+    <xs:sequence>
+      <!-- GENERATED ... AS IDENTITY -->
+      <xs:element name="identity"   type="IdentityType"   minOccurs="0" maxOccurs="1"/>
+      <!-- GENERATED ALWAYS AS (expr) STORED|VIRTUAL -->
+      <xs:element name="generated"  type="GeneratedType"  minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <!-- Column name -->
+    <xs:attribute name="name"        type="xs:string"           use="required"/>
+    <!-- Data type: varchar, integer, numeric, jsonb, tsvector, point, uuid, etc.
+         Arrays are expressed with [] suffix: integer[], text[], varchar[] -->
+    <xs:attribute name="type"        type="xs:string"           use="required"/>
+    <!-- Length for varchar(n), char(n), etc. -->
+    <xs:attribute name="length"      type="xs:positiveInteger"   use="optional"/>
+    <!-- Total digit count for numeric(p,s) -->
+    <xs:attribute name="precision"   type="xs:positiveInteger"   use="optional"/>
+    <!-- Decimal digits for numeric(p,s) -->
+    <xs:attribute name="scale"       type="xs:nonNegativeInteger" use="optional"/>
+    <!-- Whether the column allows NULL values -->
+    <xs:attribute name="nullable"    type="xs:boolean"           use="optional" default="true"/>
+    <!-- DEFAULT expression (raw SQL), e.g. "CURRENT_TIMESTAMP", "now()", "'open'::varchar" -->
+    <xs:attribute name="default"     type="xs:string"            use="optional"/>
+    <!-- COLLATE collation_name -->
+    <xs:attribute name="collation"   type="xs:string"            use="optional"/>
+    <!-- STORAGE mode (PG14+) -->
+    <xs:attribute name="storage"     type="StorageModeType"      use="optional"/>
+    <!-- COMPRESSION method (PG14+) -->
+    <xs:attribute name="compression" type="CompressionMethodType" use="optional"/>
+    <!-- COMMENT ON COLUMN (short form) -->
+    <xs:attribute name="comment"     type="xs:string"              use="optional"/>
+  </xs:complexType>
+
+  <!-- GENERATED { ALWAYS | BY DEFAULT } AS IDENTITY [(sequence_options)] -->
+  <xs:complexType name="IdentityType">
+    <xs:sequence>
+      <!-- Inline sequence options for the identity sequence -->
+      <xs:element name="sequence" type="SequenceOptionsType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="generated" type="IdentityGeneratedType" use="required"/>
+  </xs:complexType>
+
+  <!-- GENERATED ALWAYS AS (expression) STORED | VIRTUAL -->
+  <xs:complexType name="GeneratedType">
+    <!-- The computed expression (raw SQL) -->
+    <xs:attribute name="expression" type="xs:string"  use="required"/>
+    <!-- true = STORED (persisted), false = VIRTUAL (PG18+) -->
+    <xs:attribute name="stored"     type="xs:boolean" use="optional" default="true"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       PRIMARY KEY
+       ============================================================ -->
+
+  <xs:complexType name="PKType">
+    <xs:sequence>
+      <xs:element name="column" type="ColumnRefType" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name"             type="xs:string"  use="optional"/>
+    <!-- WITHOUT OVERLAPS — temporal PK for range/period columns (PG17+) -->
+    <xs:attribute name="without-overlaps" type="xs:boolean" use="optional" default="false"/>
+    <xs:attribute name="deferrable"       type="xs:boolean" use="optional" default="false"/>
+    <xs:attribute name="initially"        type="DeferrableInitiallyType" use="optional"/>
+    <!-- NOT ENFORCED (PG18+) -->
+    <xs:attribute name="enforced"         type="xs:boolean" use="optional" default="true"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       FOREIGN KEY
+       ============================================================ -->
+
+  <xs:complexType name="FKType">
+    <xs:sequence>
+      <!-- Each column element maps a local column to the referenced column -->
+      <xs:element name="column" type="ColumnRefType" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name"       type="xs:string"            use="optional"/>
+    <!-- Target table (within the same schema or fully qualified) -->
+    <xs:attribute name="to-table"   type="xs:string"            use="required"/>
+    <!-- Target schema (if different from current schema) -->
+    <xs:attribute name="to-schema"  type="xs:string"            use="optional"/>
+    <xs:attribute name="on-delete"  type="ReferentialActionType" use="optional" default="restrict"/>
+    <xs:attribute name="on-update"  type="ReferentialActionType" use="optional" default="restrict"/>
+    <xs:attribute name="deferrable" type="xs:boolean"           use="optional" default="false"/>
+    <xs:attribute name="initially"  type="DeferrableInitiallyType" use="optional"/>
+    <xs:attribute name="match"      type="MatchType"             use="optional" default="simple"/>
+    <!-- NOT ENFORCED (PG18+) -->
+    <xs:attribute name="enforced"   type="xs:boolean"           use="optional" default="true"/>
+    <!-- PERIOD column name for temporal FK (PG18+) -->
+    <xs:attribute name="period"     type="xs:string"            use="optional"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       UNIQUE constraint
+       ============================================================ -->
+
+  <xs:complexType name="UniqueType">
+    <xs:sequence>
+      <xs:element name="column" type="ColumnRefType" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name"           type="xs:string"  use="optional"/>
+    <!-- NULLS [NOT] DISTINCT (PG15+) -->
+    <xs:attribute name="nulls-distinct" type="xs:boolean" use="optional" default="true"/>
+    <!-- WITHOUT OVERLAPS (PG17+) -->
+    <xs:attribute name="without-overlaps" type="xs:boolean" use="optional" default="false"/>
+    <xs:attribute name="deferrable"     type="xs:boolean" use="optional" default="false"/>
+    <xs:attribute name="initially"      type="DeferrableInitiallyType" use="optional"/>
+    <!-- NOT ENFORCED (PG18+) -->
+    <xs:attribute name="enforced"       type="xs:boolean" use="optional" default="true"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       CHECK constraint
+       ============================================================ -->
+
+  <!-- The element content is the raw SQL CHECK expression (typically CDATA) -->
+  <xs:complexType name="CheckType" mixed="true">
+    <xs:attribute name="name"       type="xs:string"  use="optional"/>
+    <!-- NO INHERIT: constraint not inherited by child tables -->
+    <xs:attribute name="no-inherit" type="xs:boolean" use="optional" default="false"/>
+    <!-- NOT ENFORCED (PG18+) -->
+    <xs:attribute name="enforced"   type="xs:boolean" use="optional" default="true"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       EXCLUDE constraint
+       ============================================================ -->
+
+  <xs:complexType name="ExcludeType">
+    <xs:sequence>
+      <!-- Each element is an exclusion column/expression with an operator -->
+      <xs:element name="element" minOccurs="1" maxOccurs="unbounded">
+        <xs:complexType>
+          <!-- A plain column name (mutually exclusive with expression) -->
+          <xs:attribute name="column"     type="xs:string" use="optional"/>
+          <!-- A raw SQL expression (mutually exclusive with column) -->
+          <xs:attribute name="expression" type="xs:string" use="optional"/>
+          <!-- The exclusion operator, e.g. "=", "&&", "&amp;&amp;" -->
+          <xs:attribute name="with"       type="xs:string" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="name"       type="xs:string"      use="optional"/>
+    <!-- USING index method, e.g. "gist" -->
+    <xs:attribute name="using"      type="xs:string"      use="optional" default="gist"/>
+    <xs:attribute name="deferrable" type="xs:boolean"     use="optional" default="false"/>
+    <xs:attribute name="initially"  type="DeferrableInitiallyType" use="optional"/>
+    <!-- NOT ENFORCED (PG18+) -->
+    <xs:attribute name="enforced"   type="xs:boolean"     use="optional" default="true"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       WITH (storage parameters)
+       ============================================================ -->
+
+  <!-- Storage parameters as name/value pairs.
+       Common parameters: fillfactor, autovacuum_enabled, toast_tuple_target, etc. -->
+  <xs:complexType name="WithType">
+    <xs:sequence>
+      <xs:element name="param" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="name"  type="xs:string" use="required"/>
+          <xs:attribute name="value" type="xs:string" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:anyAttribute namespace="##any" processContents="lax"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       PARTITION BY
+       ============================================================ -->
+
+  <xs:complexType name="PartitionByType">
+    <xs:sequence>
+      <!-- One or more partitioning columns or expressions -->
+      <xs:element name="column" type="ColumnRefType" minOccurs="0" maxOccurs="unbounded"/>
+      <!-- Expression-based partition key (raw SQL) -->
+      <xs:element name="expression" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType mixed="true"/>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="type" type="PartitionByTypeType" use="required"/>
+  </xs:complexType>
+
+  <!-- FOR VALUES ... clause as raw SQL CDATA (for partition child tables, Variant A — deprecated) -->
+  <xs:complexType name="PartitionBoundType" mixed="true"/>
+
+  <!-- Child partition (Variant B — nested inside parent table) -->
+  <xs:complexType name="PartitionType">
+    <xs:sequence>
+      <xs:element name="bound" type="xs:string" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="partition-by" type="PartitionByType" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="partition" type="PartitionType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="with" type="WithType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+    <xs:attribute name="tablespace" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Index
+       ============================================================ -->
+
+  <xs:complexType name="IndexType">
+    <xs:sequence>
+      <!-- Regular column references in the index key -->
+      <xs:element name="column"     type="ColumnRefType"  minOccurs="0" maxOccurs="unbounded"/>
+      <!-- Expression index key (raw SQL, typically CDATA) -->
+      <xs:element name="expression" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType mixed="true">
+          <xs:attribute name="opclass" type="xs:string" use="optional"/>
+          <xs:attribute name="order"   type="SortOrderType" use="optional"/>
+          <xs:attribute name="nulls"   type="NullsPlacementType" use="optional"/>
+        </xs:complexType>
+      </xs:element>
+      <!-- WHERE predicate for partial index (raw SQL, typically CDATA) -->
+      <xs:element name="where" minOccurs="0" maxOccurs="1">
+        <xs:complexType mixed="true"/>
+      </xs:element>
+      <!-- INCLUDE columns (covering index, PG11+) -->
+      <xs:element name="include" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="column" type="ColumnRefType" minOccurs="1" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <!-- Storage parameters for the index -->
+      <xs:element name="with" type="WithType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="name"           type="xs:string"       use="required"/>
+    <!-- The table this index belongs to -->
+    <xs:attribute name="table"          type="xs:string"       use="required"/>
+    <!-- Schema of the table (if not the schema-level default) -->
+    <xs:attribute name="schema"         type="xs:string"       use="optional"/>
+    <!-- UNIQUE index -->
+    <xs:attribute name="unique"         type="xs:boolean"      use="optional" default="false"/>
+    <!-- Access method: btree (default), hash, gist, spgist, gin, brin -->
+    <xs:attribute name="using"          type="IndexMethodType" use="optional" default="btree"/>
+    <!-- NULLS [NOT] DISTINCT (PG15+) -->
+    <xs:attribute name="nulls-distinct" type="xs:boolean"      use="optional" default="true"/>
+    <!-- TABLESPACE for the index -->
+    <xs:attribute name="tablespace"     type="xs:string"       use="optional"/>
+    <!-- CREATE INDEX CONCURRENTLY (used by ALTER generator) -->
+    <xs:attribute name="concurrently"   type="xs:boolean"      use="optional" default="false"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Views
+       ============================================================ -->
+
+  <xs:complexType name="ViewsType">
+    <xs:sequence>
+      <xs:element name="view"              type="ViewType"             minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="materialized-view" type="MaterializedViewType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- CREATE [OR REPLACE] VIEW -->
+  <xs:complexType name="ViewType">
+    <xs:sequence>
+      <!-- The SELECT query body (raw SQL, typically CDATA) -->
+      <xs:element name="query" minOccurs="1" maxOccurs="1">
+        <xs:complexType mixed="true"/>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="name"             type="xs:string"  use="required"/>
+    <xs:attribute name="schema"           type="xs:string"  use="optional"/>
+    <!-- Recreate if exists (CREATE OR REPLACE) -->
+    <xs:attribute name="or-replace"       type="xs:boolean" use="optional" default="true"/>
+    <xs:attribute name="recursive"        type="xs:boolean" use="optional" default="false"/>
+    <!-- security_barrier option -->
+    <xs:attribute name="security-barrier" type="xs:boolean" use="optional" default="false"/>
+    <!-- security_invoker option (PG15+) -->
+    <xs:attribute name="security-invoker" type="xs:boolean" use="optional" default="false"/>
+    <!-- WITH CHECK OPTION: "cascaded" | "local" | "" (none) -->
+    <xs:attribute name="check-option"     type="xs:string"  use="optional"/>
+  </xs:complexType>
+
+  <!-- CREATE MATERIALIZED VIEW -->
+  <xs:complexType name="MaterializedViewType">
+    <xs:sequence>
+      <!-- The SELECT query body (raw SQL, typically CDATA) -->
+      <xs:element name="query" minOccurs="1" maxOccurs="1">
+        <xs:complexType mixed="true"/>
+      </xs:element>
+      <!-- Storage parameters -->
+      <xs:element name="with" type="WithType" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="name"       type="xs:string"  use="required"/>
+    <xs:attribute name="schema"     type="xs:string"  use="optional"/>
+    <!-- Table access method (USING), e.g. "heap" -->
+    <xs:attribute name="using"      type="xs:string"  use="optional"/>
+    <xs:attribute name="tablespace" type="xs:string"  use="optional"/>
+    <!-- WITH DATA (true) or WITH NO DATA (false) -->
+    <xs:attribute name="with-data"  type="xs:boolean" use="optional" default="true"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Functions
+       ============================================================ -->
+
+  <xs:complexType name="FunctionsType">
+    <xs:sequence>
+      <xs:element name="function" type="FunctionType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="FunctionType">
+    <xs:sequence>
+      <!-- Input arguments -->
+      <xs:element name="arg" minOccurs="0" maxOccurs="unbounded">
+        <xs:complexType>
+          <xs:attribute name="name"    type="xs:string" use="optional"/>
+          <xs:attribute name="type"    type="xs:string" use="required"/>
+          <!-- Argument mode: in, out, inout, variadic -->
+          <xs:attribute name="mode"    type="xs:string" use="optional" default="in"/>
+          <!-- DEFAULT expression (raw SQL) -->
+          <xs:attribute name="default" type="xs:string" use="optional"/>
+        </xs:complexType>
+      </xs:element>
+      <!-- RETURNS TABLE (...) definition -->
+      <xs:element name="returns-table" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="column" minOccurs="1" maxOccurs="unbounded">
+              <xs:complexType>
+                <xs:attribute name="name" type="xs:string" use="required"/>
+                <xs:attribute name="type" type="xs:string" use="required"/>
+              </xs:complexType>
+            </xs:element>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <!-- Function body (raw SQL / PL/pgSQL / etc., typically CDATA) -->
+      <xs:element name="body" minOccurs="1" maxOccurs="1">
+        <xs:complexType mixed="true"/>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="name"       type="xs:string"          use="required"/>
+    <xs:attribute name="schema"     type="xs:string"          use="optional"/>
+    <!-- RETURNS type (omit when using returns-table) -->
+    <xs:attribute name="returns"    type="xs:string"          use="optional"/>
+    <xs:attribute name="language"   type="xs:string"          use="required"/>
+    <xs:attribute name="volatility" type="VolatilityType"     use="optional" default="volatile"/>
+    <xs:attribute name="security"   type="SecurityType"       use="optional" default="invoker"/>
+    <xs:attribute name="parallel"   type="ParallelSafetyType" use="optional" default="unsafe"/>
+    <!-- STRICT (RETURNS NULL ON NULL INPUT) -->
+    <xs:attribute name="strict"     type="xs:boolean"         use="optional" default="false"/>
+    <!-- LEAKPROOF -->
+    <xs:attribute name="leakproof"  type="xs:boolean"         use="optional" default="false"/>
+    <!-- COST estimate -->
+    <xs:attribute name="cost"       type="xs:positiveInteger" use="optional"/>
+    <!-- ROWS estimate (for set-returning functions) -->
+    <xs:attribute name="rows"       type="xs:positiveInteger" use="optional"/>
+    <!-- CREATE OR REPLACE -->
+    <xs:attribute name="or-replace" type="xs:boolean"         use="optional" default="true"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Triggers
+       ============================================================ -->
+
+  <xs:complexType name="TriggersType">
+    <xs:sequence>
+      <xs:element name="trigger" type="TriggerType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="TriggerType">
+    <xs:sequence>
+      <!-- REFERENCING OLD TABLE / NEW TABLE (transition tables, AFTER statement triggers) -->
+      <xs:element name="referencing" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:attribute name="old-table" type="xs:string" use="optional"/>
+          <xs:attribute name="new-table" type="xs:string" use="optional"/>
+        </xs:complexType>
+      </xs:element>
+      <!-- WHEN (condition) — optional trigger condition (raw SQL, typically CDATA) -->
+      <xs:element name="when" minOccurs="0" maxOccurs="1">
+        <xs:complexType mixed="true"/>
+      </xs:element>
+      <!-- EXECUTE FUNCTION name(args) -->
+      <xs:element name="execute" minOccurs="1" maxOccurs="1">
+        <xs:complexType>
+          <xs:attribute name="function"  type="xs:string" use="required"/>
+          <!-- Arguments passed to the trigger function (raw SQL string list) -->
+          <xs:attribute name="arguments" type="xs:string" use="optional"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="name"       type="xs:string"          use="required"/>
+    <xs:attribute name="schema"     type="xs:string"          use="optional"/>
+    <!-- The table the trigger is defined on -->
+    <xs:attribute name="table"      type="xs:string"          use="required"/>
+    <!-- BEFORE | AFTER | INSTEAD OF -->
+    <xs:attribute name="timing"     type="TriggerTimingType"  use="required"/>
+    <!-- Comma-separated list: insert, update, delete, truncate -->
+    <xs:attribute name="events"     type="xs:string"          use="required"/>
+    <!-- FOR EACH ROW | STATEMENT -->
+    <xs:attribute name="for-each"   type="TriggerForEachType" use="optional" default="row"/>
+    <!-- CONSTRAINT trigger -->
+    <xs:attribute name="constraint" type="xs:boolean"         use="optional" default="false"/>
+    <xs:attribute name="deferrable" type="xs:boolean"         use="optional" default="false"/>
+    <xs:attribute name="initially"  type="DeferrableInitiallyType" use="optional"/>
+    <!-- CREATE OR REPLACE (PG14+) -->
+    <xs:attribute name="or-replace" type="xs:boolean"         use="optional" default="false"/>
+    <!-- UPDATE OF columns (comma-separated list, for UPDATE events) -->
+    <xs:attribute name="of-columns" type="xs:string"          use="optional"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Policies (Row-Level Security)
+       ============================================================ -->
+
+  <xs:complexType name="PoliciesType">
+    <xs:sequence>
+      <xs:element name="policy" type="PolicyType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="PolicyType">
+    <xs:sequence>
+      <!-- USING (expression) — visibility filter for SELECT/UPDATE/DELETE (raw SQL, CDATA) -->
+      <xs:element name="using" minOccurs="0" maxOccurs="1">
+        <xs:complexType mixed="true"/>
+      </xs:element>
+      <!-- WITH CHECK (expression) — validity check for INSERT/UPDATE (raw SQL, CDATA) -->
+      <xs:element name="with-check" minOccurs="0" maxOccurs="1">
+        <xs:complexType mixed="true"/>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="name"    type="xs:string"        use="required"/>
+    <xs:attribute name="schema"  type="xs:string"        use="optional"/>
+    <!-- The table the policy is defined on -->
+    <xs:attribute name="table"   type="xs:string"        use="required"/>
+    <!-- PERMISSIVE | RESTRICTIVE -->
+    <xs:attribute name="type"    type="PolicyTypeType"   use="optional" default="permissive"/>
+    <!-- ALL | SELECT | INSERT | UPDATE | DELETE -->
+    <xs:attribute name="command" type="PolicyCommandType" use="optional" default="all"/>
+    <!-- Comma-separated list of role names; use "public" for PUBLIC -->
+    <xs:attribute name="to"      type="xs:string"        use="optional" default="public"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Comments
+       ============================================================ -->
+
+  <xs:complexType name="CommentsType">
+    <xs:sequence>
+      <xs:element name="comment" type="CommentItemType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- The element text content is the comment string -->
+  <xs:complexType name="CommentItemType" mixed="true">
+    <!-- What kind of object is being commented -->
+    <xs:attribute name="on"     type="CommentOnType" use="required"/>
+    <!-- Schema that contains the object (where applicable) -->
+    <xs:attribute name="schema" type="xs:string"     use="optional"/>
+    <!-- Table name (for column, trigger, policy, constraint comments) -->
+    <xs:attribute name="table"  type="xs:string"     use="optional"/>
+    <!-- Object name (table, view, function, index, sequence, schema, etc.) -->
+    <xs:attribute name="name"   type="xs:string"     use="required"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Grants
+       ============================================================ -->
+
+  <xs:complexType name="GrantsType">
+    <xs:sequence>
+      <!-- Object privilege grants -->
+      <xs:element name="grant"      type="GrantType"     minOccurs="0" maxOccurs="unbounded"/>
+      <!-- Role membership grants -->
+      <xs:element name="grant-role" type="GrantRoleType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- GRANT privileges ON object TO role -->
+  <xs:complexType name="GrantType">
+    <!-- What to grant on: schema, table, sequence, function, type, database, all-* -->
+    <xs:attribute name="on"         type="GrantOnType" use="required"/>
+    <!-- Schema name (for schema-scoped objects and all-*-in-schema) -->
+    <xs:attribute name="schema"     type="xs:string"   use="optional"/>
+    <!-- Object name (omitted for all-*-in-schema variants) -->
+    <xs:attribute name="name"       type="xs:string"   use="optional"/>
+    <!-- Comma-separated privilege list: select, insert, update, delete, truncate,
+         references, trigger, maintain, usage, create, execute, connect, temporary, all -->
+    <xs:attribute name="privileges" type="xs:string"   use="required"/>
+    <!-- Grantee role name or "public" -->
+    <xs:attribute name="to"         type="xs:string"   use="required"/>
+    <!-- WITH GRANT OPTION: allows the grantee to re-grant the privileges -->
+    <xs:attribute name="with-grant-option" type="xs:boolean" use="optional" default="false"/>
+  </xs:complexType>
+
+  <!-- GRANT role TO role [WITH ADMIN OPTION] [WITH INHERIT TRUE/FALSE] -->
+  <xs:complexType name="GrantRoleType">
+    <!-- The role being granted -->
+    <xs:attribute name="role"         type="xs:string"  use="required"/>
+    <!-- The grantee role -->
+    <xs:attribute name="to"           type="xs:string"  use="required"/>
+    <!-- WITH ADMIN OPTION -->
+    <xs:attribute name="with-admin"   type="xs:boolean" use="optional" default="false"/>
+    <!-- WITH INHERIT TRUE|FALSE (PG16+) -->
+    <xs:attribute name="with-inherit" type="xs:boolean" use="optional" default="true"/>
+    <!-- WITH SET TRUE|FALSE (PG16+) -->
+    <xs:attribute name="with-set"     type="xs:boolean" use="optional" default="true"/>
+  </xs:complexType>
+
+  <!-- ============================================================
+       Layouts (diagram positions — UI metadata, separate from model)
+       ============================================================ -->
+
+  <xs:complexType name="LayoutsType">
+    <xs:sequence>
+      <xs:element name="layout" type="LayoutType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="LayoutType">
+    <xs:sequence>
+      <!-- Per-table position and color in the diagram -->
+      <xs:element name="entity" type="EntityPositionType" minOccurs="0" maxOccurs="unbounded"/>
+      <!-- Named groups of tables (visual grouping) -->
+      <xs:element name="group"  type="GroupType"          minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <!-- Layout name, e.g. "Default Diagram", "Main" -->
+    <xs:attribute name="name"    type="xs:string"  use="required"/>
+    <!-- Whether this is the primary/default layout shown on open -->
+    <xs:attribute name="default" type="xs:boolean" use="optional" default="false"/>
+  </xs:complexType>
+
+  <!-- Position and appearance of a table entity in the diagram -->
+  <xs:complexType name="EntityPositionType">
+    <xs:attribute name="schema" type="xs:string"  use="optional"/>
+    <!-- The table name this position refers to -->
+    <xs:attribute name="table"  type="xs:string"  use="required"/>
+    <!-- X coordinate in the diagram canvas (pixels) -->
+    <xs:attribute name="x"      type="xs:integer" use="optional" default="0"/>
+    <!-- Y coordinate in the diagram canvas (pixels) -->
+    <xs:attribute name="y"      type="xs:integer" use="optional" default="0"/>
+    <!-- Background fill color as CSS hex (e.g. "#C1D8EE") or 6-char hex without # -->
+    <xs:attribute name="color"  type="xs:string"  use="optional"/>
+    <!-- Width override in pixels (if 0, auto-sized) -->
+    <xs:attribute name="width"  type="xs:nonNegativeInteger" use="optional" default="0"/>
+    <!-- Height override in pixels (if 0, auto-sized) -->
+    <xs:attribute name="height" type="xs:nonNegativeInteger" use="optional" default="0"/>
+  </xs:complexType>
+
+  <!-- A named group of table entities in the diagram -->
+  <xs:complexType name="GroupType">
+    <xs:sequence>
+      <!-- Member tables belonging to this group -->
+      <xs:element name="member" type="GroupMemberType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name"  type="xs:string" use="required"/>
+    <!-- Group background color as CSS hex or 6-char hex -->
+    <xs:attribute name="color" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Reference to a table within a layout group -->
+  <xs:complexType name="GroupMemberType">
+    <xs:attribute name="schema" type="xs:string" use="optional"/>
+    <xs:attribute name="table"  type="xs:string" use="required"/>
+  </xs:complexType>
+
+</xs:schema>

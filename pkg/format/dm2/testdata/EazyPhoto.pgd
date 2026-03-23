@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pgd version="1" pg-version="18" default-schema="public">
+  <project name="EazyPhoto">
+    <settings>
+      <naming convention="camelCase"></naming>
+      <defaults nullable="true" on-delete="restrict" on-update="restrict"></defaults>
+    </settings>
+  </project>
+  <roles></roles>
+  <tablespaces></tablespaces>
+  <extensions></extensions>
+  <sequences></sequences>
+  <schema name="public">
+    <table name="users">
+      <column name="userId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="login" type="varchar" length="64" nullable="false"></column>
+      <column name="password" type="varchar" length="64" nullable="false"></column>
+      <column name="authKey" type="varchar" length="32"></column>
+      <column name="lastActivityAt" type="timestamp" default="now()"></column>
+      <column name="statusId" type="integer" nullable="false"></column>
+      <pk name="">
+        <column name="userId"></column>
+      </pk>
+      <fk name="FK_users_statusId" to-table="statuses" on-delete="restrict" on-update="restrict">
+        <column name="statusId" references="statusId"></column>
+      </fk>
+    </table>
+    <table name="statuses">
+      <column name="statusId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="title" type="varchar" length="255" nullable="false"></column>
+      <column name="alias" type="varchar" length="64" nullable="false"></column>
+      <pk name="">
+        <column name="statusId"></column>
+      </pk>
+    </table>
+    <table name="daemonLocks">
+      <column name="daemonLockId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="title" type="varchar" length="255" nullable="false"></column>
+      <column name="packageName" type="varchar" length="255" nullable="false"></column>
+      <column name="methodName" type="varchar" length="255" nullable="false"></column>
+      <column name="runAt" type="timestamp" nullable="false" default="now()"></column>
+      <column name="maxExecutionTime" type="interval" nullable="false" default="&#39;00:03:00&#39;"></column>
+      <pk name="">
+        <column name="daemonLockId"></column>
+      </pk>
+    </table>
+    <table name="vfsFiles">
+      <column name="fileId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="folderId" type="integer" nullable="false"></column>
+      <column name="title" type="varchar" length="255" nullable="false"></column>
+      <column name="path" type="varchar" length="255" nullable="false"></column>
+      <column name="params" type="text"></column>
+      <column name="isFavorite" type="boolean" default="false"></column>
+      <column name="mimeType" type="varchar" length="255" nullable="false"></column>
+      <column name="fileSize" type="integer" default="0"></column>
+      <column name="fileExists" type="boolean" nullable="false" default="true"></column>
+      <column name="createdAt" type="timestamp" nullable="false" default="now()"></column>
+      <column name="statusId" type="integer" nullable="false"></column>
+      <pk name="">
+        <column name="fileId"></column>
+      </pk>
+      <fk name="FK_vfsFiles_folderId" to-table="vfsFolders" on-delete="restrict" on-update="restrict">
+        <column name="folderId" references="folderId"></column>
+      </fk>
+      <fk name="FK_vfsFiles_statusId" to-table="statuses" on-delete="restrict" on-update="restrict">
+        <column name="statusId" references="statusId"></column>
+      </fk>
+    </table>
+    <table name="vfsFoldersTree">
+      <column name="objectId" type="integer" nullable="false"></column>
+      <column name="parentId" type="integer"></column>
+      <column name="path" type="text"></column>
+      <column name="rKey" type="integer"></column>
+      <column name="lKey" type="integer"></column>
+      <pk name="">
+        <column name="objectId"></column>
+      </pk>
+      <fk name="FK_vfsFoldersTree_folderId" to-table="vfsFolders" on-delete="restrict" on-update="restrict">
+        <column name="objectId" references="folderId"></column>
+      </fk>
+      <fk name="FK_vfsFoldersTree_parentId" to-table="vfsFolders" on-delete="restrict" on-update="restrict">
+        <column name="parentId" references="folderId"></column>
+      </fk>
+    </table>
+    <table name="vfsFolders">
+      <column name="folderId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="parentFolderId" type="integer"></column>
+      <column name="title" type="varchar" length="255" nullable="false"></column>
+      <column name="isFavorite" type="boolean" default="false"></column>
+      <column name="createdAt" type="timestamp" nullable="false" default="now()"></column>
+      <column name="statusId" type="integer" nullable="false"></column>
+      <pk name="">
+        <column name="folderId"></column>
+      </pk>
+      <fk name="FK_vfsFolders_folderId" to-table="vfsFolders" on-delete="restrict" on-update="restrict">
+        <column name="parentFolderId" references="folderId"></column>
+      </fk>
+      <fk name="FK_vfsFolders_statusId" to-table="statuses" on-delete="restrict" on-update="restrict">
+        <column name="statusId" references="statusId"></column>
+      </fk>
+    </table>
+    <table name="siteParams">
+      <column name="siteParamId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="alias" type="varchar" length="32" nullable="false"></column>
+      <column name="value" type="varchar" length="255" nullable="false"></column>
+      <column name="description" type="varchar" length="255"></column>
+      <column name="statusId" type="integer" nullable="false"></column>
+      <pk name="">
+        <column name="siteParamId"></column>
+      </pk>
+      <fk name="FK_siteParams_statusId" to-table="statuses" on-delete="restrict" on-update="restrict">
+        <column name="statusId" references="statusId"></column>
+      </fk>
+    </table>
+    <table name="staticPages">
+      <column name="staticPageId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="title" type="varchar" length="255" nullable="false"></column>
+      <column name="url" type="varchar" length="255" nullable="false"></column>
+      <column name="content" type="text"></column>
+      <column name="orderNumber" type="integer"></column>
+      <column name="parentStaticPageId" type="integer"></column>
+      <column name="statusId" type="integer" nullable="false"></column>
+      <pk name="">
+        <column name="staticPageId"></column>
+      </pk>
+      <fk name="FK_staticPages_statusId" to-table="statuses" on-delete="restrict" on-update="restrict">
+        <column name="statusId" references="statusId"></column>
+      </fk>
+      <fk name="FK_staticPages_parentStaticPageId" to-table="staticPages" on-delete="restrict" on-update="restrict">
+        <column name="parentStaticPageId" references="staticPageId"></column>
+      </fk>
+    </table>
+    <table name="navigations">
+      <column name="navigationId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="navigationTypeId" type="integer" nullable="false"></column>
+      <column name="title" type="varchar" length="255"></column>
+      <column name="orderNumber" type="integer" nullable="false" default="1"></column>
+      <column name="staticPageId" type="integer"></column>
+      <column name="url" type="varchar" length="255"></column>
+      <column name="params" type="text"></column>
+      <column name="statusId" type="integer" nullable="false"></column>
+      <pk name="">
+        <column name="navigationId"></column>
+      </pk>
+      <fk name="FK_navigations_staticPageId" to-table="staticPages" on-delete="restrict" on-update="restrict">
+        <column name="staticPageId" references="staticPageId"></column>
+      </fk>
+      <fk name="FK_navigations_statusId" to-table="statuses" on-delete="restrict" on-update="restrict">
+        <column name="statusId" references="statusId"></column>
+      </fk>
+      <fk name="FK_navigations_navigationTypeId" to-table="navigationTypes" on-delete="restrict" on-update="restrict">
+        <column name="navigationTypeId" references="navigationTypeId"></column>
+      </fk>
+    </table>
+    <table name="navigationTypes">
+      <column name="navigationTypeId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="title" type="varchar" length="255" nullable="false"></column>
+      <column name="alias" type="varchar" length="32" nullable="false"></column>
+      <column name="statusId" type="integer" nullable="false"></column>
+      <pk name="">
+        <column name="navigationTypeId"></column>
+      </pk>
+      <fk name="FK_navigationTypes_statusId" to-table="statuses" on-delete="restrict" on-update="restrict">
+        <column name="statusId" references="statusId"></column>
+      </fk>
+    </table>
+    <table name="objectImages">
+      <column name="objectImageId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="objectClass" type="varchar" length="32" nullable="false"></column>
+      <column name="objectId" type="integer" nullable="false"></column>
+      <column name="title" type="varchar" length="255"></column>
+      <column name="orderNumber" type="integer" nullable="false"></column>
+      <column name="smallImageId" type="integer" nullable="false"></column>
+      <column name="bigImageId" type="integer" nullable="false"></column>
+      <column name="statusId" type="integer" nullable="false"></column>
+      <pk name="">
+        <column name="objectImageId"></column>
+      </pk>
+      <fk name="FK_objectImages_statusId" to-table="statuses" on-delete="restrict" on-update="restrict">
+        <column name="statusId" references="statusId"></column>
+      </fk>
+      <fk name="FK_objectImages_smallImageId" to-table="vfsFiles" on-delete="restrict" on-update="restrict">
+        <column name="smallImageId" references="fileId"></column>
+      </fk>
+      <fk name="FK_objectImages_bigImageId" to-table="vfsFiles" on-delete="restrict" on-update="restrict">
+        <column name="bigImageId" references="fileId"></column>
+      </fk>
+    </table>
+    <table name="metaDetails">
+      <column name="metaDetailId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="url" type="varchar" length="255"></column>
+      <column name="objectClass" type="varchar" length="32"></column>
+      <column name="objectId" type="integer"></column>
+      <column name="pageTitle" type="varchar" length="255"></column>
+      <column name="metaKeywords" type="varchar" length="1024"></column>
+      <column name="metaDescription" type="varchar" length="1024"></column>
+      <column name="alt" type="varchar" length="255"></column>
+      <column name="canonicalUrl" type="varchar" length="1024"></column>
+      <column name="statusId" type="integer" nullable="false"></column>
+      <pk name="">
+        <column name="metaDetailId"></column>
+      </pk>
+      <fk name="FK_metaDetails_statusId" to-table="statuses" on-delete="restrict" on-update="restrict">
+        <column name="statusId" references="statusId"></column>
+      </fk>
+    </table>
+    <table name="albums">
+      <column name="albumId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="title" type="varchar" length="255" nullable="false"></column>
+      <column name="description" type="varchar" length="4096"></column>
+      <column name="alias" type="varchar" length="255" nullable="false"></column>
+      <column name="isPrivate" type="boolean" nullable="false" default="false"></column>
+      <column name="startDate" type="date" nullable="false"></column>
+      <column name="endDate" type="date"></column>
+      <column name="orderNumber" type="integer"></column>
+      <column name="folderPath" type="varchar" length="255" nullable="false"></column>
+      <column name="roSecret" type="varchar" length="1024" nullable="false"></column>
+      <column name="roSecretHd" type="varchar" length="1024"></column>
+      <column name="deleteOriginalsAfter" type="integer"></column>
+      <column name="isDescSort" type="boolean" nullable="false" default="false"></column>
+      <column name="createdAt" type="timestamp" nullable="false" default="now()"></column>
+      <column name="modifiedAt" type="timestamp"></column>
+      <column name="metaInfo" type="text" nullable="false"></column>
+      <column name="tagIds" type="integer[]"></column>
+      <column name="userId" type="integer" nullable="false"></column>
+      <column name="statusId" type="integer" nullable="false"></column>
+      <pk name="">
+        <column name="albumId"></column>
+      </pk>
+      <fk name="FK_albums_statusId" to-table="statuses" on-delete="restrict" on-update="restrict">
+        <column name="statusId" references="statusId"></column>
+      </fk>
+      <fk name="FK_albums_userId" to-table="users" on-delete="restrict" on-update="restrict">
+        <column name="userId" references="userId"></column>
+      </fk>
+    </table>
+    <table name="photos">
+      <column name="photoId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="albumId" type="integer" nullable="false"></column>
+      <column name="originalName" type="varchar" length="255" nullable="false"></column>
+      <column name="filename" type="varchar" length="255" nullable="false"></column>
+      <column name="fileSize" type="integer" nullable="false"></column>
+      <column name="fileSizeHd" type="integer" nullable="false"></column>
+      <column name="orderNumber" type="integer"></column>
+      <column name="afterText" type="text"></column>
+      <column name="title" type="varchar" length="255"></column>
+      <column name="exif" type="text"></column>
+      <column name="createdAt" type="timestamp" nullable="false" default="now()"></column>
+      <column name="photoDate" type="timestamp"></column>
+      <column name="isFavorite" type="boolean" default="false"></column>
+      <column name="statusId" type="integer" nullable="false"></column>
+      <pk name="">
+        <column name="photoId"></column>
+      </pk>
+      <fk name="FK_photos_albumId" to-table="albums" on-delete="restrict" on-update="restrict">
+        <column name="albumId" references="albumId"></column>
+      </fk>
+      <fk name="FK_photos_statusId" to-table="statuses" on-delete="restrict" on-update="restrict">
+        <column name="statusId" references="statusId"></column>
+      </fk>
+    </table>
+    <table name="tags">
+      <column name="tagId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="title" type="varchar" length="255" nullable="false"></column>
+      <column name="alias" type="varchar" length="255" nullable="false"></column>
+      <column name="description" type="text"></column>
+      <column name="orderNumber" type="integer"></column>
+      <column name="photoPath" type="text"></column>
+      <column name="photoId" type="integer"></column>
+      <column name="parentTagId" type="integer"></column>
+      <column name="statusId" type="integer" nullable="false"></column>
+      <pk name="">
+        <column name="tagId"></column>
+      </pk>
+      <fk name="FK_tags_photoId" to-table="photos" on-delete="restrict" on-update="restrict">
+        <column name="photoId" references="photoId"></column>
+      </fk>
+      <fk name="FK_tags_statusId" to-table="statuses" on-delete="restrict" on-update="restrict">
+        <column name="statusId" references="statusId"></column>
+      </fk>
+      <fk name="FK_tags_parentTagId" to-table="tags" on-delete="restrict" on-update="restrict">
+        <column name="parentTagId" references="tagId"></column>
+      </fk>
+    </table>
+    <index name="IX_vfsFoldersTreeTreePath" table="vfsFoldersTree" using="gist">
+      <column name="path"></column>
+    </index>
+    <index name="IX_vfsFoldersTreeTreeRKey" table="vfsFoldersTree">
+      <column name="rKey"></column>
+    </index>
+    <index name="IX_vfsFoldersTreeTreeLKey" table="vfsFoldersTree">
+      <column name="lKey"></column>
+    </index>
+    <index name="IX_daemonLock" table="daemonLocks" unique="true">
+      <column name="title"></column>
+      <column name="packageName"></column>
+      <column name="methodName"></column>
+    </index>
+    <index name="IX_photos_isFavorite" table="photos">
+      <column name="isFavorite"></column>
+    </index>
+    <index name="IX_FK_users_statusId_users" table="users">
+      <column name="statusId"></column>
+    </index>
+    <index name="IX_FK_vfsFiles_folderId_vfsFiles" table="vfsFiles">
+      <column name="folderId"></column>
+    </index>
+    <index name="IX_FK_vfsFiles_statusId_vfsFiles" table="vfsFiles">
+      <column name="statusId"></column>
+    </index>
+    <index name="IX_FK_vfsFoldersTree_folderId_vfsFoldersTree" table="vfsFoldersTree">
+      <column name="objectId"></column>
+    </index>
+    <index name="IX_FK_vfsFoldersTree_parentId_vfsFoldersTree" table="vfsFoldersTree">
+      <column name="parentId"></column>
+    </index>
+    <index name="IX_FK_vfsFolders_folderId_vfsFolders" table="vfsFolders">
+      <column name="parentFolderId"></column>
+    </index>
+    <index name="IX_FK_vfsFolders_statusId_vfsFolders" table="vfsFolders">
+      <column name="statusId"></column>
+    </index>
+    <index name="IX_FK_siteParams_statusId_siteParams" table="siteParams">
+      <column name="statusId"></column>
+    </index>
+    <index name="IX_FK_staticPages_statusId_staticPages" table="staticPages">
+      <column name="statusId"></column>
+    </index>
+    <index name="IX_FK_staticPages_parentStaticPageId_staticPages" table="staticPages">
+      <column name="parentStaticPageId"></column>
+    </index>
+    <index name="IX_FK_navigations_staticPageId_navigations" table="navigations">
+      <column name="staticPageId"></column>
+    </index>
+    <index name="IX_FK_navigations_statusId_navigations" table="navigations">
+      <column name="statusId"></column>
+    </index>
+    <index name="IX_FK_navigations_navigationTypeId_navigations" table="navigations">
+      <column name="navigationTypeId"></column>
+    </index>
+    <index name="IX_FK_navigationTypes_statusId_navigationTypes" table="navigationTypes">
+      <column name="statusId"></column>
+    </index>
+    <index name="IX_FK_objectImages_statusId_objectImages" table="objectImages">
+      <column name="statusId"></column>
+    </index>
+    <index name="IX_FK_objectImages_smallImageId_objectImages" table="objectImages">
+      <column name="smallImageId"></column>
+    </index>
+    <index name="IX_FK_objectImages_bigImageId_objectImages" table="objectImages">
+      <column name="bigImageId"></column>
+    </index>
+    <index name="IX_FK_metaDetails_statusId_metaDetails" table="metaDetails">
+      <column name="statusId"></column>
+    </index>
+    <index name="IX_FK_albums_statusId_albums" table="albums">
+      <column name="statusId"></column>
+    </index>
+    <index name="IX_FK_albums_userId_albums" table="albums">
+      <column name="userId"></column>
+    </index>
+    <index name="IX_FK_photos_albumId_photos" table="photos">
+      <column name="albumId"></column>
+    </index>
+    <index name="IX_FK_photos_statusId_photos" table="photos">
+      <column name="statusId"></column>
+    </index>
+    <index name="IX_FK_tags_photoId_tags" table="tags">
+      <column name="photoId"></column>
+    </index>
+    <index name="IX_FK_tags_statusId_tags" table="tags">
+      <column name="statusId"></column>
+    </index>
+    <index name="IX_FK_tags_parentTagId_tags" table="tags">
+      <column name="parentTagId"></column>
+    </index>
+  </schema>
+  <functions></functions>
+  <triggers></triggers>
+  <rules></rules>
+  <policies></policies>
+  <comments></comments>
+  <layouts>
+    <layout name="Default Diagram" default="true">
+      <entity schema="public" table="users" x="50" y="539"></entity>
+      <entity schema="public" table="statuses" x="466" y="376"></entity>
+      <entity schema="public" table="daemonLocks" x="22" y="843"></entity>
+      <entity schema="public" table="vfsFiles" x="751" y="489"></entity>
+      <entity schema="public" table="vfsFoldersTree" x="1017" y="1"></entity>
+      <entity schema="public" table="vfsFolders" x="998" y="286"></entity>
+      <entity schema="public" table="siteParams" x="50" y="424"></entity>
+      <entity schema="public" table="staticPages" x="18" y="209"></entity>
+      <entity schema="public" table="navigations" x="22" y="1"></entity>
+      <entity schema="public" table="navigationTypes" x="439" y="24"></entity>
+      <entity schema="public" table="objectImages" x="734" y="16"></entity>
+      <entity schema="public" table="metaDetails" x="31" y="660"></entity>
+      <entity schema="public" table="albums" x="315" y="767"></entity>
+      <entity schema="public" table="photos" x="706" y="804"></entity>
+      <entity schema="public" table="tags" x="456" y="543"></entity>
+    </layout>
+  </layouts>
+</pgd>

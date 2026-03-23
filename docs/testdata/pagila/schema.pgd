@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pgd version="1" pg-version="18" default-schema="public">
+  <project name="pagila">
+    <settings>
+      <naming convention="camelCase"></naming>
+      <defaults nullable="true" on-delete="restrict" on-update="restrict"></defaults>
+    </settings>
+  </project>
+  <roles></roles>
+  <tablespaces></tablespaces>
+  <extensions></extensions>
+  <types>
+    <enum name="mpaa_rating">
+      <label>G</label>
+      <label>PG</label>
+      <label>PG-13</label>
+      <label>R</label>
+      <label>NC-17</label>
+    </enum>
+    <domain name="bıgınt" type="bigint"></domain>
+    <domain name="year" type="integer">
+      <constraint name="year_check"><![CDATA[value >= 1901 AND value <= 2155]]></constraint>
+    </domain>
+  </types>
+  <sequences>
+    <sequence name="customer_customer_id_seq" schema="public" start="1" increment="1" cache="1"></sequence>
+    <sequence name="actor_actor_id_seq" schema="public" start="1" increment="1" cache="1"></sequence>
+    <sequence name="category_category_id_seq" schema="public" start="1" increment="1" cache="1"></sequence>
+    <sequence name="film_film_id_seq" schema="public" start="1" increment="1" cache="1"></sequence>
+    <sequence name="address_address_id_seq" schema="public" start="1" increment="1" cache="1"></sequence>
+    <sequence name="city_city_id_seq" schema="public" start="1" increment="1" cache="1"></sequence>
+    <sequence name="country_country_id_seq" schema="public" start="1" increment="1" cache="1"></sequence>
+    <sequence name="inventory_inventory_id_seq" schema="public" start="1" increment="1" cache="1"></sequence>
+    <sequence name="language_language_id_seq" schema="public" start="1" increment="1" cache="1"></sequence>
+    <sequence name="payment_payment_id_seq" schema="public" start="1" increment="1" cache="1"></sequence>
+    <sequence name="rental_rental_id_seq" schema="public" start="1" increment="1" cache="1"></sequence>
+    <sequence name="staff_staff_id_seq" schema="public" start="1" increment="1" cache="1"></sequence>
+    <sequence name="store_store_id_seq" schema="public" start="1" increment="1" cache="1"></sequence>
+  </sequences>
+  <schema name="public">
+    <table name="actor">
+      <column name="actor_id" type="integer" nullable="false" default="nextval(&#39;public.actor_actor_id_seq&#39;::regclass)"></column>
+      <column name="first_name" type="text" nullable="false"></column>
+      <column name="last_name" type="text" nullable="false"></column>
+      <column name="last_update" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="actor_pkey">
+        <column name="actor_id"></column>
+      </pk>
+    </table>
+    <table name="address">
+      <column name="address_id" type="integer" nullable="false" default="nextval(&#39;public.address_address_id_seq&#39;::regclass)"></column>
+      <column name="address" type="text" nullable="false"></column>
+      <column name="address2" type="text"></column>
+      <column name="district" type="text" nullable="false"></column>
+      <column name="city_id" type="integer" nullable="false"></column>
+      <column name="postal_code" type="text"></column>
+      <column name="phone" type="text" nullable="false"></column>
+      <column name="last_update" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="address_pkey">
+        <column name="address_id"></column>
+      </pk>
+      <fk name="address_city_id_fkey" to-table="city" on-delete="restrict" on-update="cascade">
+        <column name="city_id" references="city_id"></column>
+      </fk>
+    </table>
+    <table name="category">
+      <column name="category_id" type="integer" nullable="false" default="nextval(&#39;public.category_category_id_seq&#39;::regclass)"></column>
+      <column name="name" type="text" nullable="false"></column>
+      <column name="last_update" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="category_pkey">
+        <column name="category_id"></column>
+      </pk>
+    </table>
+    <table name="city">
+      <column name="city_id" type="integer" nullable="false" default="nextval(&#39;public.city_city_id_seq&#39;::regclass)"></column>
+      <column name="city" type="text" nullable="false"></column>
+      <column name="country_id" type="integer" nullable="false"></column>
+      <column name="last_update" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="city_pkey">
+        <column name="city_id"></column>
+      </pk>
+      <fk name="city_country_id_fkey" to-table="country" on-delete="restrict" on-update="cascade">
+        <column name="country_id" references="country_id"></column>
+      </fk>
+    </table>
+    <table name="country">
+      <column name="country_id" type="integer" nullable="false" default="nextval(&#39;public.country_country_id_seq&#39;::regclass)"></column>
+      <column name="country" type="text" nullable="false"></column>
+      <column name="last_update" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="country_pkey">
+        <column name="country_id"></column>
+      </pk>
+    </table>
+    <table name="customer">
+      <column name="customer_id" type="integer" nullable="false" default="nextval(&#39;public.customer_customer_id_seq&#39;::regclass)"></column>
+      <column name="store_id" type="integer" nullable="false"></column>
+      <column name="first_name" type="text" nullable="false"></column>
+      <column name="last_name" type="text" nullable="false"></column>
+      <column name="email" type="text"></column>
+      <column name="address_id" type="integer" nullable="false"></column>
+      <column name="activebool" type="boolean" nullable="false" default="true"></column>
+      <column name="create_date" type="date" nullable="false" default="current_date"></column>
+      <column name="last_update" type="timestamptz" default="now()"></column>
+      <column name="active" type="integer"></column>
+      <pk name="customer_pkey">
+        <column name="customer_id"></column>
+      </pk>
+      <fk name="customer_address_id_fkey" to-table="address" on-delete="restrict" on-update="cascade">
+        <column name="address_id" references="address_id"></column>
+      </fk>
+      <fk name="customer_store_id_fkey" to-table="store" on-delete="restrict" on-update="cascade">
+        <column name="store_id" references="store_id"></column>
+      </fk>
+    </table>
+    <table name="film">
+      <column name="film_id" type="integer" nullable="false" default="nextval(&#39;public.film_film_id_seq&#39;::regclass)"></column>
+      <column name="title" type="text" nullable="false"></column>
+      <column name="description" type="text"></column>
+      <column name="release_year" type="year"></column>
+      <column name="language_id" type="integer" nullable="false"></column>
+      <column name="original_language_id" type="integer"></column>
+      <column name="rental_duration" type="smallint" nullable="false" default="3"></column>
+      <column name="rental_rate" type="numeric" precision="4" scale="2" nullable="false" default="4.99"></column>
+      <column name="length" type="smallint"></column>
+      <column name="replacement_cost" type="numeric" precision="5" scale="2" nullable="false" default="19.99"></column>
+      <column name="rating" type="mpaa_rating" default="&#39;G&#39;::public.mpaa_rating"></column>
+      <column name="last_update" type="timestamptz" nullable="false" default="now()"></column>
+      <column name="special_features" type="text[]"></column>
+      <column name="fulltext" type="tsvector" nullable="false"></column>
+      <pk name="film_pkey">
+        <column name="film_id"></column>
+      </pk>
+      <fk name="film_language_id_fkey" to-table="language" on-delete="restrict" on-update="cascade">
+        <column name="language_id" references="language_id"></column>
+      </fk>
+      <fk name="film_original_language_id_fkey" to-table="language" on-delete="restrict" on-update="cascade">
+        <column name="original_language_id" references="language_id"></column>
+      </fk>
+    </table>
+    <table name="film_actor">
+      <column name="actor_id" type="integer" nullable="false"></column>
+      <column name="film_id" type="integer" nullable="false"></column>
+      <column name="last_update" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="film_actor_pkey">
+        <column name="actor_id"></column>
+        <column name="film_id"></column>
+      </pk>
+      <fk name="film_actor_actor_id_fkey" to-table="actor" on-delete="restrict" on-update="cascade">
+        <column name="actor_id" references="actor_id"></column>
+      </fk>
+      <fk name="film_actor_film_id_fkey" to-table="film" on-delete="restrict" on-update="cascade">
+        <column name="film_id" references="film_id"></column>
+      </fk>
+    </table>
+    <table name="film_category">
+      <column name="film_id" type="integer" nullable="false"></column>
+      <column name="category_id" type="integer" nullable="false"></column>
+      <column name="last_update" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="film_category_pkey">
+        <column name="film_id"></column>
+        <column name="category_id"></column>
+      </pk>
+      <fk name="film_category_category_id_fkey" to-table="category" on-delete="restrict" on-update="cascade">
+        <column name="category_id" references="category_id"></column>
+      </fk>
+      <fk name="film_category_film_id_fkey" to-table="film" on-delete="restrict" on-update="cascade">
+        <column name="film_id" references="film_id"></column>
+      </fk>
+    </table>
+    <table name="inventory">
+      <column name="inventory_id" type="integer" nullable="false" default="nextval(&#39;public.inventory_inventory_id_seq&#39;::regclass)"></column>
+      <column name="film_id" type="integer" nullable="false"></column>
+      <column name="store_id" type="integer" nullable="false"></column>
+      <column name="last_update" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="inventory_pkey">
+        <column name="inventory_id"></column>
+      </pk>
+      <fk name="inventory_film_id_fkey" to-table="film" on-delete="restrict" on-update="cascade">
+        <column name="film_id" references="film_id"></column>
+      </fk>
+      <fk name="inventory_store_id_fkey" to-table="store" on-delete="restrict" on-update="cascade">
+        <column name="store_id" references="store_id"></column>
+      </fk>
+    </table>
+    <table name="language">
+      <column name="language_id" type="integer" nullable="false" default="nextval(&#39;public.language_language_id_seq&#39;::regclass)"></column>
+      <column name="name" type="bpchar" nullable="false"></column>
+      <column name="last_update" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="language_pkey">
+        <column name="language_id"></column>
+      </pk>
+    </table>
+    <table name="payment">
+      <column name="payment_id" type="integer" nullable="false" default="nextval(&#39;public.payment_payment_id_seq&#39;::regclass)"></column>
+      <column name="customer_id" type="integer" nullable="false"></column>
+      <column name="staff_id" type="integer" nullable="false"></column>
+      <column name="rental_id" type="integer" nullable="false"></column>
+      <column name="amount" type="numeric" precision="5" scale="2" nullable="false"></column>
+      <column name="payment_date" type="timestamptz" nullable="false"></column>
+      <pk name="">
+        <column name="payment_date"></column>
+        <column name="payment_id"></column>
+      </pk>
+      <partition-by type="range">
+        <column name="payment_date"></column>
+      </partition-by>
+      <partition name="payment_p2022_01">
+        <bound>FOR VALUES FROM (&#39;2022-01-01 00:00:00+00&#39;) TO (&#39;2022-02-01 00:00:00+00&#39;)</bound>
+      </partition>
+      <partition name="payment_p2022_02">
+        <bound>FOR VALUES FROM (&#39;2022-02-01 00:00:00+00&#39;) TO (&#39;2022-03-01 00:00:00+00&#39;)</bound>
+      </partition>
+      <partition name="payment_p2022_03">
+        <bound>FOR VALUES FROM (&#39;2022-03-01 00:00:00+00&#39;) TO (&#39;2022-04-01 01:00:00+01&#39;)</bound>
+      </partition>
+      <partition name="payment_p2022_04">
+        <bound>FOR VALUES FROM (&#39;2022-04-01 01:00:00+01&#39;) TO (&#39;2022-05-01 01:00:00+01&#39;)</bound>
+      </partition>
+      <partition name="payment_p2022_05">
+        <bound>FOR VALUES FROM (&#39;2022-05-01 01:00:00+01&#39;) TO (&#39;2022-06-01 01:00:00+01&#39;)</bound>
+      </partition>
+      <partition name="payment_p2022_06">
+        <bound>FOR VALUES FROM (&#39;2022-06-01 01:00:00+01&#39;) TO (&#39;2022-07-01 01:00:00+01&#39;)</bound>
+      </partition>
+      <partition name="payment_p2022_07">
+        <bound>FOR VALUES FROM (&#39;2022-07-01 01:00:00+01&#39;) TO (&#39;2022-08-01 01:00:00+01&#39;)</bound>
+      </partition>
+    </table>
+    <table name="rental">
+      <column name="rental_id" type="integer" nullable="false" default="nextval(&#39;public.rental_rental_id_seq&#39;::regclass)"></column>
+      <column name="rental_date" type="timestamptz" nullable="false"></column>
+      <column name="inventory_id" type="integer" nullable="false"></column>
+      <column name="customer_id" type="integer" nullable="false"></column>
+      <column name="return_date" type="timestamptz"></column>
+      <column name="staff_id" type="integer" nullable="false"></column>
+      <column name="last_update" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="rental_pkey">
+        <column name="rental_id"></column>
+      </pk>
+      <fk name="rental_customer_id_fkey" to-table="customer" on-delete="restrict" on-update="cascade">
+        <column name="customer_id" references="customer_id"></column>
+      </fk>
+      <fk name="rental_inventory_id_fkey" to-table="inventory" on-delete="restrict" on-update="cascade">
+        <column name="inventory_id" references="inventory_id"></column>
+      </fk>
+      <fk name="rental_staff_id_fkey" to-table="staff" on-delete="restrict" on-update="cascade">
+        <column name="staff_id" references="staff_id"></column>
+      </fk>
+    </table>
+    <table name="staff">
+      <column name="staff_id" type="integer" nullable="false" default="nextval(&#39;public.staff_staff_id_seq&#39;::regclass)"></column>
+      <column name="first_name" type="text" nullable="false"></column>
+      <column name="last_name" type="text" nullable="false"></column>
+      <column name="address_id" type="integer" nullable="false"></column>
+      <column name="email" type="text"></column>
+      <column name="store_id" type="integer" nullable="false"></column>
+      <column name="active" type="boolean" nullable="false" default="true"></column>
+      <column name="username" type="text" nullable="false"></column>
+      <column name="password" type="text"></column>
+      <column name="last_update" type="timestamptz" nullable="false" default="now()"></column>
+      <column name="picture" type="bytea"></column>
+      <pk name="staff_pkey">
+        <column name="staff_id"></column>
+      </pk>
+      <fk name="staff_address_id_fkey" to-table="address" on-delete="restrict" on-update="cascade">
+        <column name="address_id" references="address_id"></column>
+      </fk>
+      <fk name="staff_store_id_fkey" to-table="store" on-delete="no action" on-update="no action">
+        <column name="store_id" references="store_id"></column>
+      </fk>
+    </table>
+    <table name="store">
+      <column name="store_id" type="integer" nullable="false" default="nextval(&#39;public.store_store_id_seq&#39;::regclass)"></column>
+      <column name="manager_staff_id" type="integer" nullable="false"></column>
+      <column name="address_id" type="integer" nullable="false"></column>
+      <column name="last_update" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="store_pkey">
+        <column name="store_id"></column>
+      </pk>
+      <fk name="store_address_id_fkey" to-table="address" on-delete="restrict" on-update="cascade">
+        <column name="address_id" references="address_id"></column>
+      </fk>
+    </table>
+    <index name="film_fulltext_idx" table="film" using="gist">
+      <column name="fulltext"></column>
+    </index>
+    <index name="idx_actor_last_name" table="actor">
+      <column name="last_name"></column>
+    </index>
+    <index name="idx_fk_address_id" table="customer">
+      <column name="address_id"></column>
+    </index>
+    <index name="idx_fk_city_id" table="address">
+      <column name="city_id"></column>
+    </index>
+    <index name="idx_fk_country_id" table="city">
+      <column name="country_id"></column>
+    </index>
+    <index name="idx_fk_film_id" table="film_actor">
+      <column name="film_id"></column>
+    </index>
+    <index name="idx_fk_inventory_id" table="rental">
+      <column name="inventory_id"></column>
+    </index>
+    <index name="idx_fk_language_id" table="film">
+      <column name="language_id"></column>
+    </index>
+    <index name="idx_fk_original_language_id" table="film">
+      <column name="original_language_id"></column>
+    </index>
+    <index name="idx_fk_store_id" table="customer">
+      <column name="store_id"></column>
+    </index>
+    <index name="idx_last_name" table="customer">
+      <column name="last_name"></column>
+    </index>
+    <index name="idx_store_id_film_id" table="inventory">
+      <column name="store_id"></column>
+      <column name="film_id"></column>
+    </index>
+    <index name="idx_title" table="film">
+      <column name="title"></column>
+    </index>
+    <index name="idx_unq_manager_staff_id" table="store" unique="true">
+      <column name="manager_staff_id"></column>
+    </index>
+    <index name="idx_unq_rental_rental_date_inventory_id_customer_id" table="rental" unique="true">
+      <column name="rental_date"></column>
+      <column name="inventory_id"></column>
+      <column name="customer_id"></column>
+    </index>
+    <index name="rental_category" table="rental_by_category" unique="true">
+      <column name="category"></column>
+    </index>
+  </schema>
+  <views>
+    <view name="actor_info" schema="public">
+      <query>SELECT a.actor_id, a.first_name, a.last_name, public.group_concat(DISTINCT (c.name || &#39;: &#39;::text) || (SELECT public.group_concat(f.title) AS group_concat FROM public.film f JOIN public.film_category fc_1 ON f.film_id = fc_1.film_id JOIN public.film_actor fa_1 ON f.film_id = fa_1.film_id WHERE fc_1.category_id = c.category_id AND fa_1.actor_id = a.actor_id GROUP BY fa_1.actor_id)) AS film_info FROM public.actor a LEFT JOIN public.film_actor fa ON a.actor_id = fa.actor_id LEFT JOIN public.film_category fc ON fa.film_id = fc.film_id LEFT JOIN public.category c ON fc.category_id = c.category_id GROUP BY a.actor_id, a.first_name, a.last_name</query>
+    </view>
+    <view name="customer_list" schema="public">
+      <query>SELECT cu.customer_id AS id, (cu.first_name || &#39; &#39;::text) || cu.last_name AS name, a.address, a.postal_code AS &#34;zip code&#34;, a.phone, city.city, country.country, CASE WHEN cu.activebool THEN &#39;active&#39;::text ELSE &#39;&#39;::text END AS notes, cu.store_id AS sid FROM public.customer cu JOIN public.address a ON cu.address_id = a.address_id JOIN public.city ON a.city_id = city.city_id JOIN public.country ON city.country_id = country.country_id</query>
+    </view>
+    <view name="film_list" schema="public">
+      <query>SELECT film.film_id AS fid, film.title, film.description, category.name AS category, film.rental_rate AS price, film.length, film.rating, public.group_concat((actor.first_name || &#39; &#39;::text) || actor.last_name) AS actors FROM public.category LEFT JOIN public.film_category ON category.category_id = film_category.category_id LEFT JOIN public.film ON film_category.film_id = film.film_id JOIN public.film_actor ON film.film_id = film_actor.film_id JOIN public.actor ON film_actor.actor_id = actor.actor_id GROUP BY film.film_id, film.title, film.description, category.name, film.rental_rate, film.length, film.rating</query>
+    </view>
+    <view name="nicer_but_slower_film_list" schema="public">
+      <query>SELECT film.film_id AS fid, film.title, film.description, category.name AS category, film.rental_rate AS price, film.length, film.rating, public.group_concat(((upper(&#34;substring&#34;(actor.first_name, 1, 1)) || lower(&#34;substring&#34;(actor.first_name, 2))) || upper(&#34;substring&#34;(actor.last_name, 1, 1))) || lower(&#34;substring&#34;(actor.last_name, 2))) AS actors FROM public.category LEFT JOIN public.film_category ON category.category_id = film_category.category_id LEFT JOIN public.film ON film_category.film_id = film.film_id JOIN public.film_actor ON film.film_id = film_actor.film_id JOIN public.actor ON film_actor.actor_id = actor.actor_id GROUP BY film.film_id, film.title, film.description, category.name, film.rental_rate, film.length, film.rating</query>
+    </view>
+    <view name="sales_by_film_category" schema="public">
+      <query>SELECT c.name AS category, sum(p.amount) AS total_sales FROM public.payment p JOIN public.rental r ON p.rental_id = r.rental_id JOIN public.inventory i ON r.inventory_id = i.inventory_id JOIN public.film f ON i.film_id = f.film_id JOIN public.film_category fc ON f.film_id = fc.film_id JOIN public.category c ON fc.category_id = c.category_id GROUP BY c.name ORDER BY sum(p.amount) DESC</query>
+    </view>
+    <view name="sales_by_store" schema="public">
+      <query>SELECT (c.city || &#39;,&#39;::text) || cy.country AS store, (m.first_name || &#39; &#39;::text) || m.last_name AS manager, sum(p.amount) AS total_sales FROM public.payment p JOIN public.rental r ON p.rental_id = r.rental_id JOIN public.inventory i ON r.inventory_id = i.inventory_id JOIN public.store s ON i.store_id = s.store_id JOIN public.address a ON s.address_id = a.address_id JOIN public.city c ON a.city_id = c.city_id JOIN public.country cy ON c.country_id = cy.country_id JOIN public.staff m ON s.manager_staff_id = m.staff_id GROUP BY cy.country, c.city, s.store_id, m.first_name, m.last_name ORDER BY cy.country, c.city</query>
+    </view>
+    <view name="staff_list" schema="public">
+      <query>SELECT s.staff_id AS id, (s.first_name || &#39; &#39;::text) || s.last_name AS name, a.address, a.postal_code AS &#34;zip code&#34;, a.phone, city.city, country.country, s.store_id AS sid FROM public.staff s JOIN public.address a ON s.address_id = a.address_id JOIN public.city ON a.city_id = city.city_id JOIN public.country ON city.country_id = country.country_id</query>
+    </view>
+    <materialized-view name="rental_by_category" schema="public">
+      <query>SELECT c.name AS category, sum(p.amount) AS total_sales FROM public.payment p JOIN public.rental r ON p.rental_id = r.rental_id JOIN public.inventory i ON r.inventory_id = i.inventory_id JOIN public.film f ON i.film_id = f.film_id JOIN public.film_category fc ON f.film_id = fc.film_id JOIN public.category c ON fc.category_id = c.category_id GROUP BY c.name ORDER BY sum(p.amount) DESC</query>
+    </materialized-view>
+  </views>
+  <functions>
+    <function name="_group_concat" returns="text" language="sql" volatility="immutable">
+      <arg name="" type="text"></arg>
+      <arg name="" type="text"></arg>
+      <body>SELECT CASE&#xA;  WHEN $2 IS NULL THEN $1&#xA;  WHEN $1 IS NULL THEN $2&#xA;  ELSE $1 || &#39;, &#39; || $2&#xA;END</body>
+    </function>
+    <function name="film_in_stock" returns="SETOF integer" language="sql">
+      <arg name="p_film_id" type="integer"></arg>
+      <arg name="p_store_id" type="integer"></arg>
+      <arg name="p_film_count" type="integer" mode="out"></arg>
+      <body>SELECT inventory_id&#xA;     FROM inventory&#xA;     WHERE film_id = $1&#xA;     AND store_id = $2&#xA;     AND inventory_in_stock(inventory_id);</body>
+    </function>
+    <function name="film_not_in_stock" returns="SETOF integer" language="sql">
+      <arg name="p_film_id" type="integer"></arg>
+      <arg name="p_store_id" type="integer"></arg>
+      <arg name="p_film_count" type="integer" mode="out"></arg>
+      <body>SELECT inventory_id&#xA;    FROM inventory&#xA;    WHERE film_id = $1&#xA;    AND store_id = $2&#xA;    AND NOT inventory_in_stock(inventory_id);</body>
+    </function>
+    <function name="get_customer_balance" returns="numeric" language="plpgsql">
+      <arg name="p_customer_id" type="integer"></arg>
+      <arg name="p_effective_date" type="timestamptz"></arg>
+      <body>DECLARE&#xA;    v_rentfees DECIMAL(5,2); --#FEES PAID TO RENT THE VIDEOS INITIALLY&#xA;    v_overfees INTEGER;      --#LATE FEES FOR PRIOR RENTALS&#xA;    v_payments DECIMAL(5,2); --#SUM OF PAYMENTS MADE PREVIOUSLY&#xA;BEGIN&#xA;    SELECT COALESCE(SUM(film.rental_rate),0) INTO v_rentfees&#xA;    FROM film, inventory, rental&#xA;    WHERE film.film_id = inventory.film_id&#xA;      AND inventory.inventory_id = rental.inventory_id&#xA;      AND rental.rental_date &lt;= p_effective_date&#xA;      AND rental.customer_id = p_customer_id;&#xA;    SELECT COALESCE(SUM(IF((rental.return_date - rental.rental_date) &gt; (film.rental_duration * &#39;1 day&#39;::interval),&#xA;        ((rental.return_date - rental.rental_date) - (film.rental_duration * &#39;1 day&#39;::interval)),0)),0) INTO v_overfees&#xA;    FROM rental, inventory, film&#xA;    WHERE film.film_id = inventory.film_id&#xA;      AND inventory.inventory_id = rental.inventory_id&#xA;      AND rental.rental_date &lt;= p_effective_date&#xA;      AND rental.customer_id = p_customer_id;&#xA;    SELECT COALESCE(SUM(payment.amount),0) INTO v_payments&#xA;    FROM payment&#xA;    WHERE payment.payment_date &lt;= p_effective_date&#xA;    AND payment.customer_id = p_customer_id;&#xA;    RETURN v_rentfees + v_overfees - v_payments;&#xA;END</body>
+    </function>
+    <function name="inventory_held_by_customer" returns="integer" language="plpgsql">
+      <arg name="p_inventory_id" type="integer"></arg>
+      <body>DECLARE&#xA;    v_customer_id INTEGER;&#xA;BEGIN&#xA;  SELECT customer_id INTO v_customer_id&#xA;  FROM rental&#xA;  WHERE return_date IS NULL&#xA;  AND inventory_id = p_inventory_id;&#xA;  RETURN v_customer_id;&#xA;END</body>
+    </function>
+    <function name="inventory_in_stock" returns="boolean" language="plpgsql">
+      <arg name="p_inventory_id" type="integer"></arg>
+      <body>DECLARE&#xA;    v_rentals INTEGER;&#xA;    v_out     INTEGER;&#xA;BEGIN&#xA;    SELECT count(*) INTO v_rentals&#xA;    FROM rental&#xA;    WHERE inventory_id = p_inventory_id;&#xA;    IF v_rentals = 0 THEN&#xA;      RETURN TRUE;&#xA;    END IF;&#xA;    SELECT COUNT(rental_id) INTO v_out&#xA;    FROM inventory LEFT JOIN rental USING(inventory_id)&#xA;    WHERE inventory.inventory_id = p_inventory_id&#xA;    AND rental.return_date IS NULL;&#xA;    IF v_out &gt; 0 THEN&#xA;      RETURN FALSE;&#xA;    ELSE&#xA;      RETURN TRUE;&#xA;    END IF;&#xA;END</body>
+    </function>
+    <function name="last_day" returns="date" language="sql" volatility="immutable" strict="true">
+      <arg name="" type="timestamptz"></arg>
+      <body>SELECT CASE&#xA;    WHEN EXTRACT(MONTH FROM $1) = 12 THEN&#xA;      (((EXTRACT(YEAR FROM $1) + 1) operator(pg_catalog.||) &#39;-01-01&#39;)::date - INTERVAL &#39;1 day&#39;)::date&#xA;    ELSE&#xA;      ((EXTRACT(YEAR FROM $1) operator(pg_catalog.||) &#39;-&#39; operator(pg_catalog.||) (EXTRACT(MONTH FROM $1) + 1) operator(pg_catalog.||) &#39;-01&#39;)::date - INTERVAL &#39;1 day&#39;)::date&#xA;    END</body>
+    </function>
+    <function name="last_updated" returns="trigger" language="plpgsql">
+      <body>BEGIN&#xA;    NEW.last_update = CURRENT_TIMESTAMP;&#xA;    RETURN NEW;&#xA;END</body>
+    </function>
+    <function name="rewards_report" returns="SETOF customer" language="plpgsql" security="definer">
+      <arg name="min_monthly_purchases" type="integer"></arg>
+      <arg name="min_dollar_amount_purchased" type="numeric"></arg>
+      <body>DECLARE&#xA;    last_month_start DATE;&#xA;    last_month_end DATE;&#xA;rr RECORD;&#xA;tmpSQL TEXT;&#xA;BEGIN&#xA;    /* Some sanity checks... */&#xA;    IF min_monthly_purchases = 0 THEN&#xA;        RAISE EXCEPTION &#39;Minimum monthly purchases parameter must be &gt; 0&#39;;&#xA;    END IF;&#xA;    IF min_dollar_amount_purchased = 0.00 THEN&#xA;        RAISE EXCEPTION &#39;Minimum monthly dollar amount purchased parameter must be &gt; $0.00&#39;;&#xA;    END IF;&#xA;    last_month_start := CURRENT_DATE - &#39;3 month&#39;::interval;&#xA;    last_month_start := to_date((extract(YEAR FROM last_month_start) || &#39;-&#39; || extract(MONTH FROM last_month_start) || &#39;-01&#39;),&#39;YYYY-MM-DD&#39;);&#xA;    last_month_end := LAST_DAY(last_month_start);&#xA;    /*&#xA;    Create a temporary storage area for Customer IDs.&#xA;    */&#xA;    CREATE TEMPORARY TABLE tmpCustomer (customer_id INTEGER NOT NULL PRIMARY KEY);&#xA;    /*&#xA;    Find all customers meeting the monthly purchase requirements&#xA;    */&#xA;    tmpSQL := &#39;INSERT INTO tmpCustomer (customer_id)&#xA;        SELECT p.customer_id&#xA;        FROM payment AS p&#xA;        WHERE DATE(p.payment_date) BETWEEN &#39;||quote_literal(last_month_start) ||&#39; AND &#39;|| quote_literal(last_month_end) || &#39;&#xA;        GROUP BY customer_id&#xA;        HAVING SUM(p.amount) &gt; &#39;|| min_dollar_amount_purchased || &#39;&#xA;        AND COUNT(customer_id) &gt; &#39; ||min_monthly_purchases ;&#xA;    EXECUTE tmpSQL;&#xA;    /*&#xA;    Output ALL customer information of matching rewardees.&#xA;    Customize output as needed.&#xA;    */&#xA;    FOR rr IN EXECUTE &#39;SELECT c.* FROM tmpCustomer AS t INNER JOIN customer AS c ON t.customer_id = c.customer_id&#39; LOOP&#xA;        RETURN NEXT rr;&#xA;    END LOOP;&#xA;    /* Clean up */&#xA;    tmpSQL := &#39;DROP TABLE tmpCustomer&#39;;&#xA;    EXECUTE tmpSQL;&#xA;RETURN;&#xA;END</body>
+    </function>
+    <function name="group_concat" kind="aggregate" language="" sfunc="_group_concat" stype="text">
+      <arg name="" type="text"></arg>
+      <body></body>
+    </function>
+  </functions>
+  <triggers>
+    <trigger name="film_fulltext_trigger" table="film" timing="before" events="insert,update" for-each="row">
+      <execute function="tsvector_update_trigger"></execute>
+    </trigger>
+    <trigger name="last_updated" table="actor" timing="before" events="update" for-each="row">
+      <execute function="last_updated"></execute>
+    </trigger>
+    <trigger name="last_updated" table="address" timing="before" events="update" for-each="row">
+      <execute function="last_updated"></execute>
+    </trigger>
+    <trigger name="last_updated" table="category" timing="before" events="update" for-each="row">
+      <execute function="last_updated"></execute>
+    </trigger>
+    <trigger name="last_updated" table="city" timing="before" events="update" for-each="row">
+      <execute function="last_updated"></execute>
+    </trigger>
+    <trigger name="last_updated" table="country" timing="before" events="update" for-each="row">
+      <execute function="last_updated"></execute>
+    </trigger>
+    <trigger name="last_updated" table="customer" timing="before" events="update" for-each="row">
+      <execute function="last_updated"></execute>
+    </trigger>
+    <trigger name="last_updated" table="film" timing="before" events="update" for-each="row">
+      <execute function="last_updated"></execute>
+    </trigger>
+    <trigger name="last_updated" table="film_actor" timing="before" events="update" for-each="row">
+      <execute function="last_updated"></execute>
+    </trigger>
+    <trigger name="last_updated" table="film_category" timing="before" events="update" for-each="row">
+      <execute function="last_updated"></execute>
+    </trigger>
+    <trigger name="last_updated" table="inventory" timing="before" events="update" for-each="row">
+      <execute function="last_updated"></execute>
+    </trigger>
+    <trigger name="last_updated" table="language" timing="before" events="update" for-each="row">
+      <execute function="last_updated"></execute>
+    </trigger>
+    <trigger name="last_updated" table="rental" timing="before" events="update" for-each="row">
+      <execute function="last_updated"></execute>
+    </trigger>
+    <trigger name="last_updated" table="staff" timing="before" events="update" for-each="row">
+      <execute function="last_updated"></execute>
+    </trigger>
+    <trigger name="last_updated" table="store" timing="before" events="update" for-each="row">
+      <execute function="last_updated"></execute>
+    </trigger>
+  </triggers>
+  <rules></rules>
+  <policies></policies>
+  <comments></comments>
+  <layouts>
+    <layout name="Default Diagram" default="true"></layout>
+  </layouts>
+</pgd>

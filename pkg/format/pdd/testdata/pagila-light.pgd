@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pgd version="1" pg-version="18" default-schema="public">
+  <project name="Noname3">
+    <settings>
+      <naming convention="camelCase"></naming>
+      <defaults nullable="true" on-delete="restrict" on-update="restrict"></defaults>
+    </settings>
+  </project>
+  <roles></roles>
+  <tablespaces></tablespaces>
+  <extensions></extensions>
+  <types>
+    <domain name="year" type="integer"></domain>
+  </types>
+  <sequences></sequences>
+  <schema name="public">
+    <table name="actor">
+      <column name="actor_id" type="integer" nullable="false"></column>
+      <column name="first_name" type="varchar" length="45" nullable="false"></column>
+      <column name="last_name" type="varchar" length="45" nullable="false"></column>
+      <column name="last_update" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="actor_pkey">
+        <column name="actor_id"></column>
+      </pk>
+    </table>
+    <table name="address">
+      <column name="address_id" type="integer" nullable="false"></column>
+      <column name="address" type="varchar" length="50" nullable="false"></column>
+      <column name="address2" type="varchar" length="50"></column>
+      <column name="district" type="varchar" length="20" nullable="false"></column>
+      <column name="city_id" type="smallint" nullable="false"></column>
+      <column name="postal_code" type="varchar" length="10"></column>
+      <column name="phone" type="varchar" length="20" nullable="false"></column>
+      <column name="last_update" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="address_pkey">
+        <column name="address_id"></column>
+      </pk>
+      <fk name="address_city_id_fkey" to-table="city" on-delete="no action" on-update="cascade">
+        <column name="city_id" references="city_id"></column>
+      </fk>
+    </table>
+    <table name="category">
+      <column name="category_id" type="integer" nullable="false"></column>
+      <column name="name" type="varchar" length="25" nullable="false"></column>
+      <column name="last_update" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="category_pkey">
+        <column name="category_id"></column>
+      </pk>
+    </table>
+    <table name="city">
+      <column name="city_id" type="integer" nullable="false"></column>
+      <column name="city" type="varchar" length="50" nullable="false"></column>
+      <column name="country_id" type="smallint" nullable="false"></column>
+      <column name="last_update" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="city_pkey">
+        <column name="city_id"></column>
+      </pk>
+      <fk name="city_country_id_fkey" to-table="country" on-delete="no action" on-update="cascade">
+        <column name="country_id" references="country_id"></column>
+      </fk>
+    </table>
+    <table name="country">
+      <column name="country_id" type="integer" nullable="false"></column>
+      <column name="country" type="varchar" length="50" nullable="false"></column>
+      <column name="last_update" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="country_pkey">
+        <column name="country_id"></column>
+      </pk>
+    </table>
+    <table name="customer">
+      <column name="customer_id" type="integer" nullable="false"></column>
+      <column name="store_id" type="smallint" nullable="false"></column>
+      <column name="first_name" type="varchar" length="45" nullable="false"></column>
+      <column name="last_name" type="varchar" length="45" nullable="false"></column>
+      <column name="email" type="varchar" length="50"></column>
+      <column name="address_id" type="smallint" nullable="false"></column>
+      <column name="activebool" type="boolean" nullable="false" default="true"></column>
+      <column name="create_date" type="date" nullable="false" default="(&#39;now&#39;::text)::date"></column>
+      <column name="last_update" type="timestamp" default="now()"></column>
+      <column name="active" type="integer"></column>
+      <pk name="customer_pkey">
+        <column name="customer_id"></column>
+      </pk>
+      <fk name="customer_address_id_fkey" to-table="address" on-delete="no action" on-update="cascade">
+        <column name="address_id" references="address_id"></column>
+      </fk>
+      <fk name="customer_store_id_fkey" to-table="store" on-delete="no action" on-update="cascade">
+        <column name="store_id" references="store_id"></column>
+      </fk>
+    </table>
+    <table name="film">
+      <column name="film_id" type="integer" nullable="false"></column>
+      <column name="title" type="varchar" length="255" nullable="false"></column>
+      <column name="description" type="text"></column>
+      <column name="release_year" type="year"></column>
+      <column name="language_id" type="smallint" nullable="false"></column>
+      <column name="original_language_id" type="smallint"></column>
+      <column name="rental_duration" type="smallint" nullable="false" default="3"></column>
+      <column name="rental_rate" type="numeric" precision="4" scale="2" nullable="false" default="4.99"></column>
+      <column name="length" type="smallint"></column>
+      <column name="replacement_cost" type="numeric" precision="5" scale="2" nullable="false" default="19.99"></column>
+      <column name="rating" type="mpaa_rating" default="&#39;G&#39;::mpaa_rating"></column>
+      <column name="last_update" type="timestamp" nullable="false" default="now()"></column>
+      <column name="special_features" type="text[]"></column>
+      <column name="fulltext" type="tsvector" nullable="false"></column>
+      <pk name="film_pkey">
+        <column name="film_id"></column>
+      </pk>
+      <fk name="film_language_id_fkey" to-table="language" on-delete="no action" on-update="cascade">
+        <column name="language_id" references="language_id"></column>
+      </fk>
+      <fk name="film_original_language_id_fkey" to-table="language" on-delete="no action" on-update="cascade">
+        <column name="original_language_id" references="language_id"></column>
+      </fk>
+    </table>
+    <table name="film_actor">
+      <column name="actor_id" type="smallint" nullable="false"></column>
+      <column name="film_id" type="smallint" nullable="false"></column>
+      <column name="last_update" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="film_actor_pkey">
+        <column name="actor_id"></column>
+        <column name="film_id"></column>
+      </pk>
+      <fk name="film_actor_actor_id_fkey" to-table="actor" on-delete="no action" on-update="cascade">
+        <column name="actor_id" references="actor_id"></column>
+      </fk>
+      <fk name="film_actor_film_id_fkey" to-table="film" on-delete="no action" on-update="cascade">
+        <column name="film_id" references="film_id"></column>
+      </fk>
+    </table>
+    <table name="film_category">
+      <column name="film_id" type="smallint" nullable="false"></column>
+      <column name="category_id" type="smallint" nullable="false"></column>
+      <column name="last_update" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="film_category_pkey">
+        <column name="film_id"></column>
+        <column name="category_id"></column>
+      </pk>
+      <fk name="film_category_category_id_fkey" to-table="category" on-delete="no action" on-update="cascade">
+        <column name="category_id" references="category_id"></column>
+      </fk>
+      <fk name="film_category_film_id_fkey" to-table="film" on-delete="no action" on-update="cascade">
+        <column name="film_id" references="film_id"></column>
+      </fk>
+    </table>
+    <table name="inventory">
+      <column name="inventory_id" type="integer" nullable="false"></column>
+      <column name="film_id" type="smallint" nullable="false"></column>
+      <column name="store_id" type="smallint" nullable="false"></column>
+      <column name="last_update" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="inventory_pkey">
+        <column name="inventory_id"></column>
+      </pk>
+      <fk name="inventory_film_id_fkey" to-table="film" on-delete="no action" on-update="cascade">
+        <column name="film_id" references="film_id"></column>
+      </fk>
+      <fk name="inventory_store_id_fkey" to-table="store" on-delete="no action" on-update="cascade">
+        <column name="store_id" references="store_id"></column>
+      </fk>
+    </table>
+    <table name="language">
+      <column name="language_id" type="integer" nullable="false"></column>
+      <column name="name" type="char" length="20" nullable="false"></column>
+      <column name="last_update" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="language_pkey">
+        <column name="language_id"></column>
+      </pk>
+    </table>
+    <table name="payment">
+      <column name="payment_id" type="integer" nullable="false"></column>
+      <column name="customer_id" type="smallint" nullable="false"></column>
+      <column name="staff_id" type="smallint" nullable="false"></column>
+      <column name="rental_id" type="integer" nullable="false"></column>
+      <column name="amount" type="numeric" precision="5" scale="2" nullable="false"></column>
+      <column name="payment_date" type="timestamp" nullable="false"></column>
+      <pk name="payment_pkey">
+        <column name="payment_id"></column>
+      </pk>
+      <fk name="payment_customer_id_fkey" to-table="customer" on-delete="no action" on-update="cascade">
+        <column name="customer_id" references="customer_id"></column>
+      </fk>
+      <fk name="payment_rental_id_fkey" to-table="rental" on-delete="set-null" on-update="cascade">
+        <column name="rental_id" references="rental_id"></column>
+      </fk>
+      <fk name="payment_staff_id_fkey" to-table="staff" on-delete="no action" on-update="cascade">
+        <column name="staff_id" references="staff_id"></column>
+      </fk>
+    </table>
+    <table name="rental">
+      <column name="rental_id" type="integer" nullable="false"></column>
+      <column name="rental_date" type="timestamp" nullable="false"></column>
+      <column name="inventory_id" type="integer" nullable="false"></column>
+      <column name="customer_id" type="smallint" nullable="false"></column>
+      <column name="return_date" type="timestamp"></column>
+      <column name="staff_id" type="smallint" nullable="false"></column>
+      <column name="last_update" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="rental_pkey">
+        <column name="rental_id"></column>
+      </pk>
+      <fk name="rental_customer_id_fkey" to-table="customer" on-delete="no action" on-update="cascade">
+        <column name="customer_id" references="customer_id"></column>
+      </fk>
+      <fk name="rental_inventory_id_fkey" to-table="inventory" on-delete="no action" on-update="cascade">
+        <column name="inventory_id" references="inventory_id"></column>
+      </fk>
+      <fk name="rental_staff_id_fkey" to-table="staff" on-delete="no action" on-update="cascade">
+        <column name="staff_id" references="staff_id"></column>
+      </fk>
+    </table>
+    <table name="staff">
+      <column name="staff_id" type="integer" nullable="false"></column>
+      <column name="first_name" type="varchar" length="45" nullable="false"></column>
+      <column name="last_name" type="varchar" length="45" nullable="false"></column>
+      <column name="address_id" type="smallint" nullable="false"></column>
+      <column name="email" type="varchar" length="50"></column>
+      <column name="store_id" type="smallint" nullable="false"></column>
+      <column name="active" type="boolean" nullable="false" default="true"></column>
+      <column name="username" type="varchar" length="16" nullable="false"></column>
+      <column name="password" type="varchar" length="40"></column>
+      <column name="last_update" type="timestamp" nullable="false" default="now()"></column>
+      <column name="picture" type="bytea"></column>
+      <pk name="staff_pkey">
+        <column name="staff_id"></column>
+      </pk>
+      <fk name="staff_address_id_fkey" to-table="address" on-delete="no action" on-update="cascade">
+        <column name="address_id" references="address_id"></column>
+      </fk>
+      <fk name="staff_store_id_fkey" to-table="store" on-delete="restrict" on-update="restrict">
+        <column name="store_id" references="store_id"></column>
+      </fk>
+    </table>
+    <table name="store">
+      <column name="store_id" type="integer" nullable="false"></column>
+      <column name="manager_staff_id" type="smallint" nullable="false"></column>
+      <column name="address_id" type="smallint" nullable="false"></column>
+      <column name="last_update" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="store_pkey">
+        <column name="store_id"></column>
+      </pk>
+      <fk name="store_address_id_fkey" to-table="address" on-delete="no action" on-update="cascade">
+        <column name="address_id" references="address_id"></column>
+      </fk>
+      <fk name="store_manager_staff_id_fkey" to-table="staff" on-delete="no action" on-update="cascade">
+        <column name="manager_staff_id" references="staff_id"></column>
+      </fk>
+    </table>
+    <index name="idx_actor_last_name" table="actor">
+      <column name="last_name"></column>
+    </index>
+    <index name="actor_pkey_idx_pk" table="actor" unique="true">
+      <column name="actor_id"></column>
+    </index>
+    <index name="idx_fk_city_id" table="address">
+      <column name="city_id"></column>
+    </index>
+    <index name="address_pkey_idx_pk" table="address" unique="true">
+      <column name="address_id"></column>
+    </index>
+    <index name="category_pkey_idx_pk" table="category" unique="true">
+      <column name="category_id"></column>
+    </index>
+    <index name="idx_fk_country_id" table="city">
+      <column name="country_id"></column>
+    </index>
+    <index name="city_pkey_idx_pk" table="city" unique="true">
+      <column name="city_id"></column>
+    </index>
+    <index name="country_pkey_idx_pk" table="country" unique="true">
+      <column name="country_id"></column>
+    </index>
+    <index name="idx_fk_address_id" table="customer">
+      <column name="address_id"></column>
+    </index>
+    <index name="idx_fk_store_id" table="customer">
+      <column name="store_id"></column>
+    </index>
+    <index name="idx_last_name" table="customer">
+      <column name="last_name"></column>
+    </index>
+    <index name="customer_pkey_idx_pk" table="customer" unique="true">
+      <column name="customer_id"></column>
+    </index>
+    <index name="film_fulltext_idx" table="film" using="gist">
+      <column name="fulltext"></column>
+    </index>
+    <index name="idx_fk_language_id" table="film">
+      <column name="language_id"></column>
+    </index>
+    <index name="idx_fk_original_language_id" table="film">
+      <column name="original_language_id"></column>
+    </index>
+    <index name="idx_title" table="film">
+      <column name="title"></column>
+    </index>
+    <index name="film_pkey_idx_pk" table="film" unique="true">
+      <column name="film_id"></column>
+    </index>
+    <index name="idx_fk_film_id" table="film_actor">
+      <column name="film_id"></column>
+    </index>
+    <index name="film_actor_pkey_idx_pk" table="film_actor" unique="true">
+      <column name="actor_id"></column>
+      <column name="film_id"></column>
+    </index>
+    <index name="film_category_pkey_idx_pk" table="film_category" unique="true">
+      <column name="film_id"></column>
+      <column name="category_id"></column>
+    </index>
+    <index name="idx_store_id_film_id" table="inventory">
+      <column name="store_id"></column>
+      <column name="film_id"></column>
+    </index>
+    <index name="inventory_pkey_idx_pk" table="inventory" unique="true">
+      <column name="inventory_id"></column>
+    </index>
+    <index name="language_pkey_idx_pk" table="language" unique="true">
+      <column name="language_id"></column>
+    </index>
+    <index name="idx_fk_customer_id" table="payment">
+      <column name="customer_id"></column>
+    </index>
+    <index name="idx_fk_staff_id" table="payment">
+      <column name="staff_id"></column>
+    </index>
+    <index name="payment_pkey_idx_pk" table="payment" unique="true">
+      <column name="payment_id"></column>
+    </index>
+    <index name="idx_fk_inventory_id" table="rental">
+      <column name="inventory_id"></column>
+    </index>
+    <index name="idx_unq_rental_rental_date_inventory_id_customer_id" table="rental" unique="true">
+      <column name="rental_date"></column>
+      <column name="inventory_id"></column>
+      <column name="customer_id"></column>
+    </index>
+    <index name="rental_pkey_idx_pk" table="rental" unique="true">
+      <column name="rental_id"></column>
+    </index>
+    <index name="staff_pkey_idx_pk" table="staff" unique="true">
+      <column name="staff_id"></column>
+    </index>
+    <index name="idx_unq_manager_staff_id" table="store" unique="true">
+      <column name="manager_staff_id"></column>
+    </index>
+    <index name="store_pkey_idx_pk" table="store" unique="true">
+      <column name="store_id"></column>
+    </index>
+  </schema>
+  <functions></functions>
+  <triggers></triggers>
+  <rules></rules>
+  <policies></policies>
+  <comments></comments>
+  <layouts>
+    <layout name="Default Diagram" default="true">
+      <entity schema="public" table="actor" x="1740" y="190" color="#FFFFFF"></entity>
+      <entity schema="public" table="address" x="80" y="60" color="#FFFFFF"></entity>
+      <entity schema="public" table="category" x="920" y="650" color="#FFFFFF"></entity>
+      <entity schema="public" table="city" x="90" y="370" color="#FFFFFF"></entity>
+      <entity schema="public" table="country" x="140" y="620" color="#FFFFFF"></entity>
+      <entity schema="public" table="customer" x="900" y="1020" color="#FFFFFF"></entity>
+      <entity schema="public" table="film" x="1210" y="400" color="#FFFFFF"></entity>
+      <entity schema="public" table="film_actor" x="1550" y="360" color="#FFFFFF"></entity>
+      <entity schema="public" table="film_category" x="920" y="480" color="#FFFFFF"></entity>
+      <entity schema="public" table="inventory" x="1280" y="220" color="#FFFFFF"></entity>
+      <entity schema="public" table="language" x="930" y="760" color="#FFFFFF"></entity>
+      <entity schema="public" table="payment" x="330" y="220" color="#FFFFFF"></entity>
+      <entity schema="public" table="rental" x="620" y="410" color="#FFFFFF"></entity>
+      <entity schema="public" table="staff" x="890" y="110" color="#FFFFFF"></entity>
+      <entity schema="public" table="store" x="1900" y="40" color="#FFFFFF"></entity>
+    </layout>
+  </layouts>
+</pgd>

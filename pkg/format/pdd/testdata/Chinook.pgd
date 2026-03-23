@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pgd version="1" pg-version="18" default-schema="public">
+  <project name="Chinook">
+    <settings>
+      <naming convention="camelCase"></naming>
+      <defaults nullable="true" on-delete="restrict" on-update="restrict"></defaults>
+    </settings>
+  </project>
+  <roles></roles>
+  <tablespaces></tablespaces>
+  <extensions></extensions>
+  <sequences></sequences>
+  <schema name="public">
+    <table name="Album">
+      <column name="AlbumId" type="integer" nullable="false"></column>
+      <column name="Title" type="varchar" length="160" nullable="false"></column>
+      <column name="ArtistId" type="integer" nullable="false"></column>
+      <pk name="PK_Album">
+        <column name="AlbumId"></column>
+      </pk>
+      <fk name="FK_AlbumArtistId" to-table="Artist" on-delete="restrict" on-update="restrict">
+        <column name="ArtistId" references="ArtistId"></column>
+      </fk>
+    </table>
+    <table name="Artist">
+      <column name="ArtistId" type="integer" nullable="false"></column>
+      <column name="Name" type="varchar" length="120"></column>
+      <pk name="PK_Artist">
+        <column name="ArtistId"></column>
+      </pk>
+    </table>
+    <table name="Customer">
+      <column name="CustomerId" type="integer" nullable="false"></column>
+      <column name="FirstName" type="varchar" length="40" nullable="false"></column>
+      <column name="LastName" type="varchar" length="20" nullable="false"></column>
+      <column name="Company" type="varchar" length="80"></column>
+      <column name="Address" type="varchar" length="70"></column>
+      <column name="City" type="varchar" length="40"></column>
+      <column name="State" type="varchar" length="40"></column>
+      <column name="Country" type="varchar" length="40"></column>
+      <column name="PostalCode" type="varchar" length="10"></column>
+      <column name="Phone" type="varchar" length="24"></column>
+      <column name="Fax" type="varchar" length="24"></column>
+      <column name="Email" type="varchar" length="60" nullable="false"></column>
+      <column name="SupportRepId" type="integer"></column>
+      <pk name="PK_Customer">
+        <column name="CustomerId"></column>
+      </pk>
+      <fk name="FK_CustomerSupportRepId" to-table="Employee" on-delete="restrict" on-update="restrict">
+        <column name="SupportRepId" references="EmployeeId"></column>
+      </fk>
+    </table>
+    <table name="Employee">
+      <column name="EmployeeId" type="integer" nullable="false"></column>
+      <column name="LastName" type="varchar" length="20" nullable="false"></column>
+      <column name="FirstName" type="varchar" length="20" nullable="false"></column>
+      <column name="Title" type="varchar" length="30"></column>
+      <column name="ReportsTo" type="integer"></column>
+      <column name="BirthDate" type="timestamp"></column>
+      <column name="HireDate" type="timestamp"></column>
+      <column name="Address" type="varchar" length="70"></column>
+      <column name="City" type="varchar" length="40"></column>
+      <column name="State" type="varchar" length="40"></column>
+      <column name="Country" type="varchar" length="40"></column>
+      <column name="PostalCode" type="varchar" length="10"></column>
+      <column name="Phone" type="varchar" length="24"></column>
+      <column name="Fax" type="varchar" length="24"></column>
+      <column name="Email" type="varchar" length="60"></column>
+      <pk name="PK_Employee">
+        <column name="EmployeeId"></column>
+      </pk>
+      <fk name="FK_EmployeeReportsTo" to-table="Employee" on-delete="restrict" on-update="restrict">
+        <column name="ReportsTo" references="EmployeeId"></column>
+      </fk>
+    </table>
+    <table name="Genre">
+      <column name="GenreId" type="integer" nullable="false"></column>
+      <column name="Name" type="varchar" length="120"></column>
+      <pk name="PK_Genre">
+        <column name="GenreId"></column>
+      </pk>
+    </table>
+    <table name="Invoice">
+      <column name="InvoiceId" type="integer" nullable="false"></column>
+      <column name="CustomerId" type="integer" nullable="false"></column>
+      <column name="InvoiceDate" type="timestamp" nullable="false"></column>
+      <column name="BillingAddress" type="varchar" length="70"></column>
+      <column name="BillingCity" type="varchar" length="40"></column>
+      <column name="BillingState" type="varchar" length="40"></column>
+      <column name="BillingCountry" type="varchar" length="40"></column>
+      <column name="BillingPostalCode" type="varchar" length="10"></column>
+      <column name="Total" type="numeric" precision="10" scale="2" nullable="false"></column>
+      <pk name="PK_Invoice">
+        <column name="InvoiceId"></column>
+      </pk>
+      <fk name="FK_InvoiceCustomerId" to-table="Customer" on-delete="restrict" on-update="restrict">
+        <column name="CustomerId" references="CustomerId"></column>
+      </fk>
+    </table>
+    <table name="InvoiceLine">
+      <column name="InvoiceLineId" type="integer" nullable="false"></column>
+      <column name="InvoiceId" type="integer" nullable="false"></column>
+      <column name="TrackId" type="integer" nullable="false"></column>
+      <column name="UnitPrice" type="numeric" precision="10" scale="2" nullable="false"></column>
+      <column name="Quantity" type="integer" nullable="false"></column>
+      <pk name="PK_InvoiceLine">
+        <column name="InvoiceLineId"></column>
+      </pk>
+      <fk name="FK_InvoiceLineInvoiceId" to-table="Invoice" on-delete="restrict" on-update="restrict">
+        <column name="InvoiceId" references="InvoiceId"></column>
+      </fk>
+      <fk name="FK_InvoiceLineTrackId" to-table="Track" on-delete="restrict" on-update="restrict">
+        <column name="TrackId" references="TrackId"></column>
+      </fk>
+    </table>
+    <table name="MediaType">
+      <column name="MediaTypeId" type="integer" nullable="false"></column>
+      <column name="Name" type="varchar" length="120"></column>
+      <pk name="PK_MediaType">
+        <column name="MediaTypeId"></column>
+      </pk>
+    </table>
+    <table name="Playlist">
+      <column name="PlaylistId" type="integer" nullable="false"></column>
+      <column name="Name" type="varchar" length="120"></column>
+      <pk name="PK_Playlist">
+        <column name="PlaylistId"></column>
+      </pk>
+    </table>
+    <table name="PlaylistTrack">
+      <column name="PlaylistId" type="integer" nullable="false"></column>
+      <column name="TrackId" type="integer" nullable="false"></column>
+      <pk name="PK_PlaylistTrack">
+        <column name="PlaylistId"></column>
+        <column name="TrackId"></column>
+      </pk>
+      <fk name="FK_PlaylistTrackPlaylistId" to-table="Playlist" on-delete="restrict" on-update="restrict">
+        <column name="PlaylistId" references="PlaylistId"></column>
+      </fk>
+      <fk name="FK_PlaylistTrackTrackId" to-table="Track" on-delete="restrict" on-update="restrict">
+        <column name="TrackId" references="TrackId"></column>
+      </fk>
+    </table>
+    <table name="Track">
+      <column name="TrackId" type="integer" nullable="false"></column>
+      <column name="Name" type="varchar" length="200" nullable="false"></column>
+      <column name="AlbumId" type="integer"></column>
+      <column name="MediaTypeId" type="integer" nullable="false"></column>
+      <column name="GenreId" type="integer"></column>
+      <column name="Composer" type="varchar" length="220"></column>
+      <column name="Milliseconds" type="integer" nullable="false"></column>
+      <column name="Bytes" type="integer"></column>
+      <column name="UnitPrice" type="numeric" precision="10" scale="2" nullable="false"></column>
+      <pk name="PK_Track">
+        <column name="TrackId"></column>
+      </pk>
+      <fk name="FK_TrackAlbumId" to-table="Album" on-delete="restrict" on-update="restrict">
+        <column name="AlbumId" references="AlbumId"></column>
+      </fk>
+      <fk name="FK_TrackGenreId" to-table="Genre" on-delete="restrict" on-update="restrict">
+        <column name="GenreId" references="GenreId"></column>
+      </fk>
+      <fk name="FK_TrackMediaTypeId" to-table="MediaType" on-delete="restrict" on-update="restrict">
+        <column name="MediaTypeId" references="MediaTypeId"></column>
+      </fk>
+    </table>
+    <index name="PK_Album" table="Album" unique="true">
+      <column name="AlbumId"></column>
+    </index>
+    <index name="IFK_AlbumArtistId" table="Album">
+      <column name="ArtistId"></column>
+    </index>
+    <index name="PK_Artist" table="Artist" unique="true">
+      <column name="ArtistId"></column>
+    </index>
+    <index name="PK_Customer" table="Customer" unique="true">
+      <column name="CustomerId"></column>
+    </index>
+    <index name="IFK_CustomerSupportRepId" table="Customer">
+      <column name="SupportRepId"></column>
+    </index>
+    <index name="PK_Employee" table="Employee" unique="true">
+      <column name="EmployeeId"></column>
+    </index>
+    <index name="IFK_EmployeeReportsTo" table="Employee">
+      <column name="ReportsTo"></column>
+    </index>
+    <index name="PK_Genre" table="Genre" unique="true">
+      <column name="GenreId"></column>
+    </index>
+    <index name="PK_Invoice" table="Invoice" unique="true">
+      <column name="InvoiceId"></column>
+    </index>
+    <index name="IFK_InvoiceCustomerId" table="Invoice">
+      <column name="CustomerId"></column>
+    </index>
+    <index name="PK_InvoiceLine" table="InvoiceLine" unique="true">
+      <column name="InvoiceLineId"></column>
+    </index>
+    <index name="IFK_InvoiceLineInvoiceId" table="InvoiceLine">
+      <column name="InvoiceId"></column>
+    </index>
+    <index name="IFK_InvoiceLineTrackId" table="InvoiceLine">
+      <column name="TrackId"></column>
+    </index>
+    <index name="PK_MediaType" table="MediaType" unique="true">
+      <column name="MediaTypeId"></column>
+    </index>
+    <index name="PK_Playlist" table="Playlist" unique="true">
+      <column name="PlaylistId"></column>
+    </index>
+    <index name="PK_PlaylistTrack" table="PlaylistTrack" unique="true">
+      <column name="PlaylistId"></column>
+      <column name="TrackId"></column>
+    </index>
+    <index name="IFK_PlaylistTrackTrackId" table="PlaylistTrack">
+      <column name="TrackId"></column>
+    </index>
+    <index name="PK_Track" table="Track" unique="true">
+      <column name="TrackId"></column>
+    </index>
+    <index name="IFK_TrackAlbumId" table="Track">
+      <column name="AlbumId"></column>
+    </index>
+    <index name="IFK_TrackGenreId" table="Track">
+      <column name="GenreId"></column>
+    </index>
+    <index name="IFK_TrackMediaTypeId" table="Track">
+      <column name="MediaTypeId"></column>
+    </index>
+  </schema>
+  <functions></functions>
+  <triggers></triggers>
+  <rules></rules>
+  <policies></policies>
+  <comments></comments>
+  <layouts>
+    <layout name="Default Diagram" default="true">
+      <entity schema="public" table="Album" x="270" y="60" color="#FFFFFF"></entity>
+      <entity schema="public" table="Artist" x="40" y="10" color="#FFFFFF"></entity>
+      <entity schema="public" table="Customer" x="1020" y="200" color="#FFFFFF"></entity>
+      <entity schema="public" table="Employee" x="740" y="440" color="#FFFFFF"></entity>
+      <entity schema="public" table="Genre" x="510" y="20" color="#FFFFFF"></entity>
+      <entity schema="public" table="Invoice" x="750" y="60" color="#FFFFFF"></entity>
+      <entity schema="public" table="InvoiceLine" x="510" y="260" color="#FFFFFF"></entity>
+      <entity schema="public" table="MediaType" x="30" y="220" color="#FFFFFF"></entity>
+      <entity schema="public" table="Playlist" x="50" y="600" color="#FFFFFF"></entity>
+      <entity schema="public" table="PlaylistTrack" x="30" y="440" color="#FFFFFF"></entity>
+      <entity schema="public" table="Track" x="250" y="260" color="#FFFFFF"></entity>
+    </layout>
+  </layouts>
+</pgd>

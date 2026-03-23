@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pgd version="1" pg-version="18" default-schema="public">
+  <project name="synthetic">
+    <settings>
+      <naming convention="camelCase"></naming>
+      <defaults nullable="true" on-delete="restrict" on-update="restrict"></defaults>
+    </settings>
+  </project>
+  <roles></roles>
+  <tablespaces></tablespaces>
+  <extensions></extensions>
+  <sequences></sequences>
+  <schema name="public">
+    <table name="artist">
+      <column name="artist_id" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="name" type="varchar" length="120" nullable="false"></column>
+      <pk name="pk_artist">
+        <column name="artist_id"></column>
+      </pk>
+    </table>
+    <table name="album">
+      <column name="album_id" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="title" type="varchar" length="160" nullable="false"></column>
+      <column name="artist_id" type="integer" nullable="false"></column>
+      <pk name="pk_album">
+        <column name="album_id"></column>
+      </pk>
+      <fk name="fk_album_artist" to-table="artist" on-delete="restrict" on-update="restrict">
+        <column name="artist_id" references="artist_id"></column>
+      </fk>
+    </table>
+    <table name="track">
+      <column name="track_id" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="name" type="varchar" length="200" nullable="false"></column>
+      <column name="album_id" type="integer"></column>
+      <column name="milliseconds" type="integer" nullable="false"></column>
+      <column name="unit_price" type="numeric" nullable="false"></column>
+      <pk name="pk_track">
+        <column name="track_id"></column>
+      </pk>
+      <fk name="fk_track_album" to-table="album" on-delete="restrict" on-update="restrict">
+        <column name="album_id" references="album_id"></column>
+      </fk>
+    </table>
+  </schema>
+  <functions></functions>
+  <triggers></triggers>
+  <rules></rules>
+  <policies></policies>
+  <comments></comments>
+  <layouts>
+    <layout name="Default Diagram" default="true">
+      <entity schema="public" table="artist" x="40" y="40"></entity>
+      <entity schema="public" table="album" x="240" y="40"></entity>
+      <entity schema="public" table="track" x="440" y="40"></entity>
+    </layout>
+  </layouts>
+</pgd>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pgd version="1" pg-version="18" default-schema="public">
+  <schema name="public">
+    <table name="notifications">
+      <column name="notificationId" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="userId" type="integer" nullable="false"></column>
+      <column name="message" type="text" nullable="false"></column>
+      <column name="createdAt" type="timestamptz" nullable="false" default="now()"></column>
+      <column name="statusId" type="integer" nullable="false"></column>
+      <pk name="pk_notifications">
+        <column name="notificationId"></column>
+      </pk>
+    </table>
+  </schema>
+</pgd>

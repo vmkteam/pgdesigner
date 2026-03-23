@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pgd version="1" pg-version="18" default-schema="public">
+  <project name="northwind">
+    <settings>
+      <naming convention="camelCase"></naming>
+      <defaults nullable="true" on-delete="restrict" on-update="restrict"></defaults>
+    </settings>
+  </project>
+  <roles></roles>
+  <tablespaces></tablespaces>
+  <extensions></extensions>
+  <sequences></sequences>
+  <schema name="public">
+    <table name="categories">
+      <column name="category_id" type="smallint" nullable="false"></column>
+      <column name="category_name" type="varchar" length="15" nullable="false"></column>
+      <column name="description" type="text"></column>
+      <column name="picture" type="bytea"></column>
+      <pk name="pk_categories">
+        <column name="category_id"></column>
+      </pk>
+    </table>
+    <table name="customer_customer_demo">
+      <column name="customer_id" type="varchar" length="5" nullable="false"></column>
+      <column name="customer_type_id" type="varchar" length="5" nullable="false"></column>
+      <pk name="pk_customer_customer_demo">
+        <column name="customer_id"></column>
+        <column name="customer_type_id"></column>
+      </pk>
+      <fk name="fk_customer_customer_demo_customer_demographics" to-table="customer_demographics" on-delete="no action" on-update="no action">
+        <column name="customer_type_id" references="customer_type_id"></column>
+      </fk>
+      <fk name="fk_customer_customer_demo_customers" to-table="customers" on-delete="no action" on-update="no action">
+        <column name="customer_id" references="customer_id"></column>
+      </fk>
+    </table>
+    <table name="customer_demographics">
+      <column name="customer_type_id" type="varchar" length="5" nullable="false"></column>
+      <column name="customer_desc" type="text"></column>
+      <pk name="pk_customer_demographics">
+        <column name="customer_type_id"></column>
+      </pk>
+    </table>
+    <table name="customers">
+      <column name="customer_id" type="varchar" length="5" nullable="false"></column>
+      <column name="company_name" type="varchar" length="40" nullable="false"></column>
+      <column name="contact_name" type="varchar" length="30"></column>
+      <column name="contact_title" type="varchar" length="30"></column>
+      <column name="address" type="varchar" length="60"></column>
+      <column name="city" type="varchar" length="15"></column>
+      <column name="region" type="varchar" length="15"></column>
+      <column name="postal_code" type="varchar" length="10"></column>
+      <column name="country" type="varchar" length="15"></column>
+      <column name="phone" type="varchar" length="24"></column>
+      <column name="fax" type="varchar" length="24"></column>
+      <pk name="pk_customers">
+        <column name="customer_id"></column>
+      </pk>
+    </table>
+    <table name="employee_territories">
+      <column name="employee_id" type="smallint" nullable="false"></column>
+      <column name="territory_id" type="varchar" length="20" nullable="false"></column>
+      <pk name="pk_employee_territories">
+        <column name="employee_id"></column>
+        <column name="territory_id"></column>
+      </pk>
+      <fk name="fk_employee_territories_employees" to-table="employees" on-delete="no action" on-update="no action">
+        <column name="employee_id" references="employee_id"></column>
+      </fk>
+      <fk name="fk_employee_territories_territories" to-table="territories" on-delete="no action" on-update="no action">
+        <column name="territory_id" references="territory_id"></column>
+      </fk>
+    </table>
+    <table name="employees">
+      <column name="employee_id" type="smallint" nullable="false"></column>
+      <column name="last_name" type="varchar" length="20" nullable="false"></column>
+      <column name="first_name" type="varchar" length="10" nullable="false"></column>
+      <column name="title" type="varchar" length="30"></column>
+      <column name="title_of_courtesy" type="varchar" length="25"></column>
+      <column name="birth_date" type="date"></column>
+      <column name="hire_date" type="date"></column>
+      <column name="address" type="varchar" length="60"></column>
+      <column name="city" type="varchar" length="15"></column>
+      <column name="region" type="varchar" length="15"></column>
+      <column name="postal_code" type="varchar" length="10"></column>
+      <column name="country" type="varchar" length="15"></column>
+      <column name="home_phone" type="varchar" length="24"></column>
+      <column name="extension" type="varchar" length="4"></column>
+      <column name="photo" type="bytea"></column>
+      <column name="notes" type="text"></column>
+      <column name="reports_to" type="smallint"></column>
+      <column name="photo_path" type="varchar" length="255"></column>
+      <pk name="pk_employees">
+        <column name="employee_id"></column>
+      </pk>
+      <fk name="fk_employees_employees" to-table="employees" on-delete="no action" on-update="no action">
+        <column name="reports_to" references="employee_id"></column>
+      </fk>
+    </table>
+    <table name="order_details">
+      <column name="order_id" type="smallint" nullable="false"></column>
+      <column name="product_id" type="smallint" nullable="false"></column>
+      <column name="unit_price" type="real" nullable="false"></column>
+      <column name="quantity" type="smallint" nullable="false"></column>
+      <column name="discount" type="real" nullable="false"></column>
+      <pk name="pk_order_details">
+        <column name="order_id"></column>
+        <column name="product_id"></column>
+      </pk>
+      <fk name="fk_order_details_orders" to-table="orders" on-delete="no action" on-update="no action">
+        <column name="order_id" references="order_id"></column>
+      </fk>
+      <fk name="fk_order_details_products" to-table="products" on-delete="no action" on-update="no action">
+        <column name="product_id" references="product_id"></column>
+      </fk>
+    </table>
+    <table name="orders">
+      <column name="order_id" type="smallint" nullable="false"></column>
+      <column name="customer_id" type="varchar" length="5"></column>
+      <column name="employee_id" type="smallint"></column>
+      <column name="order_date" type="date"></column>
+      <column name="required_date" type="date"></column>
+      <column name="shipped_date" type="date"></column>
+      <column name="ship_via" type="smallint"></column>
+      <column name="freight" type="real"></column>
+      <column name="ship_name" type="varchar" length="40"></column>
+      <column name="ship_address" type="varchar" length="60"></column>
+      <column name="ship_city" type="varchar" length="15"></column>
+      <column name="ship_region" type="varchar" length="15"></column>
+      <column name="ship_postal_code" type="varchar" length="10"></column>
+      <column name="ship_country" type="varchar" length="15"></column>
+      <pk name="pk_orders">
+        <column name="order_id"></column>
+      </pk>
+      <fk name="fk_orders_customers" to-table="customers" on-delete="no action" on-update="no action">
+        <column name="customer_id" references="customer_id"></column>
+      </fk>
+      <fk name="fk_orders_employees" to-table="employees" on-delete="no action" on-update="no action">
+        <column name="employee_id" references="employee_id"></column>
+      </fk>
+      <fk name="fk_orders_shippers" to-table="shippers" on-delete="no action" on-update="no action">
+        <column name="ship_via" references="shipper_id"></column>
+      </fk>
+    </table>
+    <table name="products">
+      <column name="product_id" type="smallint" nullable="false"></column>
+      <column name="product_name" type="varchar" length="40" nullable="false"></column>
+      <column name="supplier_id" type="smallint"></column>
+      <column name="category_id" type="smallint"></column>
+      <column name="quantity_per_unit" type="varchar" length="20"></column>
+      <column name="unit_price" type="real"></column>
+      <column name="units_in_stock" type="smallint"></column>
+      <column name="units_on_order" type="smallint"></column>
+      <column name="reorder_level" type="smallint"></column>
+      <column name="discontinued" type="integer" nullable="false"></column>
+      <pk name="pk_products">
+        <column name="product_id"></column>
+      </pk>
+      <fk name="fk_products_categories" to-table="categories" on-delete="no action" on-update="no action">
+        <column name="category_id" references="category_id"></column>
+      </fk>
+      <fk name="fk_products_suppliers" to-table="suppliers" on-delete="no action" on-update="no action">
+        <column name="supplier_id" references="supplier_id"></column>
+      </fk>
+    </table>
+    <table name="region">
+      <column name="region_id" type="smallint" nullable="false"></column>
+      <column name="region_description" type="varchar" length="60" nullable="false"></column>
+      <pk name="pk_region">
+        <column name="region_id"></column>
+      </pk>
+    </table>
+    <table name="shippers">
+      <column name="shipper_id" type="smallint" nullable="false"></column>
+      <column name="company_name" type="varchar" length="40" nullable="false"></column>
+      <column name="phone" type="varchar" length="24"></column>
+      <pk name="pk_shippers">
+        <column name="shipper_id"></column>
+      </pk>
+    </table>
+    <table name="suppliers">
+      <column name="supplier_id" type="smallint" nullable="false"></column>
+      <column name="company_name" type="varchar" length="40" nullable="false"></column>
+      <column name="contact_name" type="varchar" length="30"></column>
+      <column name="contact_title" type="varchar" length="30"></column>
+      <column name="address" type="varchar" length="60"></column>
+      <column name="city" type="varchar" length="15"></column>
+      <column name="region" type="varchar" length="15"></column>
+      <column name="postal_code" type="varchar" length="10"></column>
+      <column name="country" type="varchar" length="15"></column>
+      <column name="phone" type="varchar" length="24"></column>
+      <column name="fax" type="varchar" length="24"></column>
+      <column name="homepage" type="text"></column>
+      <pk name="pk_suppliers">
+        <column name="supplier_id"></column>
+      </pk>
+    </table>
+    <table name="territories">
+      <column name="territory_id" type="varchar" length="20" nullable="false"></column>
+      <column name="territory_description" type="varchar" length="60" nullable="false"></column>
+      <column name="region_id" type="smallint" nullable="false"></column>
+      <pk name="pk_territories">
+        <column name="territory_id"></column>
+      </pk>
+      <fk name="fk_territories_region" to-table="region" on-delete="no action" on-update="no action">
+        <column name="region_id" references="region_id"></column>
+      </fk>
+    </table>
+    <table name="us_states">
+      <column name="state_id" type="smallint" nullable="false"></column>
+      <column name="state_name" type="varchar" length="100"></column>
+      <column name="state_abbr" type="varchar" length="2"></column>
+      <column name="state_region" type="varchar" length="50"></column>
+      <pk name="pk_usstates">
+        <column name="state_id"></column>
+      </pk>
+    </table>
+  </schema>
+  <functions></functions>
+  <triggers></triggers>
+  <rules></rules>
+  <policies></policies>
+  <comments></comments>
+  <layouts>
+    <layout name="Default Diagram" default="true"></layout>
+  </layouts>
+</pgd>

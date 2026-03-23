@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pgd version="1" pg-version="18" default-schema="public">
+  <project name="airlines_rt">
+    <settings>
+      <naming convention="camelCase"></naming>
+      <defaults nullable="true" on-delete="restrict" on-update="restrict"></defaults>
+    </settings>
+  </project>
+  <roles></roles>
+  <tablespaces></tablespaces>
+  <extensions></extensions>
+  <sequences>
+    <sequence name="flights_flight_id_seq" schema="bookings" start="1" increment="1" cache="1"></sequence>
+  </sequences>
+  <schema name="bookings">
+    <table name="aircrafts_data">
+      <column name="aircraft_code" type="bpchar" nullable="false"></column>
+      <column name="model" type="jsonb" nullable="false"></column>
+      <column name="range" type="integer" nullable="false"></column>
+      <pk name="aircrafts_data_pkey">
+        <column name="aircraft_code"></column>
+      </pk>
+      <check name="aircrafts_range_check"><![CDATA[range > 0]]></check>
+    </table>
+    <table name="airports_data">
+      <column name="airport_code" type="bpchar" nullable="false"></column>
+      <column name="airport_name" type="jsonb" nullable="false"></column>
+      <column name="city" type="jsonb" nullable="false"></column>
+      <column name="coordinates" type="point" nullable="false"></column>
+      <column name="timezone" type="text" nullable="false"></column>
+      <pk name="airports_data_pkey">
+        <column name="airport_code"></column>
+      </pk>
+    </table>
+    <table name="boarding_passes">
+      <column name="ticket_no" type="bpchar" nullable="false"></column>
+      <column name="flight_id" type="integer" nullable="false"></column>
+      <column name="boarding_no" type="integer" nullable="false"></column>
+      <column name="seat_no" type="varchar" length="4" nullable="false"></column>
+      <pk name="boarding_passes_pkey">
+        <column name="ticket_no"></column>
+        <column name="flight_id"></column>
+      </pk>
+      <fk name="boarding_passes_ticket_no_flight_id_fkey" to-table="bookings.ticket_flights" on-delete="no action" on-update="no action">
+        <column name="ticket_no" references="ticket_no"></column>
+        <column name="flight_id" references="flight_id"></column>
+      </fk>
+      <unique name="boarding_passes_flight_id_boarding_no_key">
+        <column name="flight_id"></column>
+        <column name="boarding_no"></column>
+      </unique>
+      <unique name="boarding_passes_flight_id_seat_no_key">
+        <column name="flight_id"></column>
+        <column name="seat_no"></column>
+      </unique>
+    </table>
+    <table name="bookings">
+      <column name="book_ref" type="bpchar" nullable="false"></column>
+      <column name="book_date" type="timestamptz" nullable="false"></column>
+      <column name="total_amount" type="numeric" precision="10" scale="2" nullable="false"></column>
+      <pk name="bookings_pkey">
+        <column name="book_ref"></column>
+      </pk>
+    </table>
+    <table name="flights">
+      <column name="flight_id" type="integer" nullable="false"></column>
+      <column name="flight_no" type="bpchar" nullable="false"></column>
+      <column name="scheduled_departure" type="timestamptz" nullable="false"></column>
+      <column name="scheduled_arrival" type="timestamptz" nullable="false"></column>
+      <column name="departure_airport" type="bpchar" nullable="false"></column>
+      <column name="arrival_airport" type="bpchar" nullable="false"></column>
+      <column name="status" type="varchar" length="20" nullable="false"></column>
+      <column name="aircraft_code" type="bpchar" nullable="false"></column>
+      <column name="actual_departure" type="timestamptz"></column>
+      <column name="actual_arrival" type="timestamptz"></column>
+      <pk name="flights_pkey">
+        <column name="flight_id"></column>
+      </pk>
+      <fk name="flights_aircraft_code_fkey" to-table="bookings.aircrafts_data" on-delete="no action" on-update="no action">
+        <column name="aircraft_code" references="aircraft_code"></column>
+      </fk>
+      <fk name="flights_arrival_airport_fkey" to-table="bookings.airports_data" on-delete="no action" on-update="no action">
+        <column name="arrival_airport" references="airport_code"></column>
+      </fk>
+      <fk name="flights_departure_airport_fkey" to-table="bookings.airports_data" on-delete="no action" on-update="no action">
+        <column name="departure_airport" references="airport_code"></column>
+      </fk>
+      <unique name="flights_flight_no_scheduled_departure_key">
+        <column name="flight_no"></column>
+        <column name="scheduled_departure"></column>
+      </unique>
+      <check name="flights_check"><![CDATA[scheduled_arrival > scheduled_departure]]></check>
+      <check name="flights_check1"><![CDATA[actual_arrival IS NULL OR (actual_departure IS NOT NULL AND actual_arrival IS NOT NULL AND actual_arrival > actual_departure)]]></check>
+      <check name="flights_status_check"><![CDATA[status::text = ANY(ARRAY['On Time'::varchar::text, 'Delayed'::varchar::text, 'Departed'::varchar::text, 'Arrived'::varchar::text, 'Scheduled'::varchar::text, 'Cancelled'::varchar::text])]]></check>
+    </table>
+    <table name="seats">
+      <column name="aircraft_code" type="bpchar" nullable="false"></column>
+      <column name="seat_no" type="varchar" length="4" nullable="false"></column>
+      <column name="fare_conditions" type="varchar" length="10" nullable="false"></column>
+      <pk name="seats_pkey">
+        <column name="aircraft_code"></column>
+        <column name="seat_no"></column>
+      </pk>
+      <fk name="seats_aircraft_code_fkey" to-table="bookings.aircrafts_data" on-delete="cascade" on-update="no action">
+        <column name="aircraft_code" references="aircraft_code"></column>
+      </fk>
+      <check name="seats_fare_conditions_check"><![CDATA[fare_conditions::text = ANY(ARRAY['Economy'::varchar::text, 'Comfort'::varchar::text, 'Business'::varchar::text])]]></check>
+    </table>
+    <table name="ticket_flights">
+      <column name="ticket_no" type="bpchar" nullable="false"></column>
+      <column name="flight_id" type="integer" nullable="false"></column>
+      <column name="fare_conditions" type="varchar" length="10" nullable="false"></column>
+      <column name="amount" type="numeric" precision="10" scale="2" nullable="false"></column>
+      <pk name="ticket_flights_pkey">
+        <column name="ticket_no"></column>
+        <column name="flight_id"></column>
+      </pk>
+      <fk name="ticket_flights_flight_id_fkey" to-table="bookings.flights" on-delete="no action" on-update="no action">
+        <column name="flight_id" references="flight_id"></column>
+      </fk>
+      <fk name="ticket_flights_ticket_no_fkey" to-table="bookings.tickets" on-delete="no action" on-update="no action">
+        <column name="ticket_no" references="ticket_no"></column>
+      </fk>
+      <check name="ticket_flights_amount_check"><![CDATA[amount >= 0::numeric]]></check>
+      <check name="ticket_flights_fare_conditions_check"><![CDATA[fare_conditions::text = ANY(ARRAY['Economy'::varchar::text, 'Comfort'::varchar::text, 'Business'::varchar::text])]]></check>
+    </table>
+    <table name="tickets">
+      <column name="ticket_no" type="bpchar" nullable="false"></column>
+      <column name="book_ref" type="bpchar" nullable="false"></column>
+      <column name="passenger_id" type="varchar" length="20" nullable="false"></column>
+      <column name="passenger_name" type="text" nullable="false"></column>
+      <column name="contact_data" type="jsonb"></column>
+      <pk name="tickets_pkey">
+        <column name="ticket_no"></column>
+      </pk>
+      <fk name="tickets_book_ref_fkey" to-table="bookings.bookings" on-delete="no action" on-update="no action">
+        <column name="book_ref" references="book_ref"></column>
+      </fk>
+    </table>
+  </schema>
+  <views>
+    <view name="aircrafts" schema="bookings">
+      <query>SELECT aircraft_code, model -&gt;&gt; bookings.lang() AS model, range FROM bookings.aircrafts_data ml</query>
+    </view>
+    <view name="airports" schema="bookings">
+      <query>SELECT airport_code, airport_name -&gt;&gt; bookings.lang() AS airport_name, city -&gt;&gt; bookings.lang() AS city, coordinates, timezone FROM bookings.airports_data ml</query>
+    </view>
+    <view name="flights_v" schema="bookings">
+      <query>SELECT f.flight_id, f.flight_no, f.scheduled_departure, timezone(dep.timezone, f.scheduled_departure) AS scheduled_departure_local, f.scheduled_arrival, timezone(arr.timezone, f.scheduled_arrival) AS scheduled_arrival_local, f.scheduled_arrival - f.scheduled_departure AS scheduled_duration, f.departure_airport, dep.airport_name AS departure_airport_name, dep.city AS departure_city, f.arrival_airport, arr.airport_name AS arrival_airport_name, arr.city AS arrival_city, f.status, f.aircraft_code, f.actual_departure, timezone(dep.timezone, f.actual_departure) AS actual_departure_local, f.actual_arrival, timezone(arr.timezone, f.actual_arrival) AS actual_arrival_local, f.actual_arrival - f.actual_departure AS actual_duration FROM bookings.flights f, bookings.airports dep, bookings.airports arr WHERE f.departure_airport = dep.airport_code AND f.arrival_airport = arr.airport_code</query>
+    </view>
+    <view name="routes" schema="bookings">
+      <query>WITH f3 AS (SELECT f2.flight_no, f2.departure_airport, f2.arrival_airport, f2.aircraft_code, f2.duration, array_agg(f2.days_of_week) AS days_of_week FROM (SELECT f1.flight_no, f1.departure_airport, f1.arrival_airport, f1.aircraft_code, f1.duration, f1.days_of_week FROM (SELECT flights.flight_no, flights.departure_airport, flights.arrival_airport, flights.aircraft_code, flights.scheduled_arrival - flights.scheduled_departure AS duration, to_char(flights.scheduled_departure, &#39;ID&#39;::text)::int AS days_of_week FROM bookings.flights) f1 GROUP BY f1.flight_no, f1.departure_airport, f1.arrival_airport, f1.aircraft_code, f1.duration, f1.days_of_week ORDER BY f1.flight_no, f1.departure_airport, f1.arrival_airport, f1.aircraft_code, f1.duration, f1.days_of_week) f2 GROUP BY f2.flight_no, f2.departure_airport, f2.arrival_airport, f2.aircraft_code, f2.duration) SELECT f3.flight_no, f3.departure_airport, dep.airport_name AS departure_airport_name, dep.city AS departure_city, f3.arrival_airport, arr.airport_name AS arrival_airport_name, arr.city AS arrival_city, f3.aircraft_code, f3.duration, f3.days_of_week FROM f3, bookings.airports dep, bookings.airports arr WHERE f3.departure_airport = dep.airport_code AND f3.arrival_airport = arr.airport_code</query>
+    </view>
+  </views>
+  <functions>
+    <function name="lang" schema="bookings" returns="text" language="plpgsql" volatility="stable">
+      <body>&#xA;BEGIN&#xA;  RETURN current_setting(&#39;bookings.lang&#39;);&#xA;EXCEPTION&#xA;  WHEN undefined_object THEN&#xA;    RETURN NULL;&#xA;END;&#xA;</body>
+    </function>
+    <function name="now" schema="bookings" returns="timestamptz" language="sql" volatility="immutable">
+      <body>&#xA;SELECT &#39;2017-08-15 18:00:00&#39;::TIMESTAMP AT TIME ZONE &#39;Europe/Moscow&#39;;&#xA;</body>
+    </function>
+  </functions>
+  <triggers></triggers>
+  <rules></rules>
+  <policies></policies>
+  <comments>
+    <comment on="schema" name="bookings">Airlines demo database schema</comment>
+    <comment on="function" schema="bookings" name="now">Point in time according to which the data are generated</comment>
+    <comment on="table" schema="bookings" name="aircrafts_data">Aircrafts (internal data)</comment>
+    <comment on="column" schema="bookings" table="aircrafts_data" name="aircraft_code">Aircraft code, IATA</comment>
+    <comment on="column" schema="bookings" table="aircrafts_data" name="model">Aircraft model</comment>
+    <comment on="column" schema="bookings" table="aircrafts_data" name="range">Maximal flying distance, km</comment>
+    <comment on="view" schema="bookings" name="aircrafts">Aircrafts</comment>
+    <comment on="column" schema="bookings" table="aircrafts" name="aircraft_code">Aircraft code, IATA</comment>
+    <comment on="column" schema="bookings" table="aircrafts" name="model">Aircraft model</comment>
+    <comment on="column" schema="bookings" table="aircrafts" name="range">Maximal flying distance, km</comment>
+    <comment on="table" schema="bookings" name="airports_data">Airports (internal data)</comment>
+    <comment on="column" schema="bookings" table="airports_data" name="airport_code">Airport code</comment>
+    <comment on="column" schema="bookings" table="airports_data" name="airport_name">Airport name</comment>
+    <comment on="column" schema="bookings" table="airports_data" name="city">City</comment>
+    <comment on="column" schema="bookings" table="airports_data" name="coordinates">Airport coordinates (longitude and latitude)</comment>
+    <comment on="column" schema="bookings" table="airports_data" name="timezone">Airport time zone</comment>
+    <comment on="view" schema="bookings" name="airports">Airports</comment>
+    <comment on="column" schema="bookings" table="airports" name="airport_code">Airport code</comment>
+    <comment on="column" schema="bookings" table="airports" name="airport_name">Airport name</comment>
+    <comment on="column" schema="bookings" table="airports" name="city">City</comment>
+    <comment on="column" schema="bookings" table="airports" name="coordinates">Airport coordinates (longitude and latitude)</comment>
+    <comment on="column" schema="bookings" table="airports" name="timezone">Airport time zone</comment>
+    <comment on="table" schema="bookings" name="boarding_passes">Boarding passes</comment>
+    <comment on="column" schema="bookings" table="boarding_passes" name="ticket_no">Ticket number</comment>
+    <comment on="column" schema="bookings" table="boarding_passes" name="flight_id">Flight ID</comment>
+    <comment on="column" schema="bookings" table="boarding_passes" name="boarding_no">Boarding pass number</comment>
+    <comment on="column" schema="bookings" table="boarding_passes" name="seat_no">Seat number</comment>
+    <comment on="table" schema="bookings" name="bookings">Bookings</comment>
+    <comment on="column" schema="bookings" table="bookings" name="book_ref">Booking number</comment>
+    <comment on="column" schema="bookings" table="bookings" name="book_date">Booking date</comment>
+    <comment on="column" schema="bookings" table="bookings" name="total_amount">Total booking cost</comment>
+    <comment on="table" schema="bookings" name="flights">Flights</comment>
+    <comment on="column" schema="bookings" table="flights" name="flight_id">Flight ID</comment>
+    <comment on="column" schema="bookings" table="flights" name="flight_no">Flight number</comment>
+    <comment on="column" schema="bookings" table="flights" name="scheduled_departure">Scheduled departure time</comment>
+    <comment on="column" schema="bookings" table="flights" name="scheduled_arrival">Scheduled arrival time</comment>
+    <comment on="column" schema="bookings" table="flights" name="departure_airport">Airport of departure</comment>
+    <comment on="column" schema="bookings" table="flights" name="arrival_airport">Airport of arrival</comment>
+    <comment on="column" schema="bookings" table="flights" name="status">Flight status</comment>
+    <comment on="column" schema="bookings" table="flights" name="aircraft_code">Aircraft code, IATA</comment>
+    <comment on="column" schema="bookings" table="flights" name="actual_departure">Actual departure time</comment>
+    <comment on="column" schema="bookings" table="flights" name="actual_arrival">Actual arrival time</comment>
+    <comment on="view" schema="bookings" name="flights_v">Flights (extended)</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="flight_id">Flight ID</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="flight_no">Flight number</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="scheduled_departure">Scheduled departure time</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="scheduled_departure_local">Scheduled departure time, local time at the point of departure</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="scheduled_arrival">Scheduled arrival time</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="scheduled_arrival_local">Scheduled arrival time, local time at the point of destination</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="scheduled_duration">Scheduled flight duration</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="departure_airport">Deprature airport code</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="departure_airport_name">Departure airport name</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="departure_city">City of departure</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="arrival_airport">Arrival airport code</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="arrival_airport_name">Arrival airport name</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="arrival_city">City of arrival</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="status">Flight status</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="aircraft_code">Aircraft code, IATA</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="actual_departure">Actual departure time</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="actual_departure_local">Actual departure time, local time at the point of departure</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="actual_arrival">Actual arrival time</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="actual_arrival_local">Actual arrival time, local time at the point of destination</comment>
+    <comment on="column" schema="bookings" table="flights_v" name="actual_duration">Actual flight duration</comment>
+    <comment on="view" schema="bookings" name="routes">Routes</comment>
+    <comment on="column" schema="bookings" table="routes" name="flight_no">Flight number</comment>
+    <comment on="column" schema="bookings" table="routes" name="departure_airport">Code of airport of departure</comment>
+    <comment on="column" schema="bookings" table="routes" name="departure_airport_name">Name of airport of departure</comment>
+    <comment on="column" schema="bookings" table="routes" name="departure_city">City of departure</comment>
+    <comment on="column" schema="bookings" table="routes" name="arrival_airport">Code of airport of arrival</comment>
+    <comment on="column" schema="bookings" table="routes" name="arrival_airport_name">Name of airport of arrival</comment>
+    <comment on="column" schema="bookings" table="routes" name="arrival_city">City of arrival</comment>
+    <comment on="column" schema="bookings" table="routes" name="aircraft_code">Aircraft code, IATA</comment>
+    <comment on="column" schema="bookings" table="routes" name="duration">Scheduled duration of flight</comment>
+    <comment on="column" schema="bookings" table="routes" name="days_of_week">Days of week on which flights are scheduled</comment>
+    <comment on="table" schema="bookings" name="seats">Seats</comment>
+    <comment on="column" schema="bookings" table="seats" name="aircraft_code">Aircraft code, IATA</comment>
+    <comment on="column" schema="bookings" table="seats" name="seat_no">Seat number</comment>
+    <comment on="column" schema="bookings" table="seats" name="fare_conditions">Travel class</comment>
+    <comment on="table" schema="bookings" name="ticket_flights">Flight segment</comment>
+    <comment on="column" schema="bookings" table="ticket_flights" name="ticket_no">Ticket number</comment>
+    <comment on="column" schema="bookings" table="ticket_flights" name="flight_id">Flight ID</comment>
+    <comment on="column" schema="bookings" table="ticket_flights" name="fare_conditions">Travel class</comment>
+    <comment on="column" schema="bookings" table="ticket_flights" name="amount">Travel cost</comment>
+    <comment on="table" schema="bookings" name="tickets">Tickets</comment>
+    <comment on="column" schema="bookings" table="tickets" name="ticket_no">Ticket number</comment>
+    <comment on="column" schema="bookings" table="tickets" name="book_ref">Booking number</comment>
+    <comment on="column" schema="bookings" table="tickets" name="passenger_id">Passenger ID</comment>
+    <comment on="column" schema="bookings" table="tickets" name="passenger_name">Passenger name</comment>
+    <comment on="column" schema="bookings" table="tickets" name="contact_data">Passenger contact information</comment>
+  </comments>
+  <layouts>
+    <layout name="Default Diagram" default="true"></layout>
+  </layouts>
+</pgd>

@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pgd version="1" pg-version="18" default-schema="public">
+  <project name="chinook">
+    <settings>
+      <naming convention="camelCase"></naming>
+      <defaults nullable="true" on-delete="restrict" on-update="restrict"></defaults>
+    </settings>
+  </project>
+  <roles></roles>
+  <tablespaces></tablespaces>
+  <extensions></extensions>
+  <sequences></sequences>
+  <schema name="public">
+    <table name="album">
+      <column name="album_id" type="integer" nullable="false"></column>
+      <column name="title" type="varchar" length="160" nullable="false"></column>
+      <column name="artist_id" type="integer" nullable="false"></column>
+      <pk name="album_pkey">
+        <column name="album_id"></column>
+      </pk>
+      <fk name="album_artist_id_fkey" to-table="artist" on-delete="no action" on-update="no action">
+        <column name="artist_id" references="artist_id"></column>
+      </fk>
+    </table>
+    <table name="artist">
+      <column name="artist_id" type="integer" nullable="false"></column>
+      <column name="name" type="varchar" length="120"></column>
+      <pk name="artist_pkey">
+        <column name="artist_id"></column>
+      </pk>
+    </table>
+    <table name="customer">
+      <column name="customer_id" type="integer" nullable="false"></column>
+      <column name="first_name" type="varchar" length="40" nullable="false"></column>
+      <column name="last_name" type="varchar" length="20" nullable="false"></column>
+      <column name="company" type="varchar" length="80"></column>
+      <column name="address" type="varchar" length="70"></column>
+      <column name="city" type="varchar" length="40"></column>
+      <column name="state" type="varchar" length="40"></column>
+      <column name="country" type="varchar" length="40"></column>
+      <column name="postal_code" type="varchar" length="10"></column>
+      <column name="phone" type="varchar" length="24"></column>
+      <column name="fax" type="varchar" length="24"></column>
+      <column name="email" type="varchar" length="60" nullable="false"></column>
+      <column name="support_rep_id" type="integer"></column>
+      <pk name="customer_pkey">
+        <column name="customer_id"></column>
+      </pk>
+      <fk name="customer_support_rep_id_fkey" to-table="employee" on-delete="no action" on-update="no action">
+        <column name="support_rep_id" references="employee_id"></column>
+      </fk>
+    </table>
+    <table name="employee">
+      <column name="employee_id" type="integer" nullable="false"></column>
+      <column name="last_name" type="varchar" length="20" nullable="false"></column>
+      <column name="first_name" type="varchar" length="20" nullable="false"></column>
+      <column name="title" type="varchar" length="30"></column>
+      <column name="reports_to" type="integer"></column>
+      <column name="birth_date" type="timestamp"></column>
+      <column name="hire_date" type="timestamp"></column>
+      <column name="address" type="varchar" length="70"></column>
+      <column name="city" type="varchar" length="40"></column>
+      <column name="state" type="varchar" length="40"></column>
+      <column name="country" type="varchar" length="40"></column>
+      <column name="postal_code" type="varchar" length="10"></column>
+      <column name="phone" type="varchar" length="24"></column>
+      <column name="fax" type="varchar" length="24"></column>
+      <column name="email" type="varchar" length="60"></column>
+      <pk name="employee_pkey">
+        <column name="employee_id"></column>
+      </pk>
+      <fk name="employee_reports_to_fkey" to-table="employee" on-delete="no action" on-update="no action">
+        <column name="reports_to" references="employee_id"></column>
+      </fk>
+    </table>
+    <table name="genre">
+      <column name="genre_id" type="integer" nullable="false"></column>
+      <column name="name" type="varchar" length="120"></column>
+      <pk name="genre_pkey">
+        <column name="genre_id"></column>
+      </pk>
+    </table>
+    <table name="invoice">
+      <column name="invoice_id" type="integer" nullable="false"></column>
+      <column name="customer_id" type="integer" nullable="false"></column>
+      <column name="invoice_date" type="timestamp" nullable="false"></column>
+      <column name="billing_address" type="varchar" length="70"></column>
+      <column name="billing_city" type="varchar" length="40"></column>
+      <column name="billing_state" type="varchar" length="40"></column>
+      <column name="billing_country" type="varchar" length="40"></column>
+      <column name="billing_postal_code" type="varchar" length="10"></column>
+      <column name="total" type="numeric" precision="10" scale="2" nullable="false"></column>
+      <pk name="invoice_pkey">
+        <column name="invoice_id"></column>
+      </pk>
+      <fk name="invoice_customer_id_fkey" to-table="customer" on-delete="no action" on-update="no action">
+        <column name="customer_id" references="customer_id"></column>
+      </fk>
+    </table>
+    <table name="invoice_line">
+      <column name="invoice_line_id" type="integer" nullable="false"></column>
+      <column name="invoice_id" type="integer" nullable="false"></column>
+      <column name="track_id" type="integer" nullable="false"></column>
+      <column name="unit_price" type="numeric" precision="10" scale="2" nullable="false"></column>
+      <column name="quantity" type="integer" nullable="false"></column>
+      <pk name="invoice_line_pkey">
+        <column name="invoice_line_id"></column>
+      </pk>
+      <fk name="invoice_line_invoice_id_fkey" to-table="invoice" on-delete="no action" on-update="no action">
+        <column name="invoice_id" references="invoice_id"></column>
+      </fk>
+      <fk name="invoice_line_track_id_fkey" to-table="track" on-delete="no action" on-update="no action">
+        <column name="track_id" references="track_id"></column>
+      </fk>
+    </table>
+    <table name="media_type">
+      <column name="media_type_id" type="integer" nullable="false"></column>
+      <column name="name" type="varchar" length="120"></column>
+      <pk name="media_type_pkey">
+        <column name="media_type_id"></column>
+      </pk>
+    </table>
+    <table name="playlist">
+      <column name="playlist_id" type="integer" nullable="false"></column>
+      <column name="name" type="varchar" length="120"></column>
+      <pk name="playlist_pkey">
+        <column name="playlist_id"></column>
+      </pk>
+    </table>
+    <table name="playlist_track">
+      <column name="playlist_id" type="integer" nullable="false"></column>
+      <column name="track_id" type="integer" nullable="false"></column>
+      <pk name="playlist_track_pkey">
+        <column name="playlist_id"></column>
+        <column name="track_id"></column>
+      </pk>
+      <fk name="playlist_track_playlist_id_fkey" to-table="playlist" on-delete="no action" on-update="no action">
+        <column name="playlist_id" references="playlist_id"></column>
+      </fk>
+      <fk name="playlist_track_track_id_fkey" to-table="track" on-delete="no action" on-update="no action">
+        <column name="track_id" references="track_id"></column>
+      </fk>
+    </table>
+    <table name="track">
+      <column name="track_id" type="integer" nullable="false"></column>
+      <column name="name" type="varchar" length="200" nullable="false"></column>
+      <column name="album_id" type="integer"></column>
+      <column name="media_type_id" type="integer" nullable="false"></column>
+      <column name="genre_id" type="integer"></column>
+      <column name="composer" type="varchar" length="220"></column>
+      <column name="milliseconds" type="integer" nullable="false"></column>
+      <column name="bytes" type="integer"></column>
+      <column name="unit_price" type="numeric" precision="10" scale="2" nullable="false"></column>
+      <pk name="track_pkey">
+        <column name="track_id"></column>
+      </pk>
+      <fk name="track_album_id_fkey" to-table="album" on-delete="no action" on-update="no action">
+        <column name="album_id" references="album_id"></column>
+      </fk>
+      <fk name="track_genre_id_fkey" to-table="genre" on-delete="no action" on-update="no action">
+        <column name="genre_id" references="genre_id"></column>
+      </fk>
+      <fk name="track_media_type_id_fkey" to-table="media_type" on-delete="no action" on-update="no action">
+        <column name="media_type_id" references="media_type_id"></column>
+      </fk>
+    </table>
+    <index name="album_artist_id_idx" table="album">
+      <column name="artist_id"></column>
+    </index>
+    <index name="customer_support_rep_id_idx" table="customer">
+      <column name="support_rep_id"></column>
+    </index>
+    <index name="employee_reports_to_idx" table="employee">
+      <column name="reports_to"></column>
+    </index>
+    <index name="invoice_customer_id_idx" table="invoice">
+      <column name="customer_id"></column>
+    </index>
+    <index name="invoice_line_invoice_id_idx" table="invoice_line">
+      <column name="invoice_id"></column>
+    </index>
+    <index name="invoice_line_track_id_idx" table="invoice_line">
+      <column name="track_id"></column>
+    </index>
+    <index name="playlist_track_playlist_id_idx" table="playlist_track">
+      <column name="playlist_id"></column>
+    </index>
+    <index name="playlist_track_track_id_idx" table="playlist_track">
+      <column name="track_id"></column>
+    </index>
+    <index name="track_album_id_idx" table="track">
+      <column name="album_id"></column>
+    </index>
+    <index name="track_genre_id_idx" table="track">
+      <column name="genre_id"></column>
+    </index>
+    <index name="track_media_type_id_idx" table="track">
+      <column name="media_type_id"></column>
+    </index>
+  </schema>
+  <functions></functions>
+  <triggers></triggers>
+  <rules></rules>
+  <policies></policies>
+  <comments></comments>
+  <layouts>
+    <layout name="Default Diagram" default="true"></layout>
+  </layouts>
+</pgd>
