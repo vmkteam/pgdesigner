@@ -63,6 +63,7 @@ type ServerOptions struct {
 	IsRegisteredFn func() bool
 	Config         ConfigCallbacks
 	ReadOnly       bool
+	Version        string
 }
 
 // New returns a new zenrpc Server with ProjectService (read-only).
@@ -74,7 +75,7 @@ func New(project *pgd.Project, quitCh chan struct{}) *zenrpc.Server {
 	})
 	srv.RegisterAll(map[string]zenrpc.Invoker{
 		"project": ps,
-		"app":     NewAppService(quitCh, nil, ConfigCallbacks{}),
+		"app":     NewAppService(quitCh, nil, ConfigCallbacks{}, "dev"),
 	})
 	return srv
 }
@@ -91,7 +92,7 @@ func NewWithStore(opts ServerOptions) *zenrpc.Server {
 	}
 	srv.RegisterAll(map[string]zenrpc.Invoker{
 		"project": ps,
-		"app":     NewAppService(opts.QuitCh, opts.Store, opts.Config),
+		"app":     NewAppService(opts.QuitCh, opts.Store, opts.Config, opts.Version),
 	})
 	return srv
 }

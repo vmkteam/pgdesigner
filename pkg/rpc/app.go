@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -42,16 +41,17 @@ type ConfigCallbacks struct {
 // AppService provides application lifecycle methods.
 type AppService struct {
 	zenrpc.Service
-	quitCh chan struct{}
-	store  *store.ProjectStore
-	config ConfigCallbacks
-	mu     sync.Mutex
-	timer  *time.Timer
+	quitCh  chan struct{}
+	store   *store.ProjectStore
+	config  ConfigCallbacks
+	version string
+	mu      sync.Mutex
+	timer   *time.Timer
 }
 
 // NewAppService creates an AppService that signals quit via the provided channel.
-func NewAppService(quitCh chan struct{}, s *store.ProjectStore, cfg ConfigCallbacks) *AppService {
-	return &AppService{quitCh: quitCh, store: s, config: cfg}
+func NewAppService(quitCh chan struct{}, s *store.ProjectStore, cfg ConfigCallbacks, version string) *AppService {
+	return &AppService{quitCh: quitCh, store: s, config: cfg, version: version}
 }
 
 // Quit starts a delayed shutdown. If Ping is not called within the grace period, the server exits.
@@ -99,23 +99,6 @@ func (s *AppService) Ping() string {
 	return "pong"
 }
 
-func vcsVersion() string {
-	result := "dev"
-	info, ok := debug.ReadBuildInfo()
-	if !ok {
-		return result
-	}
-	for _, v := range info.Settings {
-		if v.Key == "vcs.revision" {
-			result = v.Value
-		}
-	}
-	if len(result) > 8 {
-		result = result[:8]
-	}
-	return result
-}
-
 // About returns application metadata.
 //
 //zenrpc:return AboutInfo
@@ -123,7 +106,7 @@ func (s *AppService) About() AboutInfo {
 	return AboutInfo{
 		Name:        "PgDesigner",
 		Description: "Visual PostgreSQL Schema Designer",
-		Version:     vcsVersion(),
+		Version:     s.version,
 		GoVersion:   runtime.Version(),
 		Target:      "PostgreSQL 18",
 		Author:      "Sergey Bykov (sergeyfast)",

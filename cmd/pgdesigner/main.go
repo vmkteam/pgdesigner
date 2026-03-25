@@ -18,10 +18,15 @@ import (
 	"github.com/vmkteam/pgdesigner/pkg/pgd"
 )
 
+var version = "dev"
+
 func main() {
 	// Subcommands
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
+		case "version", "--version", "-v":
+			fmt.Println(version)
+			return
 		case "convert":
 			runConvert(os.Args[2:])
 			return
@@ -51,8 +56,11 @@ func main() {
 	schemaFilter := flag.String("schema", "", "schema filter for RE (comma-separated)")
 	fullRE := flag.Bool("full", false, "full introspection (views, functions, triggers)")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, `Usage:
+		fmt.Fprintf(os.Stderr, `PgDesigner %s — Visual PostgreSQL Schema Designer
+
+Usage:
   pgdesigner [flags] <schema.pgd>    open ERD viewer
+  pgdesigner version                 print version and exit
   pgdesigner convert <file>          convert .dbs/.dm2/.pdd/.sql to .pgd
   pgdesigner lint <schema.pgd>       validate schema (use -fix to auto-fix)
   pgdesigner diff <old> <new>        generate ALTER migration SQL
@@ -61,7 +69,7 @@ func main() {
   pgdesigner testdata <schema.pgd>  generate test data INSERT SQL
 
 Flags:
-`)
+`, version)
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -101,7 +109,7 @@ Flags:
 		st.StartAutoBackup(30 * time.Second)
 	}
 
-	var appOpts []app.AppOption
+	appOpts := []app.AppOption{app.WithVersion(version)}
 	if *readOnly {
 		appOpts = append(appOpts, app.WithReadOnly())
 	}

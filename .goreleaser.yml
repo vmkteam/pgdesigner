@@ -1,0 +1,51 @@
+version: 2
+
+project_name: pgdesigner
+
+before:
+  hooks:
+    - sh -c "cd frontend && pnpm install --frozen-lockfile && pnpm build"
+
+builds:
+  - main: ./cmd/pgdesigner
+    binary: pgdesigner
+    env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "pgdesigner-{{ .Os }}-{{ .Arch }}"
+
+brews:
+  - repository:
+      owner: vmkteam
+      name: homebrew-tap
+    directory: Formula
+    homepage: "https://pgdesigner.io"
+    description: "PostgreSQL schema designer — ERD, linting, diffing, sample data"
+    license: "PolyForm-Noncommercial-1.0.0"
+    test: |
+      system "#{bin}/pgdesigner version"
+
+dockers_v2:
+  - images:
+      - "ghcr.io/vmkteam/pgdesigner"
+    tags:
+      - "v{{ .Version }}"
+      - latest
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    dockerfile: Dockerfile
+
+release:
+  github:
+    owner: vmkteam
+    name: pgdesigner

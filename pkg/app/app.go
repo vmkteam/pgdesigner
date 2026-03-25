@@ -28,11 +28,19 @@ type App struct {
 
 // AppOption configures App creation.
 type AppOption func(*appOptions)
-type appOptions struct{ readOnly bool }
+type appOptions struct {
+	readOnly bool
+	version  string
+}
 
 // WithReadOnly disables all write RPC methods.
 func WithReadOnly() AppOption {
 	return func(o *appOptions) { o.readOnly = true }
+}
+
+// WithVersion sets the application version for About().
+func WithVersion(v string) AppOption {
+	return func(o *appOptions) { o.version = v }
 }
 
 // New creates a new App with the given project.
@@ -62,6 +70,7 @@ func NewWithStore(s *store.ProjectStore, opts ...AppOption) *App {
 			QuitCh:         quitCh,
 			IsRegisteredFn: cfg.IsRegistered,
 			ReadOnly:       o.readOnly,
+			Version:        o.version,
 			Config: rpc.ConfigCallbacks{
 				Register: func(email string) error {
 					cfg.RegisteredEmail = email
