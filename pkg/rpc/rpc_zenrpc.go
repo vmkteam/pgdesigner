@@ -117,6 +117,10 @@ zenrpc`,
 							Type: smd.String,
 						},
 						{
+							Name: "website",
+							Type: smd.String,
+						},
+						{
 							Name: "github",
 							Type: smd.String,
 						},
@@ -513,6 +517,10 @@ func (ProjectService) SMD() smd.ServiceInfo {
 						},
 						{
 							Name: "isDemo",
+							Type: smd.Boolean,
+						},
+						{
+							Name: "isReadOnly",
 							Type: smd.Boolean,
 						},
 						{

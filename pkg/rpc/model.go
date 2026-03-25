@@ -37,6 +37,7 @@ type AboutInfo struct {
 	Target      string `json:"target"`
 	Author      string `json:"author"`
 	License     string `json:"license"`
+	Website     string `json:"website"`
 	GitHub      string `json:"github"`
 }
 

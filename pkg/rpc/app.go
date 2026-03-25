@@ -128,6 +128,7 @@ func (s *AppService) About() AboutInfo {
 		Target:      "PostgreSQL 18",
 		Author:      "Sergey Bykov (sergeyfast)",
 		License:     "PolyForm Noncommercial 1.0.0",
+		Website:     "https://pgdesigner.io",
 		GitHub:      "https://github.com/vmkteam/pgdesigner",
 	}
 }
@@ -288,5 +289,6 @@ func pgdFilePath(path string) string {
 	case ".pdd", ".dbs", ".dm2", ".sql":
 		return strings.TrimSuffix(path, ext) + ".pgd"
 	}
-	return path
+	// DSN or unknown format — no file path (requires Save As)
+	return ""
 }
