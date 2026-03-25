@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pgd version="1" pg-version="18" default-schema="public">
+  <project name="pgdump">
+    <settings>
+      <naming convention="camelCase"></naming>
+      <defaults nullable="true" on-delete="restrict" on-update="restrict"></defaults>
+    </settings>
+  </project>
+  <roles></roles>
+  <tablespaces></tablespaces>
+  <extensions>
+    <extension name="btree_gist" schema="public"></extension>
+  </extensions>
+  <types>
+    <enum name="document_status" schema="public">
+      <label>draft</label>
+      <label>review</label>
+      <label>published</label>
+      <label>archived</label>
+    </enum>
+    <enum name="user_role" schema="public">
+      <label>viewer</label>
+      <label>editor</label>
+      <label>admin</label>
+      <label>owner</label>
+    </enum>
+    <domain name="email_address" schema="public" type="text">
+      <constraint name="email_address_check"><![CDATA[value ~ E'^[^@]+@[^@]+\\.[^@]+$'::text]]></constraint>
+    </domain>
+    <domain name="positive_int" schema="public" type="integer">
+      <constraint name="positive_int_check"><![CDATA[value > 0]]></constraint>
+    </domain>
+    <domain name="slug" schema="public" type="varchar">
+      <not-null></not-null>
+      <constraint name="slug_format"><![CDATA[value::text ~ '^[a-z0-9]([a-z0-9-]*[a-z0-9])?$'::text]]></constraint>
+    </domain>
+  </types>
+  <sequences></sequences>
+  <schema name="public">
+    <table name="audit_log">
+      <column name="id" type="bigint" nullable="false">
+        <identity generated="always"></identity>
+      </column>
+      <column name="user_id" type="bigint"></column>
+      <column name="table_name" type="varchar" length="64" nullable="false"></column>
+      <column name="record_id" type="bigint" nullable="false"></column>
+      <column name="action" type="varchar" length="10" nullable="false"></column>
+      <column name="old_data" type="jsonb"></column>
+      <column name="new_data" type="jsonb"></column>
+      <column name="ip_address" type="inet"></column>
+      <column name="created_at" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="audit_log_pkey">
+        <column name="id"></column>
+      </pk>
+      <fk name="audit_log_user_id_fkey" to-table="users" on-delete="set-null" on-update="no action">
+        <column name="user_id" references="id"></column>
+      </fk>
+      <check name="chk_audit_action"><![CDATA[action::text = ANY(ARRAY['INSERT'::varchar, 'UPDATE'::varchar, 'DELETE'::varchar]::text[])]]></check>
+    </table>
+    <table name="booking_slots">
+      <column name="id" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="room_name" type="varchar" length="100" nullable="false"></column>
+      <column name="booked_during" type="tstzrange" nullable="false"></column>
+      <column name="booked_by" type="bigint" nullable="false"></column>
+      <pk name="booking_slots_pkey">
+        <column name="id"></column>
+      </pk>
+      <fk name="booking_slots_booked_by_fkey" to-table="users" on-delete="cascade" on-update="no action">
+        <column name="booked_by" references="id"></column>
+      </fk>
+    </table>
+    <table name="categories">
+      <column name="id" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="parent_id" type="integer"></column>
+      <column name="name" type="varchar" length="100" nullable="false"></column>
+      <column name="slug" type="slug"></column>
+      <column name="description" type="text"></column>
+      <column name="sort_order" type="positive_int" default="1"></column>
+      <column name="created_at" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="categories_pkey">
+        <column name="id"></column>
+      </pk>
+      <fk name="categories_parent_id_fkey" to-table="categories" on-delete="set-null" on-update="no action">
+        <column name="parent_id" references="id"></column>
+      </fk>
+    </table>
+    <table name="document_permissions">
+      <column name="id" type="bigint" nullable="false">
+        <identity generated="always"></identity>
+      </column>
+      <column name="document_id" type="bigint" nullable="false"></column>
+      <column name="user_id" type="bigint" nullable="false"></column>
+      <column name="role" type="user_role" nullable="false" default="&#39;viewer&#39;::public.user_role"></column>
+      <column name="granted_at" type="timestamptz" nullable="false" default="now()"></column>
+      <column name="expires_at" type="timestamptz"></column>
+      <pk name="document_permissions_pkey">
+        <column name="id"></column>
+      </pk>
+      <fk name="document_permissions_document_id_fkey" to-table="documents" on-delete="cascade" on-update="no action">
+        <column name="document_id" references="id"></column>
+      </fk>
+      <fk name="document_permissions_user_id_fkey" to-table="users" on-delete="cascade" on-update="no action">
+        <column name="user_id" references="id"></column>
+      </fk>
+      <unique name="uq_docperm_document_user">
+        <column name="document_id"></column>
+        <column name="user_id"></column>
+      </unique>
+      <check name="chk_docperm_expires"><![CDATA[expires_at IS NULL OR expires_at > granted_at]]></check>
+    </table>
+    <table name="document_tags">
+      <column name="document_id" type="bigint" nullable="false"></column>
+      <column name="tag_id" type="integer" nullable="false"></column>
+      <pk name="document_tags_pkey">
+        <column name="document_id"></column>
+        <column name="tag_id"></column>
+      </pk>
+      <fk name="document_tags_document_id_fkey" to-table="documents" on-delete="cascade" on-update="no action">
+        <column name="document_id" references="id"></column>
+      </fk>
+      <fk name="document_tags_tag_id_fkey" to-table="tags" on-delete="cascade" on-update="no action">
+        <column name="tag_id" references="id"></column>
+      </fk>
+    </table>
+    <table name="documents">
+      <column name="id" type="bigint" nullable="false">
+        <identity generated="always"></identity>
+      </column>
+      <column name="category_id" type="integer"></column>
+      <column name="author_id" type="bigint" nullable="false"></column>
+      <column name="title" type="varchar" length="500" nullable="false"></column>
+      <column name="body" type="text"></column>
+      <column name="metadata" type="jsonb" nullable="false" default="&#39;{}&#39;::jsonb"></column>
+      <column name="tags" type="text[]" nullable="false" default="&#39;{}&#39;::text[]"></column>
+      <column name="status" type="document_status" nullable="false" default="&#39;draft&#39;::public.document_status"></column>
+      <column name="version" type="positive_int" nullable="false" default="1"></column>
+      <column name="search_vector" type="tsvector"></column>
+      <column name="published_at" type="timestamptz"></column>
+      <column name="created_at" type="timestamptz" nullable="false" default="now()"></column>
+      <column name="updated_at" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="documents_pkey">
+        <column name="id"></column>
+      </pk>
+      <fk name="documents_author_id_fkey" to-table="users" on-delete="restrict" on-update="no action">
+        <column name="author_id" references="id"></column>
+      </fk>
+      <fk name="documents_category_id_fkey" to-table="categories" on-delete="set-null" on-update="no action">
+        <column name="category_id" references="id"></column>
+      </fk>
+      <check name="chk_documents_publish"><![CDATA[status <> 'published'::public.document_status OR published_at IS NOT NULL]]></check>
+    </table>
+    <table name="tags">
+      <column name="id" type="integer" nullable="false">
+        <identity generated="by-default"></identity>
+      </column>
+      <column name="name" type="varchar" length="60" nullable="false"></column>
+      <column name="color" type="bpchar" default="&#39;#cccccc&#39;::bpchar"></column>
+      <pk name="tags_pkey">
+        <column name="id"></column>
+      </pk>
+      <unique name="uq_tags_name">
+        <column name="name"></column>
+      </unique>
+      <check name="chk_tags_color"><![CDATA[color ~ '^#[0-9a-fA-F]{6}$'::text]]></check>
+    </table>
+    <table name="users">
+      <column name="id" type="bigint" nullable="false">
+        <identity generated="always"></identity>
+      </column>
+      <column name="email" type="email_address" nullable="false"></column>
+      <column name="display_name" type="varchar" length="200" nullable="false"></column>
+      <column name="role" type="user_role" nullable="false" default="&#39;viewer&#39;::public.user_role"></column>
+      <column name="settings" type="jsonb" nullable="false" default="&#39;{}&#39;::jsonb"></column>
+      <column name="tags" type="text[]" nullable="false" default="&#39;{}&#39;::text[]"></column>
+      <column name="search_vector" type="tsvector"></column>
+      <column name="is_active" type="boolean" nullable="false" default="true"></column>
+      <column name="created_at" type="timestamptz" nullable="false" default="now()"></column>
+      <column name="updated_at" type="timestamptz" nullable="false" default="now()"></column>
+      <pk name="users_pkey">
+        <column name="id"></column>
+      </pk>
+      <unique name="uq_users_email">
+        <column name="email"></column>
+      </unique>
+    </table>
+    <index name="idx_audit_created" table="audit_log">
+      <column name="created_at" order="desc"></column>
+    </index>
+    <index name="idx_audit_new_data_gin" table="audit_log" using="gin">
+      <column name="new_data"></column>
+    </index>
+    <index name="idx_audit_old_data_gin" table="audit_log" using="gin">
+      <column name="old_data"></column>
+    </index>
+    <index name="idx_audit_recent" table="audit_log">
+      <column name="created_at" order="desc"></column>
+      <where><![CDATA[created_at > '2024-01-01 00:00:00+03'::timestamp with time zone]]></where>
+    </index>
+    <index name="idx_audit_table_record" table="audit_log">
+      <column name="table_name"></column>
+      <column name="record_id"></column>
+    </index>
+    <index name="idx_categories_parent" table="categories">
+      <column name="parent_id"></column>
+    </index>
+    <index name="idx_categories_slug_lower" table="categories">
+      <expression><![CDATA[lower(slug::text)]]></expression>
+    </index>
+    <index name="idx_documents_active" table="documents">
+      <column name="created_at" order="desc"></column>
+      <where><![CDATA[status = 'published'::public.document_status]]></where>
+    </index>
+    <index name="idx_documents_author" table="documents">
+      <column name="author_id"></column>
+    </index>
+    <index name="idx_documents_category" table="documents">
+      <column name="category_id"></column>
+    </index>
+    <index name="idx_documents_draft" table="documents">
+      <column name="author_id"></column>
+      <column name="updated_at" order="desc"></column>
+      <where><![CDATA[status = 'draft'::public.document_status]]></where>
+    </index>
+    <index name="idx_documents_metadata_gin" table="documents" using="gin">
+      <column name="metadata"></column>
+    </index>
+    <index name="idx_documents_search_gist" table="documents" using="gist">
+      <column name="search_vector"></column>
+    </index>
+    <index name="idx_documents_status" table="documents">
+      <column name="status"></column>
+    </index>
+    <index name="idx_documents_tags_gin" table="documents" using="gin">
+      <column name="tags"></column>
+    </index>
+    <index name="idx_documents_title_lower" table="documents">
+      <expression><![CDATA[lower(title::text)]]></expression>
+    </index>
+    <index name="idx_users_active" table="users">
+      <column name="email"></column>
+      <where><![CDATA[is_active = true]]></where>
+    </index>
+    <index name="idx_users_email_lower" table="users">
+      <expression><![CDATA[lower(email::text)]]></expression>
+    </index>
+    <index name="idx_users_search_gist" table="users" using="gist">
+      <column name="search_vector"></column>
+    </index>
+    <index name="idx_users_settings_gin" table="users" using="gin">
+      <column name="settings"></column>
+    </index>
+    <index name="idx_users_tags_gin" table="users" using="gin">
+      <column name="tags"></column>
+    </index>
+  </schema>
+  <functions>
+    <function name="audit_trigger_func" schema="public" returns="trigger" language="plpgsql">
+      <body>&#xA;BEGIN&#xA;    IF TG_OP = &#39;INSERT&#39; THEN&#xA;        INSERT INTO audit_log (user_id, table_name, record_id, action, new_data)&#xA;        VALUES (current_setting(&#39;app.current_user_id&#39;, true)::bigint, TG_TABLE_NAME, NEW.id, TG_OP, to_jsonb(NEW));&#xA;        RETURN NEW;&#xA;    ELSIF TG_OP = &#39;UPDATE&#39; THEN&#xA;        INSERT INTO audit_log (user_id, table_name, record_id, action, old_data, new_data)&#xA;        VALUES (current_setting(&#39;app.current_user_id&#39;, true)::bigint, TG_TABLE_NAME, NEW.id, TG_OP, to_jsonb(OLD), to_jsonb(NEW));&#xA;        RETURN NEW;&#xA;    ELSIF TG_OP = &#39;DELETE&#39; THEN&#xA;        INSERT INTO audit_log (user_id, table_name, record_id, action, old_data)&#xA;        VALUES (current_setting(&#39;app.current_user_id&#39;, true)::bigint, TG_TABLE_NAME, OLD.id, TG_OP, to_jsonb(OLD));&#xA;        RETURN OLD;&#xA;    END IF;&#xA;    RETURN NULL;&#xA;END;&#xA;</body>
+    </function>
+    <function name="update_document_search_vector" schema="public" returns="trigger" language="plpgsql">
+      <body>&#xA;BEGIN&#xA;    NEW.search_vector := to_tsvector(&#39;english&#39;, coalesce(NEW.title, &#39;&#39;) || &#39; &#39; || coalesce(NEW.body, &#39;&#39;));&#xA;    RETURN NEW;&#xA;END;&#xA;</body>
+    </function>
+    <function name="update_user_search_vector" schema="public" returns="trigger" language="plpgsql">
+      <body>&#xA;BEGIN&#xA;    NEW.search_vector := to_tsvector(&#39;english&#39;, coalesce(NEW.display_name, &#39;&#39;) || &#39; &#39; || coalesce(NEW.email::text, &#39;&#39;));&#xA;    RETURN NEW;&#xA;END;&#xA;</body>
+    </function>
+  </functions>
+  <triggers>
+    <trigger name="trg_documents_audit" table="documents" timing="after" events="insert,delete,update" for-each="row">
+      <execute function="audit_trigger_func"></execute>
+    </trigger>
+    <trigger name="trg_documents_search_vector" table="documents" timing="before" events="insert,update" for-each="row">
+      <execute function="update_document_search_vector"></execute>
+    </trigger>
+    <trigger name="trg_users_audit" table="users" timing="after" events="insert,delete,update" for-each="row">
+      <execute function="audit_trigger_func"></execute>
+    </trigger>
+    <trigger name="trg_users_search_vector" table="users" timing="before" events="insert,update" for-each="row">
+      <execute function="update_user_search_vector"></execute>
+    </trigger>
+  </triggers>
+  <rules></rules>
+  <policies></policies>
+  <comments>
+    <comment on="table" schema="public" name="audit_log">Immutable audit trail for all data changes</comment>
+    <comment on="column" schema="public" table="audit_log" name="old_data">Previous row state as JSON (NULL for INSERT)</comment>
+    <comment on="column" schema="public" table="audit_log" name="new_data">New row state as JSON (NULL for DELETE)</comment>
+    <comment on="table" schema="public" name="booking_slots">Room booking with non-overlapping time range constraint</comment>
+    <comment on="column" schema="public" table="booking_slots" name="booked_during">Time range for the booking (tstzrange with EXCLUDE constraint)</comment>
+    <comment on="table" schema="public" name="categories">Hierarchical document categories (self-referencing tree)</comment>
+    <comment on="table" schema="public" name="document_permissions">Per-document user permissions with optional expiration</comment>
+    <comment on="table" schema="public" name="document_tags">Many-to-many relationship between documents and tags</comment>
+    <comment on="table" schema="public" name="documents">Core document storage with full-text search and versioning</comment>
+    <comment on="column" schema="public" table="documents" name="metadata">Arbitrary document metadata as JSON (custom fields, etc.)</comment>
+    <comment on="column" schema="public" table="documents" name="version">Monotonically increasing version number</comment>
+    <comment on="column" schema="public" table="documents" name="search_vector">Full-text search index over title and body</comment>
+    <comment on="table" schema="public" name="tags">Flat tag taxonomy for document classification</comment>
+    <comment on="table" schema="public" name="users">System users with role-based access control</comment>
+    <comment on="column" schema="public" table="users" name="settings">User preferences as JSON (theme, notifications, etc.)</comment>
+    <comment on="column" schema="public" table="users" name="tags">Free-form text tags for user categorization</comment>
+    <comment on="column" schema="public" table="users" name="search_vector">Full-text search index over display_name and email</comment>
+    <comment on="index" schema="public" name="idx_documents_active">Partial index: only published documents</comment>
+    <comment on="index" schema="public" name="idx_documents_metadata_gin">GIN index for JSONB containment queries on document metadata</comment>
+    <comment on="index" schema="public" name="idx_documents_search_gist">GiST index for full-text search on documents</comment>
+    <comment on="index" schema="public" name="idx_users_settings_gin">GIN index for JSONB containment queries on user settings</comment>
+  </comments>
+  <layouts>
+    <layout name="Default Diagram" default="true"></layout>
+  </layouts>
+</pgd>

@@ -1,0 +1,1984 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pgd version="1" pg-version="18" default-schema="public">
+  <project name="pgdump">
+    <settings>
+      <naming convention="camelCase"></naming>
+      <defaults nullable="true" on-delete="restrict" on-update="restrict"></defaults>
+    </settings>
+  </project>
+  <roles></roles>
+  <tablespaces></tablespaces>
+  <extensions>
+    <extension name="tablefunc" schema="public"></extension>
+    <extension name="uuid-ossp" schema="public"></extension>
+  </extensions>
+  <types>
+    <domain name="AccountNumber" schema="public" type="varchar"></domain>
+    <domain name="Flag" schema="public" type="boolean">
+      <not-null></not-null>
+    </domain>
+    <domain name="Name" schema="public" type="varchar"></domain>
+    <domain name="NameStyle" schema="public" type="boolean">
+      <not-null></not-null>
+    </domain>
+    <domain name="OrderNumber" schema="public" type="varchar"></domain>
+    <domain name="Phone" schema="public" type="varchar"></domain>
+  </types>
+  <sequences>
+    <sequence name="department_departmentid_seq" schema="humanresources" start="1" increment="1" cache="1"></sequence>
+    <sequence name="jobcandidate_jobcandidateid_seq" schema="humanresources" start="1" increment="1" cache="1"></sequence>
+    <sequence name="shift_shiftid_seq" schema="humanresources" start="1" increment="1" cache="1"></sequence>
+    <sequence name="address_addressid_seq" schema="person" start="1" increment="1" cache="1"></sequence>
+    <sequence name="addresstype_addresstypeid_seq" schema="person" start="1" increment="1" cache="1"></sequence>
+    <sequence name="businessentity_businessentityid_seq" schema="person" start="1" increment="1" cache="1"></sequence>
+    <sequence name="contacttype_contacttypeid_seq" schema="person" start="1" increment="1" cache="1"></sequence>
+    <sequence name="emailaddress_emailaddressid_seq" schema="person" start="1" increment="1" cache="1"></sequence>
+    <sequence name="phonenumbertype_phonenumbertypeid_seq" schema="person" start="1" increment="1" cache="1"></sequence>
+    <sequence name="stateprovince_stateprovinceid_seq" schema="person" start="1" increment="1" cache="1"></sequence>
+    <sequence name="billofmaterials_billofmaterialsid_seq" schema="production" start="1" increment="1" cache="1"></sequence>
+    <sequence name="illustration_illustrationid_seq" schema="production" start="1" increment="1" cache="1"></sequence>
+    <sequence name="location_locationid_seq" schema="production" start="1" increment="1" cache="1"></sequence>
+    <sequence name="product_productid_seq" schema="production" start="1" increment="1" cache="1"></sequence>
+    <sequence name="productcategory_productcategoryid_seq" schema="production" start="1" increment="1" cache="1"></sequence>
+    <sequence name="productdescription_productdescriptionid_seq" schema="production" start="1" increment="1" cache="1"></sequence>
+    <sequence name="productmodel_productmodelid_seq" schema="production" start="1" increment="1" cache="1"></sequence>
+    <sequence name="productphoto_productphotoid_seq" schema="production" start="1" increment="1" cache="1"></sequence>
+    <sequence name="productreview_productreviewid_seq" schema="production" start="1" increment="1" cache="1"></sequence>
+    <sequence name="productsubcategory_productsubcategoryid_seq" schema="production" start="1" increment="1" cache="1"></sequence>
+    <sequence name="scrapreason_scrapreasonid_seq" schema="production" start="1" increment="1" cache="1"></sequence>
+    <sequence name="transactionhistory_transactionid_seq" schema="production" start="1" increment="1" cache="1"></sequence>
+    <sequence name="workorder_workorderid_seq" schema="production" start="1" increment="1" cache="1"></sequence>
+    <sequence name="purchaseorderdetail_purchaseorderdetailid_seq" schema="purchasing" start="1" increment="1" cache="1"></sequence>
+    <sequence name="purchaseorderheader_purchaseorderid_seq" schema="purchasing" start="1" increment="1" cache="1"></sequence>
+    <sequence name="shipmethod_shipmethodid_seq" schema="purchasing" start="1" increment="1" cache="1"></sequence>
+    <sequence name="creditcard_creditcardid_seq" schema="sales" start="1" increment="1" cache="1"></sequence>
+    <sequence name="currencyrate_currencyrateid_seq" schema="sales" start="1" increment="1" cache="1"></sequence>
+    <sequence name="customer_customerid_seq" schema="sales" start="1" increment="1" cache="1"></sequence>
+    <sequence name="salesorderdetail_salesorderdetailid_seq" schema="sales" start="1" increment="1" cache="1"></sequence>
+    <sequence name="salesorderheader_salesorderid_seq" schema="sales" start="1" increment="1" cache="1"></sequence>
+    <sequence name="salesreason_salesreasonid_seq" schema="sales" start="1" increment="1" cache="1"></sequence>
+    <sequence name="salestaxrate_salestaxrateid_seq" schema="sales" start="1" increment="1" cache="1"></sequence>
+    <sequence name="salesterritory_territoryid_seq" schema="sales" start="1" increment="1" cache="1"></sequence>
+    <sequence name="shoppingcartitem_shoppingcartitemid_seq" schema="sales" start="1" increment="1" cache="1"></sequence>
+    <sequence name="specialoffer_specialofferid_seq" schema="sales" start="1" increment="1" cache="1"></sequence>
+  </sequences>
+  <schema name="hr"></schema>
+  <schema name="humanresources">
+    <table name="department">
+      <column name="departmentid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="groupname" type="Name" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="department_pkey">
+        <column name="departmentid"></column>
+      </pk>
+    </table>
+    <table name="employee">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="nationalidnumber" type="varchar" length="15" nullable="false"></column>
+      <column name="loginid" type="varchar" length="256" nullable="false"></column>
+      <column name="jobtitle" type="varchar" length="50" nullable="false"></column>
+      <column name="birthdate" type="date" nullable="false"></column>
+      <column name="maritalstatus" type="bpchar" nullable="false"></column>
+      <column name="gender" type="bpchar" nullable="false"></column>
+      <column name="hiredate" type="date" nullable="false"></column>
+      <column name="salariedflag" type="Flag" nullable="false" default="true"></column>
+      <column name="vacationhours" type="smallint" nullable="false" default="0"></column>
+      <column name="sickleavehours" type="smallint" nullable="false" default="0"></column>
+      <column name="currentflag" type="Flag" nullable="false" default="true"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <column name="organizationnode" type="varchar" default="&#39;/&#39;::varchar"></column>
+      <pk name="employee_pkey">
+        <column name="businessentityid"></column>
+      </pk>
+      <fk name="employee_businessentityid_fkey" to-table="person.person" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+      <check name="CK_Employee_BirthDate"><![CDATA[birthdate >= '1930-01-01'::date AND birthdate <= (now() - '18 years'::interval)]]></check>
+      <check name="CK_Employee_Gender"><![CDATA[upper(gender::text) = ANY(ARRAY['M'::text, 'F'::text])]]></check>
+      <check name="CK_Employee_HireDate"><![CDATA[hiredate >= '1996-07-01'::date AND hiredate <= (now() + '1 day'::interval)]]></check>
+      <check name="CK_Employee_MaritalStatus"><![CDATA[upper(maritalstatus::text) = ANY(ARRAY['M'::text, 'S'::text])]]></check>
+      <check name="CK_Employee_SickLeaveHours"><![CDATA[sickleavehours >= 0 AND sickleavehours <= 120]]></check>
+      <check name="CK_Employee_VacationHours"><![CDATA[vacationhours >= '-40'::int AND vacationhours <= 240]]></check>
+    </table>
+    <table name="employeedepartmenthistory">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="departmentid" type="smallint" nullable="false"></column>
+      <column name="shiftid" type="smallint" nullable="false"></column>
+      <column name="startdate" type="date" nullable="false"></column>
+      <column name="enddate" type="date"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="employeedepartmenthistory_pkey">
+        <column name="businessentityid"></column>
+        <column name="startdate"></column>
+        <column name="departmentid"></column>
+        <column name="shiftid"></column>
+      </pk>
+      <fk name="employeedepartmenthistory_businessentityid_fkey" to-table="humanresources.employee" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+      <fk name="employeedepartmenthistory_departmentid_fkey" to-table="humanresources.department" on-delete="no action" on-update="no action">
+        <column name="departmentid" references="departmentid"></column>
+      </fk>
+      <fk name="employeedepartmenthistory_shiftid_fkey" to-table="humanresources.shift" on-delete="no action" on-update="no action">
+        <column name="shiftid" references="shiftid"></column>
+      </fk>
+      <check name="CK_EmployeeDepartmentHistory_EndDate"><![CDATA[enddate >= startdate OR enddate IS NULL]]></check>
+    </table>
+    <table name="employeepayhistory">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="ratechangedate" type="timestamp" nullable="false"></column>
+      <column name="rate" type="numeric" nullable="false"></column>
+      <column name="payfrequency" type="smallint" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="employeepayhistory_pkey">
+        <column name="businessentityid"></column>
+        <column name="ratechangedate"></column>
+      </pk>
+      <fk name="employeepayhistory_businessentityid_fkey" to-table="humanresources.employee" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+      <check name="CK_EmployeePayHistory_PayFrequency"><![CDATA[payfrequency = ANY(ARRAY[1, 2])]]></check>
+      <check name="CK_EmployeePayHistory_Rate"><![CDATA[rate >= 6.50 AND rate <= 200.00]]></check>
+    </table>
+    <table name="jobcandidate">
+      <column name="jobcandidateid" type="integer" nullable="false"></column>
+      <column name="businessentityid" type="integer"></column>
+      <column name="resume" type="xml"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="jobcandidate_pkey">
+        <column name="jobcandidateid"></column>
+      </pk>
+      <fk name="jobcandidate_businessentityid_fkey" to-table="humanresources.employee" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+    </table>
+    <table name="shift">
+      <column name="shiftid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="starttime" type="time" nullable="false"></column>
+      <column name="endtime" type="time" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="shift_pkey">
+        <column name="shiftid"></column>
+      </pk>
+    </table>
+  </schema>
+  <schema name="pe"></schema>
+  <schema name="person">
+    <table name="address">
+      <column name="addressid" type="integer" nullable="false"></column>
+      <column name="addressline1" type="varchar" length="60" nullable="false"></column>
+      <column name="addressline2" type="varchar" length="60"></column>
+      <column name="city" type="varchar" length="30" nullable="false"></column>
+      <column name="stateprovinceid" type="integer" nullable="false"></column>
+      <column name="postalcode" type="varchar" length="15" nullable="false"></column>
+      <column name="spatiallocation" type="bytea"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="address_pkey">
+        <column name="addressid"></column>
+      </pk>
+      <fk name="address_stateprovinceid_fkey" to-table="person.stateprovince" on-delete="no action" on-update="no action">
+        <column name="stateprovinceid" references="stateprovinceid"></column>
+      </fk>
+    </table>
+    <table name="businessentityaddress">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="addressid" type="integer" nullable="false"></column>
+      <column name="addresstypeid" type="integer" nullable="false"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="businessentityaddress_pkey">
+        <column name="businessentityid"></column>
+        <column name="addressid"></column>
+        <column name="addresstypeid"></column>
+      </pk>
+      <fk name="businessentityaddress_addressid_fkey" to-table="person.address" on-delete="no action" on-update="no action">
+        <column name="addressid" references="addressid"></column>
+      </fk>
+      <fk name="businessentityaddress_addresstypeid_fkey" to-table="person.addresstype" on-delete="no action" on-update="no action">
+        <column name="addresstypeid" references="addresstypeid"></column>
+      </fk>
+      <fk name="businessentityaddress_businessentityid_fkey" to-table="person.businessentity" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+    </table>
+    <table name="countryregion">
+      <column name="countryregioncode" type="varchar" length="3" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="countryregion_pkey">
+        <column name="countryregioncode"></column>
+      </pk>
+    </table>
+    <table name="emailaddress">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="emailaddressid" type="integer" nullable="false"></column>
+      <column name="emailaddress" type="varchar" length="50"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="emailaddress_pkey">
+        <column name="businessentityid"></column>
+        <column name="emailaddressid"></column>
+      </pk>
+      <fk name="emailaddress_businessentityid_fkey" to-table="person.person" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+    </table>
+    <table name="person">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="persontype" type="bpchar" nullable="false"></column>
+      <column name="namestyle" type="NameStyle" nullable="false" default="false"></column>
+      <column name="title" type="varchar" length="8"></column>
+      <column name="firstname" type="Name" nullable="false"></column>
+      <column name="middlename" type="Name"></column>
+      <column name="lastname" type="Name" nullable="false"></column>
+      <column name="suffix" type="varchar" length="10"></column>
+      <column name="emailpromotion" type="integer" nullable="false" default="0"></column>
+      <column name="additionalcontactinfo" type="xml"></column>
+      <column name="demographics" type="xml"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="person_pkey">
+        <column name="businessentityid"></column>
+      </pk>
+      <fk name="person_businessentityid_fkey" to-table="person.businessentity" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+      <check name="CK_Person_EmailPromotion"><![CDATA[emailpromotion >= 0 AND emailpromotion <= 2]]></check>
+      <check name="CK_Person_PersonType"><![CDATA[persontype IS NULL OR upper(persontype::text) = ANY(ARRAY['SC'::text, 'VC'::text, 'IN'::text, 'EM'::text, 'SP'::text, 'GC'::text])]]></check>
+    </table>
+    <table name="personphone">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="phonenumber" type="Phone" nullable="false"></column>
+      <column name="phonenumbertypeid" type="integer" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="personphone_pkey">
+        <column name="businessentityid"></column>
+        <column name="phonenumber"></column>
+        <column name="phonenumbertypeid"></column>
+      </pk>
+      <fk name="personphone_businessentityid_fkey" to-table="person.person" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+      <fk name="personphone_phonenumbertypeid_fkey" to-table="person.phonenumbertype" on-delete="no action" on-update="no action">
+        <column name="phonenumbertypeid" references="phonenumbertypeid"></column>
+      </fk>
+    </table>
+    <table name="phonenumbertype">
+      <column name="phonenumbertypeid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="phonenumbertype_pkey">
+        <column name="phonenumbertypeid"></column>
+      </pk>
+    </table>
+    <table name="stateprovince">
+      <column name="stateprovinceid" type="integer" nullable="false"></column>
+      <column name="stateprovincecode" type="bpchar" nullable="false"></column>
+      <column name="countryregioncode" type="varchar" length="3" nullable="false"></column>
+      <column name="isonlystateprovinceflag" type="Flag" nullable="false" default="true"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="territoryid" type="integer" nullable="false"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="stateprovince_pkey">
+        <column name="stateprovinceid"></column>
+      </pk>
+      <fk name="stateprovince_countryregioncode_fkey" to-table="person.countryregion" on-delete="no action" on-update="no action">
+        <column name="countryregioncode" references="countryregioncode"></column>
+      </fk>
+      <fk name="stateprovince_territoryid_fkey" to-table="sales.salesterritory" on-delete="no action" on-update="no action">
+        <column name="territoryid" references="territoryid"></column>
+      </fk>
+    </table>
+    <table name="addresstype">
+      <column name="addresstypeid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="addresstype_pkey">
+        <column name="addresstypeid"></column>
+      </pk>
+    </table>
+    <table name="businessentity">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="businessentity_pkey">
+        <column name="businessentityid"></column>
+      </pk>
+    </table>
+    <table name="businessentitycontact">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="personid" type="integer" nullable="false"></column>
+      <column name="contacttypeid" type="integer" nullable="false"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="businessentitycontact_pkey">
+        <column name="businessentityid"></column>
+        <column name="personid"></column>
+        <column name="contacttypeid"></column>
+      </pk>
+      <fk name="businessentitycontact_businessentityid_fkey" to-table="person.businessentity" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+      <fk name="businessentitycontact_contacttypeid_fkey" to-table="person.contacttype" on-delete="no action" on-update="no action">
+        <column name="contacttypeid" references="contacttypeid"></column>
+      </fk>
+      <fk name="businessentitycontact_personid_fkey" to-table="person.person" on-delete="no action" on-update="no action">
+        <column name="personid" references="businessentityid"></column>
+      </fk>
+    </table>
+    <table name="contacttype">
+      <column name="contacttypeid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="contacttype_pkey">
+        <column name="contacttypeid"></column>
+      </pk>
+    </table>
+    <table name="password">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="passwordhash" type="varchar" length="128" nullable="false"></column>
+      <column name="passwordsalt" type="varchar" length="10" nullable="false"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="password_pkey">
+        <column name="businessentityid"></column>
+      </pk>
+      <fk name="password_businessentityid_fkey" to-table="person.person" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+    </table>
+    <index name="ix_vstateprovincecountryregion" table="vstateprovincecountryregion" unique="true">
+      <column name="stateprovinceid"></column>
+      <column name="countryregioncode"></column>
+    </index>
+  </schema>
+  <schema name="pr"></schema>
+  <schema name="production">
+    <table name="billofmaterials">
+      <column name="billofmaterialsid" type="integer" nullable="false"></column>
+      <column name="productassemblyid" type="integer"></column>
+      <column name="componentid" type="integer" nullable="false"></column>
+      <column name="startdate" type="timestamp" nullable="false" default="now()"></column>
+      <column name="enddate" type="timestamp"></column>
+      <column name="unitmeasurecode" type="bpchar" nullable="false"></column>
+      <column name="bomlevel" type="smallint" nullable="false"></column>
+      <column name="perassemblyqty" type="numeric" precision="8" scale="2" nullable="false" default="1.00"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="billofmaterials_pkey">
+        <column name="billofmaterialsid"></column>
+      </pk>
+      <fk name="billofmaterials_componentid_fkey" to-table="production.product" on-delete="no action" on-update="no action">
+        <column name="componentid" references="productid"></column>
+      </fk>
+      <fk name="billofmaterials_productassemblyid_fkey" to-table="production.product" on-delete="no action" on-update="no action">
+        <column name="productassemblyid" references="productid"></column>
+      </fk>
+      <fk name="billofmaterials_unitmeasurecode_fkey" to-table="production.unitmeasure" on-delete="no action" on-update="no action">
+        <column name="unitmeasurecode" references="unitmeasurecode"></column>
+      </fk>
+      <check name="CK_BillOfMaterials_BOMLevel"><![CDATA[(productassemblyid IS NULL AND bomlevel = 0 AND perassemblyqty = 1.00) OR (productassemblyid IS NOT NULL AND bomlevel >= 1)]]></check>
+      <check name="CK_BillOfMaterials_EndDate"><![CDATA[enddate > startdate OR enddate IS NULL]]></check>
+      <check name="CK_BillOfMaterials_PerAssemblyQty"><![CDATA[perassemblyqty >= 1.00]]></check>
+      <check name="CK_BillOfMaterials_ProductAssemblyID"><![CDATA[productassemblyid <> componentid]]></check>
+    </table>
+    <table name="culture">
+      <column name="cultureid" type="bpchar" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="culture_pkey">
+        <column name="cultureid"></column>
+      </pk>
+    </table>
+    <table name="document">
+      <column name="title" type="varchar" length="50" nullable="false"></column>
+      <column name="owner" type="integer" nullable="false"></column>
+      <column name="folderflag" type="Flag" nullable="false" default="false"></column>
+      <column name="filename" type="varchar" length="400" nullable="false"></column>
+      <column name="fileextension" type="varchar" length="8"></column>
+      <column name="revision" type="bpchar" nullable="false"></column>
+      <column name="changenumber" type="integer" nullable="false" default="0"></column>
+      <column name="status" type="smallint" nullable="false"></column>
+      <column name="documentsummary" type="text"></column>
+      <column name="document" type="bytea"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <column name="documentnode" type="varchar" nullable="false" default="&#39;/&#39;::varchar"></column>
+      <pk name="document_pkey">
+        <column name="documentnode"></column>
+      </pk>
+      <fk name="document_owner_fkey" to-table="humanresources.employee" on-delete="no action" on-update="no action">
+        <column name="owner" references="businessentityid"></column>
+      </fk>
+      <unique name="document_rowguid_key">
+        <column name="rowguid"></column>
+      </unique>
+      <check name="CK_Document_Status"><![CDATA[status >= 1 AND status <= 3]]></check>
+    </table>
+    <table name="illustration">
+      <column name="illustrationid" type="integer" nullable="false"></column>
+      <column name="diagram" type="xml"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="illustration_pkey">
+        <column name="illustrationid"></column>
+      </pk>
+    </table>
+    <table name="location">
+      <column name="locationid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="costrate" type="numeric" nullable="false" default="0.00"></column>
+      <column name="availability" type="numeric" precision="8" scale="2" nullable="false" default="0.00"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="location_pkey">
+        <column name="locationid"></column>
+      </pk>
+      <check name="CK_Location_Availability"><![CDATA[availability >= 0.00]]></check>
+      <check name="CK_Location_CostRate"><![CDATA[costrate >= 0.00]]></check>
+    </table>
+    <table name="product">
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="productnumber" type="varchar" length="25" nullable="false"></column>
+      <column name="makeflag" type="Flag" nullable="false" default="true"></column>
+      <column name="finishedgoodsflag" type="Flag" nullable="false" default="true"></column>
+      <column name="color" type="varchar" length="15"></column>
+      <column name="safetystocklevel" type="smallint" nullable="false"></column>
+      <column name="reorderpoint" type="smallint" nullable="false"></column>
+      <column name="standardcost" type="numeric" nullable="false"></column>
+      <column name="listprice" type="numeric" nullable="false"></column>
+      <column name="size" type="varchar" length="5"></column>
+      <column name="sizeunitmeasurecode" type="bpchar"></column>
+      <column name="weightunitmeasurecode" type="bpchar"></column>
+      <column name="weight" type="numeric" precision="8" scale="2"></column>
+      <column name="daystomanufacture" type="integer" nullable="false"></column>
+      <column name="productline" type="bpchar"></column>
+      <column name="class" type="bpchar"></column>
+      <column name="style" type="bpchar"></column>
+      <column name="productsubcategoryid" type="integer"></column>
+      <column name="productmodelid" type="integer"></column>
+      <column name="sellstartdate" type="timestamp" nullable="false"></column>
+      <column name="sellenddate" type="timestamp"></column>
+      <column name="discontinueddate" type="timestamp"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="product_pkey">
+        <column name="productid"></column>
+      </pk>
+      <fk name="product_productmodelid_fkey" to-table="production.productmodel" on-delete="no action" on-update="no action">
+        <column name="productmodelid" references="productmodelid"></column>
+      </fk>
+      <fk name="product_productsubcategoryid_fkey" to-table="production.productsubcategory" on-delete="no action" on-update="no action">
+        <column name="productsubcategoryid" references="productsubcategoryid"></column>
+      </fk>
+      <fk name="product_sizeunitmeasurecode_fkey" to-table="production.unitmeasure" on-delete="no action" on-update="no action">
+        <column name="sizeunitmeasurecode" references="unitmeasurecode"></column>
+      </fk>
+      <fk name="product_weightunitmeasurecode_fkey" to-table="production.unitmeasure" on-delete="no action" on-update="no action">
+        <column name="weightunitmeasurecode" references="unitmeasurecode"></column>
+      </fk>
+      <check name="CK_Product_Class"><![CDATA[upper(class::text) = ANY(ARRAY['L'::text, 'M'::text, 'H'::text]) OR class IS NULL]]></check>
+      <check name="CK_Product_DaysToManufacture"><![CDATA[daystomanufacture >= 0]]></check>
+      <check name="CK_Product_ListPrice"><![CDATA[listprice >= 0.00]]></check>
+      <check name="CK_Product_ProductLine"><![CDATA[upper(productline::text) = ANY(ARRAY['S'::text, 'T'::text, 'M'::text, 'R'::text]) OR productline IS NULL]]></check>
+      <check name="CK_Product_ReorderPoint"><![CDATA[reorderpoint > 0]]></check>
+      <check name="CK_Product_SafetyStockLevel"><![CDATA[safetystocklevel > 0]]></check>
+      <check name="CK_Product_SellEndDate"><![CDATA[sellenddate >= sellstartdate OR sellenddate IS NULL]]></check>
+      <check name="CK_Product_StandardCost"><![CDATA[standardcost >= 0.00]]></check>
+      <check name="CK_Product_Style"><![CDATA[upper(style::text) = ANY(ARRAY['W'::text, 'M'::text, 'U'::text]) OR style IS NULL]]></check>
+      <check name="CK_Product_Weight"><![CDATA[weight > 0.00]]></check>
+    </table>
+    <table name="productcategory">
+      <column name="productcategoryid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="productcategory_pkey">
+        <column name="productcategoryid"></column>
+      </pk>
+    </table>
+    <table name="productcosthistory">
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="startdate" type="timestamp" nullable="false"></column>
+      <column name="enddate" type="timestamp"></column>
+      <column name="standardcost" type="numeric" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="productcosthistory_pkey">
+        <column name="productid"></column>
+        <column name="startdate"></column>
+      </pk>
+      <fk name="productcosthistory_productid_fkey" to-table="production.product" on-delete="no action" on-update="no action">
+        <column name="productid" references="productid"></column>
+      </fk>
+      <check name="CK_ProductCostHistory_EndDate"><![CDATA[enddate >= startdate OR enddate IS NULL]]></check>
+      <check name="CK_ProductCostHistory_StandardCost"><![CDATA[standardcost >= 0.00]]></check>
+    </table>
+    <table name="productdescription">
+      <column name="productdescriptionid" type="integer" nullable="false"></column>
+      <column name="description" type="varchar" length="400" nullable="false"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="productdescription_pkey">
+        <column name="productdescriptionid"></column>
+      </pk>
+    </table>
+    <table name="productdocument">
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <column name="documentnode" type="varchar" nullable="false" default="&#39;/&#39;::varchar"></column>
+      <pk name="productdocument_pkey">
+        <column name="productid"></column>
+        <column name="documentnode"></column>
+      </pk>
+      <fk name="productdocument_documentnode_fkey" to-table="production.document" on-delete="no action" on-update="no action">
+        <column name="documentnode" references="documentnode"></column>
+      </fk>
+      <fk name="productdocument_productid_fkey" to-table="production.product" on-delete="no action" on-update="no action">
+        <column name="productid" references="productid"></column>
+      </fk>
+    </table>
+    <table name="productinventory">
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="locationid" type="smallint" nullable="false"></column>
+      <column name="shelf" type="varchar" length="10" nullable="false"></column>
+      <column name="bin" type="smallint" nullable="false"></column>
+      <column name="quantity" type="smallint" nullable="false" default="0"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="productinventory_pkey">
+        <column name="productid"></column>
+        <column name="locationid"></column>
+      </pk>
+      <fk name="productinventory_locationid_fkey" to-table="production.location" on-delete="no action" on-update="no action">
+        <column name="locationid" references="locationid"></column>
+      </fk>
+      <fk name="productinventory_productid_fkey" to-table="production.product" on-delete="no action" on-update="no action">
+        <column name="productid" references="productid"></column>
+      </fk>
+      <check name="CK_ProductInventory_Bin"><![CDATA[bin >= 0 AND bin <= 100]]></check>
+    </table>
+    <table name="productlistpricehistory">
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="startdate" type="timestamp" nullable="false"></column>
+      <column name="enddate" type="timestamp"></column>
+      <column name="listprice" type="numeric" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="productlistpricehistory_pkey">
+        <column name="productid"></column>
+        <column name="startdate"></column>
+      </pk>
+      <fk name="productlistpricehistory_productid_fkey" to-table="production.product" on-delete="no action" on-update="no action">
+        <column name="productid" references="productid"></column>
+      </fk>
+      <check name="CK_ProductListPriceHistory_EndDate"><![CDATA[enddate >= startdate OR enddate IS NULL]]></check>
+      <check name="CK_ProductListPriceHistory_ListPrice"><![CDATA[listprice > 0.00]]></check>
+    </table>
+    <table name="productmodel">
+      <column name="productmodelid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="catalogdescription" type="xml"></column>
+      <column name="instructions" type="xml"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="productmodel_pkey">
+        <column name="productmodelid"></column>
+      </pk>
+    </table>
+    <table name="productmodelillustration">
+      <column name="productmodelid" type="integer" nullable="false"></column>
+      <column name="illustrationid" type="integer" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="productmodelillustration_pkey">
+        <column name="productmodelid"></column>
+        <column name="illustrationid"></column>
+      </pk>
+      <fk name="productmodelillustration_illustrationid_fkey" to-table="production.illustration" on-delete="no action" on-update="no action">
+        <column name="illustrationid" references="illustrationid"></column>
+      </fk>
+      <fk name="productmodelillustration_productmodelid_fkey" to-table="production.productmodel" on-delete="no action" on-update="no action">
+        <column name="productmodelid" references="productmodelid"></column>
+      </fk>
+    </table>
+    <table name="productmodelproductdescriptionculture">
+      <column name="productmodelid" type="integer" nullable="false"></column>
+      <column name="productdescriptionid" type="integer" nullable="false"></column>
+      <column name="cultureid" type="bpchar" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="productmodelproductdescriptionculture_pkey">
+        <column name="productmodelid"></column>
+        <column name="productdescriptionid"></column>
+        <column name="cultureid"></column>
+      </pk>
+      <fk name="productmodelproductdescriptionculture_cultureid_fkey" to-table="production.culture" on-delete="no action" on-update="no action">
+        <column name="cultureid" references="cultureid"></column>
+      </fk>
+      <fk name="productmodelproductdescriptionculture_productdescriptionid_fkey" to-table="production.productdescription" on-delete="no action" on-update="no action">
+        <column name="productdescriptionid" references="productdescriptionid"></column>
+      </fk>
+      <fk name="productmodelproductdescriptionculture_productmodelid_fkey" to-table="production.productmodel" on-delete="no action" on-update="no action">
+        <column name="productmodelid" references="productmodelid"></column>
+      </fk>
+    </table>
+    <table name="productphoto">
+      <column name="productphotoid" type="integer" nullable="false"></column>
+      <column name="thumbnailphoto" type="bytea"></column>
+      <column name="thumbnailphotofilename" type="varchar" length="50"></column>
+      <column name="largephoto" type="bytea"></column>
+      <column name="largephotofilename" type="varchar" length="50"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="productphoto_pkey">
+        <column name="productphotoid"></column>
+      </pk>
+    </table>
+    <table name="productproductphoto">
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="productphotoid" type="integer" nullable="false"></column>
+      <column name="primary" type="Flag" nullable="false" default="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="productproductphoto_pkey">
+        <column name="productid"></column>
+        <column name="productphotoid"></column>
+      </pk>
+      <fk name="productproductphoto_productid_fkey" to-table="production.product" on-delete="no action" on-update="no action">
+        <column name="productid" references="productid"></column>
+      </fk>
+      <fk name="productproductphoto_productphotoid_fkey" to-table="production.productphoto" on-delete="no action" on-update="no action">
+        <column name="productphotoid" references="productphotoid"></column>
+      </fk>
+    </table>
+    <table name="productreview">
+      <column name="productreviewid" type="integer" nullable="false"></column>
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="reviewername" type="Name" nullable="false"></column>
+      <column name="reviewdate" type="timestamp" nullable="false" default="now()"></column>
+      <column name="emailaddress" type="varchar" length="50" nullable="false"></column>
+      <column name="rating" type="integer" nullable="false"></column>
+      <column name="comments" type="varchar" length="3850"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="productreview_pkey">
+        <column name="productreviewid"></column>
+      </pk>
+      <check name="CK_ProductReview_Rating"><![CDATA[rating >= 1 AND rating <= 5]]></check>
+    </table>
+    <table name="productsubcategory">
+      <column name="productsubcategoryid" type="integer" nullable="false"></column>
+      <column name="productcategoryid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="productsubcategory_pkey">
+        <column name="productsubcategoryid"></column>
+      </pk>
+      <fk name="productsubcategory_productcategoryid_fkey" to-table="production.productcategory" on-delete="no action" on-update="no action">
+        <column name="productcategoryid" references="productcategoryid"></column>
+      </fk>
+    </table>
+    <table name="scrapreason">
+      <column name="scrapreasonid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="scrapreason_pkey">
+        <column name="scrapreasonid"></column>
+      </pk>
+    </table>
+    <table name="transactionhistory">
+      <column name="transactionid" type="integer" nullable="false"></column>
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="referenceorderid" type="integer" nullable="false"></column>
+      <column name="referenceorderlineid" type="integer" nullable="false" default="0"></column>
+      <column name="transactiondate" type="timestamp" nullable="false" default="now()"></column>
+      <column name="transactiontype" type="bpchar" nullable="false"></column>
+      <column name="quantity" type="integer" nullable="false"></column>
+      <column name="actualcost" type="numeric" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="transactionhistory_pkey">
+        <column name="transactionid"></column>
+      </pk>
+      <fk name="transactionhistory_productid_fkey" to-table="production.product" on-delete="no action" on-update="no action">
+        <column name="productid" references="productid"></column>
+      </fk>
+      <check name="CK_TransactionHistory_TransactionType"><![CDATA[upper(transactiontype::text) = ANY(ARRAY['W'::text, 'S'::text, 'P'::text])]]></check>
+    </table>
+    <table name="transactionhistoryarchive">
+      <column name="transactionid" type="integer" nullable="false"></column>
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="referenceorderid" type="integer" nullable="false"></column>
+      <column name="referenceorderlineid" type="integer" nullable="false" default="0"></column>
+      <column name="transactiondate" type="timestamp" nullable="false" default="now()"></column>
+      <column name="transactiontype" type="bpchar" nullable="false"></column>
+      <column name="quantity" type="integer" nullable="false"></column>
+      <column name="actualcost" type="numeric" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="transactionhistoryarchive_pkey">
+        <column name="transactionid"></column>
+      </pk>
+      <check name="CK_TransactionHistoryArchive_TransactionType"><![CDATA[upper(transactiontype::text) = ANY(ARRAY['W'::text, 'S'::text, 'P'::text])]]></check>
+    </table>
+    <table name="unitmeasure">
+      <column name="unitmeasurecode" type="bpchar" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="unitmeasure_pkey">
+        <column name="unitmeasurecode"></column>
+      </pk>
+    </table>
+    <table name="workorder">
+      <column name="workorderid" type="integer" nullable="false"></column>
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="orderqty" type="integer" nullable="false"></column>
+      <column name="scrappedqty" type="smallint" nullable="false"></column>
+      <column name="startdate" type="timestamp" nullable="false"></column>
+      <column name="enddate" type="timestamp"></column>
+      <column name="duedate" type="timestamp" nullable="false"></column>
+      <column name="scrapreasonid" type="smallint"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="workorder_pkey">
+        <column name="workorderid"></column>
+      </pk>
+      <fk name="workorder_productid_fkey" to-table="production.product" on-delete="no action" on-update="no action">
+        <column name="productid" references="productid"></column>
+      </fk>
+      <fk name="workorder_scrapreasonid_fkey" to-table="production.scrapreason" on-delete="no action" on-update="no action">
+        <column name="scrapreasonid" references="scrapreasonid"></column>
+      </fk>
+      <check name="CK_WorkOrder_EndDate"><![CDATA[enddate >= startdate OR enddate IS NULL]]></check>
+      <check name="CK_WorkOrder_OrderQty"><![CDATA[orderqty > 0]]></check>
+      <check name="CK_WorkOrder_ScrappedQty"><![CDATA[scrappedqty >= 0]]></check>
+    </table>
+    <table name="workorderrouting">
+      <column name="workorderid" type="integer" nullable="false"></column>
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="operationsequence" type="smallint" nullable="false"></column>
+      <column name="locationid" type="smallint" nullable="false"></column>
+      <column name="scheduledstartdate" type="timestamp" nullable="false"></column>
+      <column name="scheduledenddate" type="timestamp" nullable="false"></column>
+      <column name="actualstartdate" type="timestamp"></column>
+      <column name="actualenddate" type="timestamp"></column>
+      <column name="actualresourcehrs" type="numeric" precision="9" scale="4"></column>
+      <column name="plannedcost" type="numeric" nullable="false"></column>
+      <column name="actualcost" type="numeric"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="workorderrouting_pkey">
+        <column name="workorderid"></column>
+        <column name="productid"></column>
+        <column name="operationsequence"></column>
+      </pk>
+      <fk name="workorderrouting_locationid_fkey" to-table="production.location" on-delete="no action" on-update="no action">
+        <column name="locationid" references="locationid"></column>
+      </fk>
+      <fk name="workorderrouting_workorderid_fkey" to-table="production.workorder" on-delete="no action" on-update="no action">
+        <column name="workorderid" references="workorderid"></column>
+      </fk>
+      <check name="CK_WorkOrderRouting_ActualCost"><![CDATA[actualcost > 0.00]]></check>
+      <check name="CK_WorkOrderRouting_ActualEndDate"><![CDATA[actualenddate >= actualstartdate OR actualenddate IS NULL OR actualstartdate IS NULL]]></check>
+      <check name="CK_WorkOrderRouting_ActualResourceHrs"><![CDATA[actualresourcehrs >= 0.0000]]></check>
+      <check name="CK_WorkOrderRouting_PlannedCost"><![CDATA[plannedcost > 0.00]]></check>
+      <check name="CK_WorkOrderRouting_ScheduledEndDate"><![CDATA[scheduledenddate >= scheduledstartdate]]></check>
+    </table>
+    <index name="ix_vproductanddescription" table="vproductanddescription" unique="true">
+      <column name="cultureid"></column>
+      <column name="productid"></column>
+    </index>
+  </schema>
+  <schema name="pu"></schema>
+  <schema name="purchasing">
+    <table name="purchaseorderdetail">
+      <column name="purchaseorderid" type="integer" nullable="false"></column>
+      <column name="purchaseorderdetailid" type="integer" nullable="false"></column>
+      <column name="duedate" type="timestamp" nullable="false"></column>
+      <column name="orderqty" type="smallint" nullable="false"></column>
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="unitprice" type="numeric" nullable="false"></column>
+      <column name="receivedqty" type="numeric" precision="8" scale="2" nullable="false"></column>
+      <column name="rejectedqty" type="numeric" precision="8" scale="2" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="purchaseorderdetail_pkey">
+        <column name="purchaseorderid"></column>
+        <column name="purchaseorderdetailid"></column>
+      </pk>
+      <fk name="purchaseorderdetail_productid_fkey" to-table="production.product" on-delete="no action" on-update="no action">
+        <column name="productid" references="productid"></column>
+      </fk>
+      <fk name="purchaseorderdetail_purchaseorderid_fkey" to-table="purchasing.purchaseorderheader" on-delete="no action" on-update="no action">
+        <column name="purchaseorderid" references="purchaseorderid"></column>
+      </fk>
+      <check name="CK_PurchaseOrderDetail_OrderQty"><![CDATA[orderqty > 0]]></check>
+      <check name="CK_PurchaseOrderDetail_ReceivedQty"><![CDATA[receivedqty >= 0.00]]></check>
+      <check name="CK_PurchaseOrderDetail_RejectedQty"><![CDATA[rejectedqty >= 0.00]]></check>
+      <check name="CK_PurchaseOrderDetail_UnitPrice"><![CDATA[unitprice >= 0.00]]></check>
+    </table>
+    <table name="purchaseorderheader">
+      <column name="purchaseorderid" type="integer" nullable="false"></column>
+      <column name="revisionnumber" type="smallint" nullable="false" default="0"></column>
+      <column name="status" type="smallint" nullable="false" default="1"></column>
+      <column name="employeeid" type="integer" nullable="false"></column>
+      <column name="vendorid" type="integer" nullable="false"></column>
+      <column name="shipmethodid" type="integer" nullable="false"></column>
+      <column name="orderdate" type="timestamp" nullable="false" default="now()"></column>
+      <column name="shipdate" type="timestamp"></column>
+      <column name="subtotal" type="numeric" nullable="false" default="0.00"></column>
+      <column name="taxamt" type="numeric" nullable="false" default="0.00"></column>
+      <column name="freight" type="numeric" nullable="false" default="0.00"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="purchaseorderheader_pkey">
+        <column name="purchaseorderid"></column>
+      </pk>
+      <fk name="purchaseorderheader_employeeid_fkey" to-table="humanresources.employee" on-delete="no action" on-update="no action">
+        <column name="employeeid" references="businessentityid"></column>
+      </fk>
+      <fk name="purchaseorderheader_shipmethodid_fkey" to-table="purchasing.shipmethod" on-delete="no action" on-update="no action">
+        <column name="shipmethodid" references="shipmethodid"></column>
+      </fk>
+      <fk name="purchaseorderheader_vendorid_fkey" to-table="purchasing.vendor" on-delete="no action" on-update="no action">
+        <column name="vendorid" references="businessentityid"></column>
+      </fk>
+      <check name="CK_PurchaseOrderHeader_Freight"><![CDATA[freight >= 0.00]]></check>
+      <check name="CK_PurchaseOrderHeader_ShipDate"><![CDATA[shipdate >= orderdate OR shipdate IS NULL]]></check>
+      <check name="CK_PurchaseOrderHeader_Status"><![CDATA[status >= 1 AND status <= 4]]></check>
+      <check name="CK_PurchaseOrderHeader_SubTotal"><![CDATA[subtotal >= 0.00]]></check>
+      <check name="CK_PurchaseOrderHeader_TaxAmt"><![CDATA[taxamt >= 0.00]]></check>
+    </table>
+    <table name="productvendor">
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="averageleadtime" type="integer" nullable="false"></column>
+      <column name="standardprice" type="numeric" nullable="false"></column>
+      <column name="lastreceiptcost" type="numeric"></column>
+      <column name="lastreceiptdate" type="timestamp"></column>
+      <column name="minorderqty" type="integer" nullable="false"></column>
+      <column name="maxorderqty" type="integer" nullable="false"></column>
+      <column name="onorderqty" type="integer"></column>
+      <column name="unitmeasurecode" type="bpchar" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="productvendor_pkey">
+        <column name="productid"></column>
+        <column name="businessentityid"></column>
+      </pk>
+      <fk name="productvendor_businessentityid_fkey" to-table="purchasing.vendor" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+      <fk name="productvendor_productid_fkey" to-table="production.product" on-delete="no action" on-update="no action">
+        <column name="productid" references="productid"></column>
+      </fk>
+      <fk name="productvendor_unitmeasurecode_fkey" to-table="production.unitmeasure" on-delete="no action" on-update="no action">
+        <column name="unitmeasurecode" references="unitmeasurecode"></column>
+      </fk>
+      <check name="CK_ProductVendor_AverageLeadTime"><![CDATA[averageleadtime >= 1]]></check>
+      <check name="CK_ProductVendor_LastReceiptCost"><![CDATA[lastreceiptcost > 0.00]]></check>
+      <check name="CK_ProductVendor_MaxOrderQty"><![CDATA[maxorderqty >= 1]]></check>
+      <check name="CK_ProductVendor_MinOrderQty"><![CDATA[minorderqty >= 1]]></check>
+      <check name="CK_ProductVendor_OnOrderQty"><![CDATA[onorderqty >= 0]]></check>
+      <check name="CK_ProductVendor_StandardPrice"><![CDATA[standardprice > 0.00]]></check>
+    </table>
+    <table name="shipmethod">
+      <column name="shipmethodid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="shipbase" type="numeric" nullable="false" default="0.00"></column>
+      <column name="shiprate" type="numeric" nullable="false" default="0.00"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="shipmethod_pkey">
+        <column name="shipmethodid"></column>
+      </pk>
+      <check name="CK_ShipMethod_ShipBase"><![CDATA[shipbase > 0.00]]></check>
+      <check name="CK_ShipMethod_ShipRate"><![CDATA[shiprate > 0.00]]></check>
+    </table>
+    <table name="vendor">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="accountnumber" type="AccountNumber" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="creditrating" type="smallint" nullable="false"></column>
+      <column name="preferredvendorstatus" type="Flag" nullable="false" default="true"></column>
+      <column name="activeflag" type="Flag" nullable="false" default="true"></column>
+      <column name="purchasingwebserviceurl" type="varchar" length="1024"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="vendor_pkey">
+        <column name="businessentityid"></column>
+      </pk>
+      <fk name="vendor_businessentityid_fkey" to-table="person.businessentity" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+      <check name="CK_Vendor_CreditRating"><![CDATA[creditrating >= 1 AND creditrating <= 5]]></check>
+    </table>
+  </schema>
+  <schema name="sa"></schema>
+  <schema name="sales">
+    <table name="customer">
+      <column name="customerid" type="integer" nullable="false"></column>
+      <column name="personid" type="integer"></column>
+      <column name="storeid" type="integer"></column>
+      <column name="territoryid" type="integer"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="customer_pkey">
+        <column name="customerid"></column>
+      </pk>
+      <fk name="customer_personid_fkey" to-table="person.person" on-delete="no action" on-update="no action">
+        <column name="personid" references="businessentityid"></column>
+      </fk>
+      <fk name="customer_storeid_fkey" to-table="sales.store" on-delete="no action" on-update="no action">
+        <column name="storeid" references="businessentityid"></column>
+      </fk>
+      <fk name="customer_territoryid_fkey" to-table="sales.salesterritory" on-delete="no action" on-update="no action">
+        <column name="territoryid" references="territoryid"></column>
+      </fk>
+    </table>
+    <table name="creditcard">
+      <column name="creditcardid" type="integer" nullable="false"></column>
+      <column name="cardtype" type="varchar" length="50" nullable="false"></column>
+      <column name="cardnumber" type="varchar" length="25" nullable="false"></column>
+      <column name="expmonth" type="smallint" nullable="false"></column>
+      <column name="expyear" type="smallint" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="creditcard_pkey">
+        <column name="creditcardid"></column>
+      </pk>
+    </table>
+    <table name="currencyrate">
+      <column name="currencyrateid" type="integer" nullable="false"></column>
+      <column name="currencyratedate" type="timestamp" nullable="false"></column>
+      <column name="fromcurrencycode" type="bpchar" nullable="false"></column>
+      <column name="tocurrencycode" type="bpchar" nullable="false"></column>
+      <column name="averagerate" type="numeric" nullable="false"></column>
+      <column name="endofdayrate" type="numeric" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="currencyrate_pkey">
+        <column name="currencyrateid"></column>
+      </pk>
+      <fk name="currencyrate_fromcurrencycode_fkey" to-table="sales.currency" on-delete="no action" on-update="no action">
+        <column name="fromcurrencycode" references="currencycode"></column>
+      </fk>
+      <fk name="currencyrate_tocurrencycode_fkey" to-table="sales.currency" on-delete="no action" on-update="no action">
+        <column name="tocurrencycode" references="currencycode"></column>
+      </fk>
+    </table>
+    <table name="countryregioncurrency">
+      <column name="countryregioncode" type="varchar" length="3" nullable="false"></column>
+      <column name="currencycode" type="bpchar" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="countryregioncurrency_pkey">
+        <column name="countryregioncode"></column>
+        <column name="currencycode"></column>
+      </pk>
+      <fk name="countryregioncurrency_countryregioncode_fkey" to-table="person.countryregion" on-delete="no action" on-update="no action">
+        <column name="countryregioncode" references="countryregioncode"></column>
+      </fk>
+      <fk name="countryregioncurrency_currencycode_fkey" to-table="sales.currency" on-delete="no action" on-update="no action">
+        <column name="currencycode" references="currencycode"></column>
+      </fk>
+    </table>
+    <table name="currency">
+      <column name="currencycode" type="bpchar" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="currency_pkey">
+        <column name="currencycode"></column>
+      </pk>
+    </table>
+    <table name="personcreditcard">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="creditcardid" type="integer" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="personcreditcard_pkey">
+        <column name="businessentityid"></column>
+        <column name="creditcardid"></column>
+      </pk>
+      <fk name="personcreditcard_businessentityid_fkey" to-table="person.person" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+      <fk name="personcreditcard_creditcardid_fkey" to-table="sales.creditcard" on-delete="no action" on-update="no action">
+        <column name="creditcardid" references="creditcardid"></column>
+      </fk>
+    </table>
+    <table name="store">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="salespersonid" type="integer"></column>
+      <column name="demographics" type="xml"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="store_pkey">
+        <column name="businessentityid"></column>
+      </pk>
+      <fk name="store_businessentityid_fkey" to-table="person.businessentity" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+      <fk name="store_salespersonid_fkey" to-table="sales.salesperson" on-delete="no action" on-update="no action">
+        <column name="salespersonid" references="businessentityid"></column>
+      </fk>
+    </table>
+    <table name="shoppingcartitem">
+      <column name="shoppingcartitemid" type="integer" nullable="false"></column>
+      <column name="shoppingcartid" type="varchar" length="50" nullable="false"></column>
+      <column name="quantity" type="integer" nullable="false" default="1"></column>
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="datecreated" type="timestamp" nullable="false" default="now()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="shoppingcartitem_pkey">
+        <column name="shoppingcartitemid"></column>
+      </pk>
+      <fk name="shoppingcartitem_productid_fkey" to-table="production.product" on-delete="no action" on-update="no action">
+        <column name="productid" references="productid"></column>
+      </fk>
+      <check name="CK_ShoppingCartItem_Quantity"><![CDATA[quantity >= 1]]></check>
+    </table>
+    <table name="specialoffer">
+      <column name="specialofferid" type="integer" nullable="false"></column>
+      <column name="description" type="varchar" length="255" nullable="false"></column>
+      <column name="discountpct" type="numeric" nullable="false" default="0.00"></column>
+      <column name="type" type="varchar" length="50" nullable="false"></column>
+      <column name="category" type="varchar" length="50" nullable="false"></column>
+      <column name="startdate" type="timestamp" nullable="false"></column>
+      <column name="enddate" type="timestamp" nullable="false"></column>
+      <column name="minqty" type="integer" nullable="false" default="0"></column>
+      <column name="maxqty" type="integer"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="specialoffer_pkey">
+        <column name="specialofferid"></column>
+      </pk>
+      <check name="CK_SpecialOffer_DiscountPct"><![CDATA[discountpct >= 0.00]]></check>
+      <check name="CK_SpecialOffer_EndDate"><![CDATA[enddate >= startdate]]></check>
+      <check name="CK_SpecialOffer_MaxQty"><![CDATA[maxqty >= 0]]></check>
+      <check name="CK_SpecialOffer_MinQty"><![CDATA[minqty >= 0]]></check>
+    </table>
+    <table name="salesorderdetail">
+      <column name="salesorderid" type="integer" nullable="false"></column>
+      <column name="salesorderdetailid" type="integer" nullable="false"></column>
+      <column name="carriertrackingnumber" type="varchar" length="25"></column>
+      <column name="orderqty" type="smallint" nullable="false"></column>
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="specialofferid" type="integer" nullable="false"></column>
+      <column name="unitprice" type="numeric" nullable="false"></column>
+      <column name="unitpricediscount" type="numeric" nullable="false" default="0.0"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="salesorderdetail_pkey">
+        <column name="salesorderid"></column>
+        <column name="salesorderdetailid"></column>
+      </pk>
+      <fk name="salesorderdetail_salesorderid_fkey" to-table="sales.salesorderheader" on-delete="cascade" on-update="no action">
+        <column name="salesorderid" references="salesorderid"></column>
+      </fk>
+      <fk name="salesorderdetail_specialofferid_productid_fkey" to-table="sales.specialofferproduct" on-delete="no action" on-update="no action">
+        <column name="specialofferid" references="specialofferid"></column>
+        <column name="productid" references="productid"></column>
+      </fk>
+      <check name="CK_SalesOrderDetail_OrderQty"><![CDATA[orderqty > 0]]></check>
+      <check name="CK_SalesOrderDetail_UnitPrice"><![CDATA[unitprice >= 0.00]]></check>
+      <check name="CK_SalesOrderDetail_UnitPriceDiscount"><![CDATA[unitpricediscount >= 0.00]]></check>
+    </table>
+    <table name="salesorderheader">
+      <column name="salesorderid" type="integer" nullable="false"></column>
+      <column name="revisionnumber" type="smallint" nullable="false" default="0"></column>
+      <column name="orderdate" type="timestamp" nullable="false" default="now()"></column>
+      <column name="duedate" type="timestamp" nullable="false"></column>
+      <column name="shipdate" type="timestamp"></column>
+      <column name="status" type="smallint" nullable="false" default="1"></column>
+      <column name="onlineorderflag" type="Flag" nullable="false" default="true"></column>
+      <column name="purchaseordernumber" type="OrderNumber"></column>
+      <column name="accountnumber" type="AccountNumber"></column>
+      <column name="customerid" type="integer" nullable="false"></column>
+      <column name="salespersonid" type="integer"></column>
+      <column name="territoryid" type="integer"></column>
+      <column name="billtoaddressid" type="integer" nullable="false"></column>
+      <column name="shiptoaddressid" type="integer" nullable="false"></column>
+      <column name="shipmethodid" type="integer" nullable="false"></column>
+      <column name="creditcardid" type="integer"></column>
+      <column name="creditcardapprovalcode" type="varchar" length="15"></column>
+      <column name="currencyrateid" type="integer"></column>
+      <column name="subtotal" type="numeric" nullable="false" default="0.00"></column>
+      <column name="taxamt" type="numeric" nullable="false" default="0.00"></column>
+      <column name="freight" type="numeric" nullable="false" default="0.00"></column>
+      <column name="totaldue" type="numeric"></column>
+      <column name="comment" type="varchar" length="128"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="salesorderheader_pkey">
+        <column name="salesorderid"></column>
+      </pk>
+      <fk name="salesorderheader_billtoaddressid_fkey" to-table="person.address" on-delete="no action" on-update="no action">
+        <column name="billtoaddressid" references="addressid"></column>
+      </fk>
+      <fk name="salesorderheader_creditcardid_fkey" to-table="sales.creditcard" on-delete="no action" on-update="no action">
+        <column name="creditcardid" references="creditcardid"></column>
+      </fk>
+      <fk name="salesorderheader_currencyrateid_fkey" to-table="sales.currencyrate" on-delete="no action" on-update="no action">
+        <column name="currencyrateid" references="currencyrateid"></column>
+      </fk>
+      <fk name="salesorderheader_customerid_fkey" to-table="sales.customer" on-delete="no action" on-update="no action">
+        <column name="customerid" references="customerid"></column>
+      </fk>
+      <fk name="salesorderheader_salespersonid_fkey" to-table="sales.salesperson" on-delete="no action" on-update="no action">
+        <column name="salespersonid" references="businessentityid"></column>
+      </fk>
+      <fk name="salesorderheader_shipmethodid_fkey" to-table="purchasing.shipmethod" on-delete="no action" on-update="no action">
+        <column name="shipmethodid" references="shipmethodid"></column>
+      </fk>
+      <fk name="salesorderheader_shiptoaddressid_fkey" to-table="person.address" on-delete="no action" on-update="no action">
+        <column name="shiptoaddressid" references="addressid"></column>
+      </fk>
+      <fk name="salesorderheader_territoryid_fkey" to-table="sales.salesterritory" on-delete="no action" on-update="no action">
+        <column name="territoryid" references="territoryid"></column>
+      </fk>
+      <check name="CK_SalesOrderHeader_DueDate"><![CDATA[duedate >= orderdate]]></check>
+      <check name="CK_SalesOrderHeader_Freight"><![CDATA[freight >= 0.00]]></check>
+      <check name="CK_SalesOrderHeader_ShipDate"><![CDATA[shipdate >= orderdate OR shipdate IS NULL]]></check>
+      <check name="CK_SalesOrderHeader_Status"><![CDATA[status >= 0 AND status <= 8]]></check>
+      <check name="CK_SalesOrderHeader_SubTotal"><![CDATA[subtotal >= 0.00]]></check>
+      <check name="CK_SalesOrderHeader_TaxAmt"><![CDATA[taxamt >= 0.00]]></check>
+    </table>
+    <table name="salesorderheadersalesreason">
+      <column name="salesorderid" type="integer" nullable="false"></column>
+      <column name="salesreasonid" type="integer" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="salesorderheadersalesreason_pkey">
+        <column name="salesorderid"></column>
+        <column name="salesreasonid"></column>
+      </pk>
+      <fk name="salesorderheadersalesreason_salesorderid_fkey" to-table="sales.salesorderheader" on-delete="cascade" on-update="no action">
+        <column name="salesorderid" references="salesorderid"></column>
+      </fk>
+      <fk name="salesorderheadersalesreason_salesreasonid_fkey" to-table="sales.salesreason" on-delete="no action" on-update="no action">
+        <column name="salesreasonid" references="salesreasonid"></column>
+      </fk>
+    </table>
+    <table name="specialofferproduct">
+      <column name="specialofferid" type="integer" nullable="false"></column>
+      <column name="productid" type="integer" nullable="false"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="specialofferproduct_pkey">
+        <column name="specialofferid"></column>
+        <column name="productid"></column>
+      </pk>
+      <fk name="specialofferproduct_productid_fkey" to-table="production.product" on-delete="no action" on-update="no action">
+        <column name="productid" references="productid"></column>
+      </fk>
+      <fk name="specialofferproduct_specialofferid_fkey" to-table="sales.specialoffer" on-delete="no action" on-update="no action">
+        <column name="specialofferid" references="specialofferid"></column>
+      </fk>
+    </table>
+    <table name="salesperson">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="territoryid" type="integer"></column>
+      <column name="salesquota" type="numeric"></column>
+      <column name="bonus" type="numeric" nullable="false" default="0.00"></column>
+      <column name="commissionpct" type="numeric" nullable="false" default="0.00"></column>
+      <column name="salesytd" type="numeric" nullable="false" default="0.00"></column>
+      <column name="saleslastyear" type="numeric" nullable="false" default="0.00"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="salesperson_pkey">
+        <column name="businessentityid"></column>
+      </pk>
+      <fk name="salesperson_businessentityid_fkey" to-table="humanresources.employee" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+      <fk name="salesperson_territoryid_fkey" to-table="sales.salesterritory" on-delete="no action" on-update="no action">
+        <column name="territoryid" references="territoryid"></column>
+      </fk>
+      <check name="CK_SalesPerson_Bonus"><![CDATA[bonus >= 0.00]]></check>
+      <check name="CK_SalesPerson_CommissionPct"><![CDATA[commissionpct >= 0.00]]></check>
+      <check name="CK_SalesPerson_SalesLastYear"><![CDATA[saleslastyear >= 0.00]]></check>
+      <check name="CK_SalesPerson_SalesQuota"><![CDATA[salesquota > 0.00]]></check>
+      <check name="CK_SalesPerson_SalesYTD"><![CDATA[salesytd >= 0.00]]></check>
+    </table>
+    <table name="salespersonquotahistory">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="quotadate" type="timestamp" nullable="false"></column>
+      <column name="salesquota" type="numeric" nullable="false"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="salespersonquotahistory_pkey">
+        <column name="businessentityid"></column>
+        <column name="quotadate"></column>
+      </pk>
+      <fk name="salespersonquotahistory_businessentityid_fkey" to-table="sales.salesperson" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+      <check name="CK_SalesPersonQuotaHistory_SalesQuota"><![CDATA[salesquota > 0.00]]></check>
+    </table>
+    <table name="salesreason">
+      <column name="salesreasonid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="reasontype" type="Name" nullable="false"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="salesreason_pkey">
+        <column name="salesreasonid"></column>
+      </pk>
+    </table>
+    <table name="salesterritory">
+      <column name="territoryid" type="integer" nullable="false"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="countryregioncode" type="varchar" length="3" nullable="false"></column>
+      <column name="group" type="varchar" length="50" nullable="false"></column>
+      <column name="salesytd" type="numeric" nullable="false" default="0.00"></column>
+      <column name="saleslastyear" type="numeric" nullable="false" default="0.00"></column>
+      <column name="costytd" type="numeric" nullable="false" default="0.00"></column>
+      <column name="costlastyear" type="numeric" nullable="false" default="0.00"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="salesterritory_pkey">
+        <column name="territoryid"></column>
+      </pk>
+      <fk name="salesterritory_countryregioncode_fkey" to-table="person.countryregion" on-delete="no action" on-update="no action">
+        <column name="countryregioncode" references="countryregioncode"></column>
+      </fk>
+      <check name="CK_SalesTerritory_CostLastYear"><![CDATA[costlastyear >= 0.00]]></check>
+      <check name="CK_SalesTerritory_CostYTD"><![CDATA[costytd >= 0.00]]></check>
+      <check name="CK_SalesTerritory_SalesLastYear"><![CDATA[saleslastyear >= 0.00]]></check>
+      <check name="CK_SalesTerritory_SalesYTD"><![CDATA[salesytd >= 0.00]]></check>
+    </table>
+    <table name="salesterritoryhistory">
+      <column name="businessentityid" type="integer" nullable="false"></column>
+      <column name="territoryid" type="integer" nullable="false"></column>
+      <column name="startdate" type="timestamp" nullable="false"></column>
+      <column name="enddate" type="timestamp"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="salesterritoryhistory_pkey">
+        <column name="businessentityid"></column>
+        <column name="startdate"></column>
+        <column name="territoryid"></column>
+      </pk>
+      <fk name="salesterritoryhistory_businessentityid_fkey" to-table="sales.salesperson" on-delete="no action" on-update="no action">
+        <column name="businessentityid" references="businessentityid"></column>
+      </fk>
+      <fk name="salesterritoryhistory_territoryid_fkey" to-table="sales.salesterritory" on-delete="no action" on-update="no action">
+        <column name="territoryid" references="territoryid"></column>
+      </fk>
+      <check name="CK_SalesTerritoryHistory_EndDate"><![CDATA[enddate >= startdate OR enddate IS NULL]]></check>
+    </table>
+    <table name="salestaxrate">
+      <column name="salestaxrateid" type="integer" nullable="false"></column>
+      <column name="stateprovinceid" type="integer" nullable="false"></column>
+      <column name="taxtype" type="smallint" nullable="false"></column>
+      <column name="taxrate" type="numeric" nullable="false" default="0.00"></column>
+      <column name="name" type="Name" nullable="false"></column>
+      <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
+      <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
+      <pk name="salestaxrate_pkey">
+        <column name="salestaxrateid"></column>
+      </pk>
+      <fk name="salestaxrate_stateprovinceid_fkey" to-table="person.stateprovince" on-delete="no action" on-update="no action">
+        <column name="stateprovinceid" references="stateprovinceid"></column>
+      </fk>
+      <check name="CK_SalesTaxRate_TaxType"><![CDATA[taxtype >= 1 AND taxtype <= 3]]></check>
+    </table>
+  </schema>
+  <views>
+    <view name="d" schema="hr">
+      <query>SELECT departmentid AS id, departmentid, name, groupname, modifieddate FROM humanresources.department</query>
+    </view>
+    <view name="e" schema="hr">
+      <query>SELECT businessentityid AS id, businessentityid, nationalidnumber, loginid, jobtitle, birthdate, maritalstatus, gender, hiredate, salariedflag, vacationhours, sickleavehours, currentflag, rowguid, modifieddate, organizationnode FROM humanresources.employee</query>
+    </view>
+    <view name="edh" schema="hr">
+      <query>SELECT businessentityid AS id, businessentityid, departmentid, shiftid, startdate, enddate, modifieddate FROM humanresources.employeedepartmenthistory</query>
+    </view>
+    <view name="eph" schema="hr">
+      <query>SELECT businessentityid AS id, businessentityid, ratechangedate, rate, payfrequency, modifieddate FROM humanresources.employeepayhistory</query>
+    </view>
+    <view name="jc" schema="hr">
+      <query>SELECT jobcandidateid AS id, jobcandidateid, businessentityid, resume, modifieddate FROM humanresources.jobcandidate</query>
+    </view>
+    <view name="s" schema="hr">
+      <query>SELECT shiftid AS id, shiftid, name, starttime, endtime, modifieddate FROM humanresources.shift</query>
+    </view>
+    <view name="vemployee" schema="humanresources">
+      <query>SELECT e.businessentityid, p.title, p.firstname, p.middlename, p.lastname, p.suffix, e.jobtitle, pp.phonenumber, pnt.name AS phonenumbertype, ea.emailaddress, p.emailpromotion, a.addressline1, a.addressline2, a.city, sp.name AS stateprovincename, a.postalcode, cr.name AS countryregionname, p.additionalcontactinfo FROM humanresources.employee e JOIN person.person p ON p.businessentityid = e.businessentityid JOIN person.businessentityaddress bea ON bea.businessentityid = e.businessentityid JOIN person.address a ON a.addressid = bea.addressid JOIN person.stateprovince sp ON sp.stateprovinceid = a.stateprovinceid JOIN person.countryregion cr ON cr.countryregioncode::text = sp.countryregioncode::text LEFT JOIN person.personphone pp ON pp.businessentityid = p.businessentityid LEFT JOIN person.phonenumbertype pnt ON pp.phonenumbertypeid = pnt.phonenumbertypeid LEFT JOIN person.emailaddress ea ON p.businessentityid = ea.businessentityid</query>
+    </view>
+    <view name="vemployeedepartment" schema="humanresources">
+      <query>SELECT e.businessentityid, p.title, p.firstname, p.middlename, p.lastname, p.suffix, e.jobtitle, d.name AS department, d.groupname, edh.startdate FROM humanresources.employee e JOIN person.person p ON p.businessentityid = e.businessentityid JOIN humanresources.employeedepartmenthistory edh ON e.businessentityid = edh.businessentityid JOIN humanresources.department d ON edh.departmentid = d.departmentid WHERE edh.enddate IS NULL</query>
+    </view>
+    <view name="vemployeedepartmenthistory" schema="humanresources">
+      <query>SELECT e.businessentityid, p.title, p.firstname, p.middlename, p.lastname, p.suffix, s.name AS shift, d.name AS department, d.groupname, edh.startdate, edh.enddate FROM humanresources.employee e JOIN person.person p ON p.businessentityid = e.businessentityid JOIN humanresources.employeedepartmenthistory edh ON e.businessentityid = edh.businessentityid JOIN humanresources.department d ON edh.departmentid = d.departmentid JOIN humanresources.shift s ON s.shiftid = edh.shiftid</query>
+    </view>
+    <view name="vjobcandidate" schema="humanresources">
+      <query>SELECT jobcandidateid, businessentityid, (xpath(&#39;/n:Resume/n:Name/n:Name.Prefix/text()&#39;::text, resume, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))[1]::varchar(30) AS &#34;Name.Prefix&#34;, (xpath(&#39;/n:Resume/n:Name/n:Name.First/text()&#39;::text, resume, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))[1]::varchar(30) AS &#34;Name.First&#34;, (xpath(&#39;/n:Resume/n:Name/n:Name.Middle/text()&#39;::text, resume, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))[1]::varchar(30) AS &#34;Name.Middle&#34;, (xpath(&#39;/n:Resume/n:Name/n:Name.Last/text()&#39;::text, resume, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))[1]::varchar(30) AS &#34;Name.Last&#34;, (xpath(&#39;/n:Resume/n:Name/n:Name.Suffix/text()&#39;::text, resume, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))[1]::varchar(30) AS &#34;Name.Suffix&#34;, (xpath(&#39;/n:Resume/n:Skills/text()&#39;::text, resume, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))[1]::varchar AS &#34;Skills&#34;, (xpath(&#39;n:Address/n:Addr.Type/text()&#39;::text, resume, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))[1]::varchar(30) AS &#34;Addr.Type&#34;, (xpath(&#39;n:Address/n:Addr.Location/n:Location/n:Loc.CountryRegion/text()&#39;::text, resume, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))[1]::varchar(100) AS &#34;Addr.Loc.CountryRegion&#34;, (xpath(&#39;n:Address/n:Addr.Location/n:Location/n:Loc.State/text()&#39;::text, resume, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))[1]::varchar(100) AS &#34;Addr.Loc.State&#34;, (xpath(&#39;n:Address/n:Addr.Location/n:Location/n:Loc.City/text()&#39;::text, resume, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))[1]::varchar(100) AS &#34;Addr.Loc.City&#34;, (xpath(&#39;n:Address/n:Addr.PostalCode/text()&#39;::text, resume, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))[1]::varchar(20) AS &#34;Addr.PostalCode&#34;, (xpath(&#39;/n:Resume/n:EMail/text()&#39;::text, resume, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))[1]::varchar AS &#34;EMail&#34;, (xpath(&#39;/n:Resume/n:WebSite/text()&#39;::text, resume, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))[1]::varchar AS &#34;WebSite&#34;, modifieddate FROM humanresources.jobcandidate</query>
+    </view>
+    <view name="vjobcandidateeducation" schema="humanresources">
+      <query>SELECT jobcandidateid, (xpath(&#39;/root/ns:Education/ns:Edu.Level/text()&#39;::text, doc, &#39;{{ns,http://adventureworks.com}}&#39;::text[]))[1]::varchar(50) AS &#34;Edu.Level&#34;, (xpath(&#39;/root/ns:Education/ns:Edu.StartDate/text()&#39;::text, doc, &#39;{{ns,http://adventureworks.com}}&#39;::text[]))[1]::varchar(20)::date AS &#34;Edu.StartDate&#34;, (xpath(&#39;/root/ns:Education/ns:Edu.EndDate/text()&#39;::text, doc, &#39;{{ns,http://adventureworks.com}}&#39;::text[]))[1]::varchar(20)::date AS &#34;Edu.EndDate&#34;, (xpath(&#39;/root/ns:Education/ns:Edu.Degree/text()&#39;::text, doc, &#39;{{ns,http://adventureworks.com}}&#39;::text[]))[1]::varchar(50) AS &#34;Edu.Degree&#34;, (xpath(&#39;/root/ns:Education/ns:Edu.Major/text()&#39;::text, doc, &#39;{{ns,http://adventureworks.com}}&#39;::text[]))[1]::varchar(50) AS &#34;Edu.Major&#34;, (xpath(&#39;/root/ns:Education/ns:Edu.Minor/text()&#39;::text, doc, &#39;{{ns,http://adventureworks.com}}&#39;::text[]))[1]::varchar(50) AS &#34;Edu.Minor&#34;, (xpath(&#39;/root/ns:Education/ns:Edu.GPA/text()&#39;::text, doc, &#39;{{ns,http://adventureworks.com}}&#39;::text[]))[1]::varchar(5) AS &#34;Edu.GPA&#34;, (xpath(&#39;/root/ns:Education/ns:Edu.GPAScale/text()&#39;::text, doc, &#39;{{ns,http://adventureworks.com}}&#39;::text[]))[1]::varchar(5) AS &#34;Edu.GPAScale&#34;, (xpath(&#39;/root/ns:Education/ns:Edu.School/text()&#39;::text, doc, &#39;{{ns,http://adventureworks.com}}&#39;::text[]))[1]::varchar(100) AS &#34;Edu.School&#34;, (xpath(&#39;/root/ns:Education/ns:Edu.Location/ns:Location/ns:Loc.CountryRegion/text()&#39;::text, doc, &#39;{{ns,http://adventureworks.com}}&#39;::text[]))[1]::varchar(100) AS &#34;Edu.Loc.CountryRegion&#34;, (xpath(&#39;/root/ns:Education/ns:Edu.Location/ns:Location/ns:Loc.State/text()&#39;::text, doc, &#39;{{ns,http://adventureworks.com}}&#39;::text[]))[1]::varchar(100) AS &#34;Edu.Loc.State&#34;, (xpath(&#39;/root/ns:Education/ns:Edu.Location/ns:Location/ns:Loc.City/text()&#39;::text, doc, &#39;{{ns,http://adventureworks.com}}&#39;::text[]))[1]::varchar(100) AS &#34;Edu.Loc.City&#34; FROM (SELECT unnesting.jobcandidateid, CAST((&#39;&lt;root xmlns:ns=&#34;http://adventureworks.com&#34;&gt;&#39;::text || unnesting.education::varchar::text) || &#39;&lt;/root&gt;&#39;::text AS xml) AS doc FROM (SELECT jobcandidate.jobcandidateid, unnest(xpath(&#39;/ns:Resume/ns:Education&#39;::text, jobcandidate.resume, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[])) AS education FROM humanresources.jobcandidate) unnesting) jc</query>
+    </view>
+    <view name="vjobcandidateemployment" schema="humanresources">
+      <query>SELECT jobcandidateid, unnest(xpath(&#39;/ns:Resume/ns:Employment/ns:Emp.StartDate/text()&#39;::text, resume, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))::varchar(20)::date AS &#34;Emp.StartDate&#34;, unnest(xpath(&#39;/ns:Resume/ns:Employment/ns:Emp.EndDate/text()&#39;::text, resume, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))::varchar(20)::date AS &#34;Emp.EndDate&#34;, unnest(xpath(&#39;/ns:Resume/ns:Employment/ns:Emp.OrgName/text()&#39;::text, resume, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))::varchar(100) AS &#34;Emp.OrgName&#34;, unnest(xpath(&#39;/ns:Resume/ns:Employment/ns:Emp.JobTitle/text()&#39;::text, resume, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))::varchar(100) AS &#34;Emp.JobTitle&#34;, unnest(xpath(&#39;/ns:Resume/ns:Employment/ns:Emp.Responsibility/text()&#39;::text, resume, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))::varchar AS &#34;Emp.Responsibility&#34;, unnest(xpath(&#39;/ns:Resume/ns:Employment/ns:Emp.FunctionCategory/text()&#39;::text, resume, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))::varchar AS &#34;Emp.FunctionCategory&#34;, unnest(xpath(&#39;/ns:Resume/ns:Employment/ns:Emp.IndustryCategory/text()&#39;::text, resume, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))::varchar AS &#34;Emp.IndustryCategory&#34;, unnest(xpath(&#39;/ns:Resume/ns:Employment/ns:Emp.Location/ns:Location/ns:Loc.CountryRegion/text()&#39;::text, resume, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))::varchar AS &#34;Emp.Loc.CountryRegion&#34;, unnest(xpath(&#39;/ns:Resume/ns:Employment/ns:Emp.Location/ns:Location/ns:Loc.State/text()&#39;::text, resume, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))::varchar AS &#34;Emp.Loc.State&#34;, unnest(xpath(&#39;/ns:Resume/ns:Employment/ns:Emp.Location/ns:Location/ns:Loc.City/text()&#39;::text, resume, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/Resume}}&#39;::text[]))::varchar AS &#34;Emp.Loc.City&#34; FROM humanresources.jobcandidate</query>
+    </view>
+    <view name="a" schema="pe">
+      <query>SELECT addressid AS id, addressid, addressline1, addressline2, city, stateprovinceid, postalcode, spatiallocation, rowguid, modifieddate FROM person.address</query>
+    </view>
+    <view name="at" schema="pe">
+      <query>SELECT addresstypeid AS id, addresstypeid, name, rowguid, modifieddate FROM person.addresstype</query>
+    </view>
+    <view name="be" schema="pe">
+      <query>SELECT businessentityid AS id, businessentityid, rowguid, modifieddate FROM person.businessentity</query>
+    </view>
+    <view name="bea" schema="pe">
+      <query>SELECT businessentityid AS id, businessentityid, addressid, addresstypeid, rowguid, modifieddate FROM person.businessentityaddress</query>
+    </view>
+    <view name="bec" schema="pe">
+      <query>SELECT businessentityid AS id, businessentityid, personid, contacttypeid, rowguid, modifieddate FROM person.businessentitycontact</query>
+    </view>
+    <view name="cr" schema="pe">
+      <query>SELECT countryregioncode, name, modifieddate FROM person.countryregion</query>
+    </view>
+    <view name="ct" schema="pe">
+      <query>SELECT contacttypeid AS id, contacttypeid, name, modifieddate FROM person.contacttype</query>
+    </view>
+    <view name="e" schema="pe">
+      <query>SELECT emailaddressid AS id, businessentityid, emailaddressid, emailaddress, rowguid, modifieddate FROM person.emailaddress</query>
+    </view>
+    <view name="p" schema="pe">
+      <query>SELECT businessentityid AS id, businessentityid, persontype, namestyle, title, firstname, middlename, lastname, suffix, emailpromotion, additionalcontactinfo, demographics, rowguid, modifieddate FROM person.person</query>
+    </view>
+    <view name="pa" schema="pe">
+      <query>SELECT businessentityid AS id, businessentityid, passwordhash, passwordsalt, rowguid, modifieddate FROM person.password</query>
+    </view>
+    <view name="pnt" schema="pe">
+      <query>SELECT phonenumbertypeid AS id, phonenumbertypeid, name, modifieddate FROM person.phonenumbertype</query>
+    </view>
+    <view name="pp" schema="pe">
+      <query>SELECT businessentityid AS id, businessentityid, phonenumber, phonenumbertypeid, modifieddate FROM person.personphone</query>
+    </view>
+    <view name="sp" schema="pe">
+      <query>SELECT stateprovinceid AS id, stateprovinceid, stateprovincecode, countryregioncode, isonlystateprovinceflag, name, territoryid, rowguid, modifieddate FROM person.stateprovince</query>
+    </view>
+    <view name="vadditionalcontactinfo" schema="person">
+      <query>SELECT p.businessentityid, p.firstname, p.middlename, p.lastname, (xpath(&#39;(act:telephoneNumber)[1]/act:number/text()&#39;::text, additional.node, &#39;{{act,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ContactTypes}}&#39;::text[]))[1] AS telephonenumber, btrim((xpath(&#39;(act:telephoneNumber)[1]/act:SpecialInstructions/text()&#39;::text, additional.node, &#39;{{act,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ContactTypes}}&#39;::text[]))[1]::varchar::text) AS telephonespecialinstructions, (xpath(&#39;(act:homePostalAddress)[1]/act:Street/text()&#39;::text, additional.node, &#39;{{act,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ContactTypes}}&#39;::text[]))[1] AS street, (xpath(&#39;(act:homePostalAddress)[1]/act:City/text()&#39;::text, additional.node, &#39;{{act,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ContactTypes}}&#39;::text[]))[1] AS city, (xpath(&#39;(act:homePostalAddress)[1]/act:StateProvince/text()&#39;::text, additional.node, &#39;{{act,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ContactTypes}}&#39;::text[]))[1] AS stateprovince, (xpath(&#39;(act:homePostalAddress)[1]/act:PostalCode/text()&#39;::text, additional.node, &#39;{{act,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ContactTypes}}&#39;::text[]))[1] AS postalcode, (xpath(&#39;(act:homePostalAddress)[1]/act:CountryRegion/text()&#39;::text, additional.node, &#39;{{act,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ContactTypes}}&#39;::text[]))[1] AS countryregion, (xpath(&#39;(act:homePostalAddress)[1]/act:SpecialInstructions/text()&#39;::text, additional.node, &#39;{{act,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ContactTypes}}&#39;::text[]))[1] AS homeaddressspecialinstructions, (xpath(&#39;(act:eMail)[1]/act:eMailAddress/text()&#39;::text, additional.node, &#39;{{act,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ContactTypes}}&#39;::text[]))[1] AS emailaddress, btrim((xpath(&#39;(act:eMail)[1]/act:SpecialInstructions/text()&#39;::text, additional.node, &#39;{{act,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ContactTypes}}&#39;::text[]))[1]::varchar::text) AS emailspecialinstructions, (xpath(&#39;((act:eMail)[1]/act:SpecialInstructions/act:telephoneNumber)[1]/act:number/text()&#39;::text, additional.node, &#39;{{act,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ContactTypes}}&#39;::text[]))[1] AS emailtelephonenumber, p.rowguid, p.modifieddate FROM person.person p LEFT JOIN (SELECT person.businessentityid, unnest(xpath(&#39;/ci:AdditionalContactInfo&#39;::text, person.additionalcontactinfo, &#39;{{ci,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ContactInfo}}&#39;::text[])) AS node FROM person.person WHERE person.additionalcontactinfo IS NOT NULL) additional ON p.businessentityid = additional.businessentityid</query>
+    </view>
+    <view name="bom" schema="pr">
+      <query>SELECT billofmaterialsid AS id, billofmaterialsid, productassemblyid, componentid, startdate, enddate, unitmeasurecode, bomlevel, perassemblyqty, modifieddate FROM production.billofmaterials</query>
+    </view>
+    <view name="c" schema="pr">
+      <query>SELECT cultureid AS id, cultureid, name, modifieddate FROM production.culture</query>
+    </view>
+    <view name="d" schema="pr">
+      <query>SELECT title, owner, folderflag, filename, fileextension, revision, changenumber, status, documentsummary, document, rowguid, modifieddate, documentnode FROM production.document</query>
+    </view>
+    <view name="i" schema="pr">
+      <query>SELECT illustrationid AS id, illustrationid, diagram, modifieddate FROM production.illustration</query>
+    </view>
+    <view name="l" schema="pr">
+      <query>SELECT locationid AS id, locationid, name, costrate, availability, modifieddate FROM production.location</query>
+    </view>
+    <view name="p" schema="pr">
+      <query>SELECT productid AS id, productid, name, productnumber, makeflag, finishedgoodsflag, color, safetystocklevel, reorderpoint, standardcost, listprice, size, sizeunitmeasurecode, weightunitmeasurecode, weight, daystomanufacture, productline, class, style, productsubcategoryid, productmodelid, sellstartdate, sellenddate, discontinueddate, rowguid, modifieddate FROM production.product</query>
+    </view>
+    <view name="pc" schema="pr">
+      <query>SELECT productcategoryid AS id, productcategoryid, name, rowguid, modifieddate FROM production.productcategory</query>
+    </view>
+    <view name="pch" schema="pr">
+      <query>SELECT productid AS id, productid, startdate, enddate, standardcost, modifieddate FROM production.productcosthistory</query>
+    </view>
+    <view name="pd" schema="pr">
+      <query>SELECT productdescriptionid AS id, productdescriptionid, description, rowguid, modifieddate FROM production.productdescription</query>
+    </view>
+    <view name="pdoc" schema="pr">
+      <query>SELECT productid AS id, productid, modifieddate, documentnode FROM production.productdocument</query>
+    </view>
+    <view name="pi" schema="pr">
+      <query>SELECT productid AS id, productid, locationid, shelf, bin, quantity, rowguid, modifieddate FROM production.productinventory</query>
+    </view>
+    <view name="plph" schema="pr">
+      <query>SELECT productid AS id, productid, startdate, enddate, listprice, modifieddate FROM production.productlistpricehistory</query>
+    </view>
+    <view name="pm" schema="pr">
+      <query>SELECT productmodelid AS id, productmodelid, name, catalogdescription, instructions, rowguid, modifieddate FROM production.productmodel</query>
+    </view>
+    <view name="pmi" schema="pr">
+      <query>SELECT productmodelid, illustrationid, modifieddate FROM production.productmodelillustration</query>
+    </view>
+    <view name="pmpdc" schema="pr">
+      <query>SELECT productmodelid, productdescriptionid, cultureid, modifieddate FROM production.productmodelproductdescriptionculture</query>
+    </view>
+    <view name="pp" schema="pr">
+      <query>SELECT productphotoid AS id, productphotoid, thumbnailphoto, thumbnailphotofilename, largephoto, largephotofilename, modifieddate FROM production.productphoto</query>
+    </view>
+    <view name="ppp" schema="pr">
+      <query>SELECT productid, productphotoid, &#34;primary&#34;, modifieddate FROM production.productproductphoto</query>
+    </view>
+    <view name="pr" schema="pr">
+      <query>SELECT productreviewid AS id, productreviewid, productid, reviewername, reviewdate, emailaddress, rating, comments, modifieddate FROM production.productreview</query>
+    </view>
+    <view name="psc" schema="pr">
+      <query>SELECT productsubcategoryid AS id, productsubcategoryid, productcategoryid, name, rowguid, modifieddate FROM production.productsubcategory</query>
+    </view>
+    <view name="sr" schema="pr">
+      <query>SELECT scrapreasonid AS id, scrapreasonid, name, modifieddate FROM production.scrapreason</query>
+    </view>
+    <view name="th" schema="pr">
+      <query>SELECT transactionid AS id, transactionid, productid, referenceorderid, referenceorderlineid, transactiondate, transactiontype, quantity, actualcost, modifieddate FROM production.transactionhistory</query>
+    </view>
+    <view name="tha" schema="pr">
+      <query>SELECT transactionid AS id, transactionid, productid, referenceorderid, referenceorderlineid, transactiondate, transactiontype, quantity, actualcost, modifieddate FROM production.transactionhistoryarchive</query>
+    </view>
+    <view name="um" schema="pr">
+      <query>SELECT unitmeasurecode AS id, unitmeasurecode, name, modifieddate FROM production.unitmeasure</query>
+    </view>
+    <view name="w" schema="pr">
+      <query>SELECT workorderid AS id, workorderid, productid, orderqty, scrappedqty, startdate, enddate, duedate, scrapreasonid, modifieddate FROM production.workorder</query>
+    </view>
+    <view name="wr" schema="pr">
+      <query>SELECT workorderid AS id, workorderid, productid, operationsequence, locationid, scheduledstartdate, scheduledenddate, actualstartdate, actualenddate, actualresourcehrs, plannedcost, actualcost, modifieddate FROM production.workorderrouting</query>
+    </view>
+    <view name="vproductmodelcatalogdescription" schema="production">
+      <query>SELECT productmodelid, name, (xpath(&#39;/p1:ProductDescription/p1:Summary/html:p/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription},{html,http://www.w3.org/1999/xhtml}}&#39;::text[]))[1]::varchar AS &#34;Summary&#34;, (xpath(&#39;/p1:ProductDescription/p1:Manufacturer/p1:Name/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription}}&#39;::text[]))[1]::varchar AS manufacturer, (xpath(&#39;/p1:ProductDescription/p1:Manufacturer/p1:Copyright/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription}}&#39;::text[]))[1]::varchar(30) AS copyright, (xpath(&#39;/p1:ProductDescription/p1:Manufacturer/p1:ProductURL/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription}}&#39;::text[]))[1]::varchar(256) AS producturl, (xpath(&#39;/p1:ProductDescription/p1:Features/wm:Warranty/wm:WarrantyPeriod/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription},{wm,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelWarrAndMain}}&#39;::text[]))[1]::varchar(256) AS warrantyperiod, (xpath(&#39;/p1:ProductDescription/p1:Features/wm:Warranty/wm:Description/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription},{wm,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelWarrAndMain}}&#39;::text[]))[1]::varchar(256) AS warrantydescription, (xpath(&#39;/p1:ProductDescription/p1:Features/wm:Maintenance/wm:NoOfYears/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription},{wm,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelWarrAndMain}}&#39;::text[]))[1]::varchar(256) AS noofyears, (xpath(&#39;/p1:ProductDescription/p1:Features/wm:Maintenance/wm:Description/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription},{wm,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelWarrAndMain}}&#39;::text[]))[1]::varchar(256) AS maintenancedescription, (xpath(&#39;/p1:ProductDescription/p1:Features/wf:wheel/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription},{wf,http://www.adventure-works.com/schemas/OtherFeatures}}&#39;::text[]))[1]::varchar(256) AS wheel, (xpath(&#39;/p1:ProductDescription/p1:Features/wf:saddle/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription},{wf,http://www.adventure-works.com/schemas/OtherFeatures}}&#39;::text[]))[1]::varchar(256) AS saddle, (xpath(&#39;/p1:ProductDescription/p1:Features/wf:pedal/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription},{wf,http://www.adventure-works.com/schemas/OtherFeatures}}&#39;::text[]))[1]::varchar(256) AS pedal, (xpath(&#39;/p1:ProductDescription/p1:Features/wf:BikeFrame/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription},{wf,http://www.adventure-works.com/schemas/OtherFeatures}}&#39;::text[]))[1]::varchar AS bikeframe, (xpath(&#39;/p1:ProductDescription/p1:Features/wf:crankset/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription},{wf,http://www.adventure-works.com/schemas/OtherFeatures}}&#39;::text[]))[1]::varchar(256) AS crankset, (xpath(&#39;/p1:ProductDescription/p1:Picture/p1:Angle/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription}}&#39;::text[]))[1]::varchar(256) AS pictureangle, (xpath(&#39;/p1:ProductDescription/p1:Picture/p1:Size/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription}}&#39;::text[]))[1]::varchar(256) AS picturesize, (xpath(&#39;/p1:ProductDescription/p1:Picture/p1:ProductPhotoID/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription}}&#39;::text[]))[1]::varchar(256) AS productphotoid, (xpath(&#39;/p1:ProductDescription/p1:Specifications/Material/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription}}&#39;::text[]))[1]::varchar(256) AS material, (xpath(&#39;/p1:ProductDescription/p1:Specifications/Color/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription}}&#39;::text[]))[1]::varchar(256) AS color, (xpath(&#39;/p1:ProductDescription/p1:Specifications/ProductLine/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription}}&#39;::text[]))[1]::varchar(256) AS productline, (xpath(&#39;/p1:ProductDescription/p1:Specifications/Style/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription}}&#39;::text[]))[1]::varchar(256) AS style, (xpath(&#39;/p1:ProductDescription/p1:Specifications/RiderExperience/text()&#39;::text, catalogdescription, &#39;{{p1,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelDescription}}&#39;::text[]))[1]::varchar(1024) AS riderexperience, rowguid, modifieddate FROM production.productmodel WHERE catalogdescription IS NOT NULL</query>
+    </view>
+    <view name="vproductmodelinstructions" schema="production">
+      <query>SELECT productmodelid, name, (xpath(&#39;/ns:root/text()&#39;::text, instructions, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelManuInstructions}}&#39;::text[]))[1]::varchar AS instructions, (xpath(&#39;@LocationID&#39;::text, mfginstructions))[1]::varchar::int AS &#34;LocationID&#34;, (xpath(&#39;@SetupHours&#39;::text, mfginstructions))[1]::varchar::numeric(9, 4) AS &#34;SetupHours&#34;, (xpath(&#39;@MachineHours&#39;::text, mfginstructions))[1]::varchar::numeric(9, 4) AS &#34;MachineHours&#34;, (xpath(&#39;@LaborHours&#39;::text, mfginstructions))[1]::varchar::numeric(9, 4) AS &#34;LaborHours&#34;, (xpath(&#39;@LotSize&#39;::text, mfginstructions))[1]::varchar::int AS &#34;LotSize&#34;, (xpath(&#39;/step/text()&#39;::text, step))[1]::varchar(1024) AS &#34;Step&#34;, rowguid, modifieddate FROM (SELECT locations.productmodelid, locations.name, locations.rowguid, locations.modifieddate, locations.instructions, locations.mfginstructions, unnest(xpath(&#39;step&#39;::text, locations.mfginstructions)) AS step FROM (SELECT productmodel.productmodelid, productmodel.name, productmodel.rowguid, productmodel.modifieddate, productmodel.instructions, unnest(xpath(&#39;/ns:root/ns:Location&#39;::text, productmodel.instructions, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/ProductModelManuInstructions}}&#39;::text[])) AS mfginstructions FROM production.productmodel) locations) pm</query>
+    </view>
+    <view name="pod" schema="pu">
+      <query>SELECT purchaseorderdetailid AS id, purchaseorderid, purchaseorderdetailid, duedate, orderqty, productid, unitprice, receivedqty, rejectedqty, modifieddate FROM purchasing.purchaseorderdetail</query>
+    </view>
+    <view name="poh" schema="pu">
+      <query>SELECT purchaseorderid AS id, purchaseorderid, revisionnumber, status, employeeid, vendorid, shipmethodid, orderdate, shipdate, subtotal, taxamt, freight, modifieddate FROM purchasing.purchaseorderheader</query>
+    </view>
+    <view name="pv" schema="pu">
+      <query>SELECT productid AS id, productid, businessentityid, averageleadtime, standardprice, lastreceiptcost, lastreceiptdate, minorderqty, maxorderqty, onorderqty, unitmeasurecode, modifieddate FROM purchasing.productvendor</query>
+    </view>
+    <view name="sm" schema="pu">
+      <query>SELECT shipmethodid AS id, shipmethodid, name, shipbase, shiprate, rowguid, modifieddate FROM purchasing.shipmethod</query>
+    </view>
+    <view name="v" schema="pu">
+      <query>SELECT businessentityid AS id, businessentityid, accountnumber, name, creditrating, preferredvendorstatus, activeflag, purchasingwebserviceurl, modifieddate FROM purchasing.vendor</query>
+    </view>
+    <view name="vvendorwithaddresses" schema="purchasing">
+      <query>SELECT v.businessentityid, v.name, at.name AS addresstype, a.addressline1, a.addressline2, a.city, sp.name AS stateprovincename, a.postalcode, cr.name AS countryregionname FROM purchasing.vendor v JOIN person.businessentityaddress bea ON bea.businessentityid = v.businessentityid JOIN person.address a ON a.addressid = bea.addressid JOIN person.stateprovince sp ON sp.stateprovinceid = a.stateprovinceid JOIN person.countryregion cr ON cr.countryregioncode::text = sp.countryregioncode::text JOIN person.addresstype at ON at.addresstypeid = bea.addresstypeid</query>
+    </view>
+    <view name="vvendorwithcontacts" schema="purchasing">
+      <query>SELECT v.businessentityid, v.name, ct.name AS contacttype, p.title, p.firstname, p.middlename, p.lastname, p.suffix, pp.phonenumber, pnt.name AS phonenumbertype, ea.emailaddress, p.emailpromotion FROM purchasing.vendor v JOIN person.businessentitycontact bec ON bec.businessentityid = v.businessentityid JOIN person.contacttype ct ON ct.contacttypeid = bec.contacttypeid JOIN person.person p ON p.businessentityid = bec.personid LEFT JOIN person.emailaddress ea ON ea.businessentityid = p.businessentityid LEFT JOIN person.personphone pp ON pp.businessentityid = p.businessentityid LEFT JOIN person.phonenumbertype pnt ON pnt.phonenumbertypeid = pp.phonenumbertypeid</query>
+    </view>
+    <view name="c" schema="sa">
+      <query>SELECT customerid AS id, customerid, personid, storeid, territoryid, rowguid, modifieddate FROM sales.customer</query>
+    </view>
+    <view name="cc" schema="sa">
+      <query>SELECT creditcardid AS id, creditcardid, cardtype, cardnumber, expmonth, expyear, modifieddate FROM sales.creditcard</query>
+    </view>
+    <view name="cr" schema="sa">
+      <query>SELECT currencyrateid, currencyratedate, fromcurrencycode, tocurrencycode, averagerate, endofdayrate, modifieddate FROM sales.currencyrate</query>
+    </view>
+    <view name="crc" schema="sa">
+      <query>SELECT countryregioncode, currencycode, modifieddate FROM sales.countryregioncurrency</query>
+    </view>
+    <view name="cu" schema="sa">
+      <query>SELECT currencycode AS id, currencycode, name, modifieddate FROM sales.currency</query>
+    </view>
+    <view name="pcc" schema="sa">
+      <query>SELECT businessentityid AS id, businessentityid, creditcardid, modifieddate FROM sales.personcreditcard</query>
+    </view>
+    <view name="s" schema="sa">
+      <query>SELECT businessentityid AS id, businessentityid, name, salespersonid, demographics, rowguid, modifieddate FROM sales.store</query>
+    </view>
+    <view name="sci" schema="sa">
+      <query>SELECT shoppingcartitemid AS id, shoppingcartitemid, shoppingcartid, quantity, productid, datecreated, modifieddate FROM sales.shoppingcartitem</query>
+    </view>
+    <view name="so" schema="sa">
+      <query>SELECT specialofferid AS id, specialofferid, description, discountpct, type, category, startdate, enddate, minqty, maxqty, rowguid, modifieddate FROM sales.specialoffer</query>
+    </view>
+    <view name="sod" schema="sa">
+      <query>SELECT salesorderdetailid AS id, salesorderid, salesorderdetailid, carriertrackingnumber, orderqty, productid, specialofferid, unitprice, unitpricediscount, rowguid, modifieddate FROM sales.salesorderdetail</query>
+    </view>
+    <view name="soh" schema="sa">
+      <query>SELECT salesorderid AS id, salesorderid, revisionnumber, orderdate, duedate, shipdate, status, onlineorderflag, purchaseordernumber, accountnumber, customerid, salespersonid, territoryid, billtoaddressid, shiptoaddressid, shipmethodid, creditcardid, creditcardapprovalcode, currencyrateid, subtotal, taxamt, freight, totaldue, comment, rowguid, modifieddate FROM sales.salesorderheader</query>
+    </view>
+    <view name="sohsr" schema="sa">
+      <query>SELECT salesorderid, salesreasonid, modifieddate FROM sales.salesorderheadersalesreason</query>
+    </view>
+    <view name="sop" schema="sa">
+      <query>SELECT specialofferid AS id, specialofferid, productid, rowguid, modifieddate FROM sales.specialofferproduct</query>
+    </view>
+    <view name="sp" schema="sa">
+      <query>SELECT businessentityid AS id, businessentityid, territoryid, salesquota, bonus, commissionpct, salesytd, saleslastyear, rowguid, modifieddate FROM sales.salesperson</query>
+    </view>
+    <view name="spqh" schema="sa">
+      <query>SELECT businessentityid AS id, businessentityid, quotadate, salesquota, rowguid, modifieddate FROM sales.salespersonquotahistory</query>
+    </view>
+    <view name="sr" schema="sa">
+      <query>SELECT salesreasonid AS id, salesreasonid, name, reasontype, modifieddate FROM sales.salesreason</query>
+    </view>
+    <view name="st" schema="sa">
+      <query>SELECT territoryid AS id, territoryid, name, countryregioncode, &#34;group&#34;, salesytd, saleslastyear, costytd, costlastyear, rowguid, modifieddate FROM sales.salesterritory</query>
+    </view>
+    <view name="sth" schema="sa">
+      <query>SELECT territoryid AS id, businessentityid, territoryid, startdate, enddate, rowguid, modifieddate FROM sales.salesterritoryhistory</query>
+    </view>
+    <view name="tr" schema="sa">
+      <query>SELECT salestaxrateid AS id, salestaxrateid, stateprovinceid, taxtype, taxrate, name, rowguid, modifieddate FROM sales.salestaxrate</query>
+    </view>
+    <view name="vindividualcustomer" schema="sales">
+      <query>SELECT p.businessentityid, p.title, p.firstname, p.middlename, p.lastname, p.suffix, pp.phonenumber, pnt.name AS phonenumbertype, ea.emailaddress, p.emailpromotion, at.name AS addresstype, a.addressline1, a.addressline2, a.city, sp.name AS stateprovincename, a.postalcode, cr.name AS countryregionname, p.demographics FROM person.person p JOIN person.businessentityaddress bea ON bea.businessentityid = p.businessentityid JOIN person.address a ON a.addressid = bea.addressid JOIN person.stateprovince sp ON sp.stateprovinceid = a.stateprovinceid JOIN person.countryregion cr ON cr.countryregioncode::text = sp.countryregioncode::text JOIN person.addresstype at ON at.addresstypeid = bea.addresstypeid JOIN sales.customer c ON c.personid = p.businessentityid LEFT JOIN person.emailaddress ea ON ea.businessentityid = p.businessentityid LEFT JOIN person.personphone pp ON pp.businessentityid = p.businessentityid LEFT JOIN person.phonenumbertype pnt ON pnt.phonenumbertypeid = pp.phonenumbertypeid WHERE c.storeid IS NULL</query>
+    </view>
+    <view name="vpersondemographics" schema="sales">
+      <query>SELECT businessentityid, (xpath(&#39;n:TotalPurchaseYTD/text()&#39;::text, demographics, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey}}&#39;::text[]))[1]::varchar::money AS totalpurchaseytd, (xpath(&#39;n:DateFirstPurchase/text()&#39;::text, demographics, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey}}&#39;::text[]))[1]::varchar::date AS datefirstpurchase, (xpath(&#39;n:BirthDate/text()&#39;::text, demographics, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey}}&#39;::text[]))[1]::varchar::date AS birthdate, (xpath(&#39;n:MaritalStatus/text()&#39;::text, demographics, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey}}&#39;::text[]))[1]::varchar(1) AS maritalstatus, (xpath(&#39;n:YearlyIncome/text()&#39;::text, demographics, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey}}&#39;::text[]))[1]::varchar(30) AS yearlyincome, (xpath(&#39;n:Gender/text()&#39;::text, demographics, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey}}&#39;::text[]))[1]::varchar(1) AS gender, (xpath(&#39;n:TotalChildren/text()&#39;::text, demographics, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey}}&#39;::text[]))[1]::varchar::int AS totalchildren, (xpath(&#39;n:NumberChildrenAtHome/text()&#39;::text, demographics, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey}}&#39;::text[]))[1]::varchar::int AS numberchildrenathome, (xpath(&#39;n:Education/text()&#39;::text, demographics, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey}}&#39;::text[]))[1]::varchar(30) AS education, (xpath(&#39;n:Occupation/text()&#39;::text, demographics, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey}}&#39;::text[]))[1]::varchar(30) AS occupation, (xpath(&#39;n:HomeOwnerFlag/text()&#39;::text, demographics, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey}}&#39;::text[]))[1]::varchar::boolean AS homeownerflag, (xpath(&#39;n:NumberCarsOwned/text()&#39;::text, demographics, &#39;{{n,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/IndividualSurvey}}&#39;::text[]))[1]::varchar::int AS numbercarsowned FROM person.person WHERE demographics IS NOT NULL</query>
+    </view>
+    <view name="vsalesperson" schema="sales">
+      <query>SELECT s.businessentityid, p.title, p.firstname, p.middlename, p.lastname, p.suffix, e.jobtitle, pp.phonenumber, pnt.name AS phonenumbertype, ea.emailaddress, p.emailpromotion, a.addressline1, a.addressline2, a.city, sp.name AS stateprovincename, a.postalcode, cr.name AS countryregionname, st.name AS territoryname, st.&#34;group&#34; AS territorygroup, s.salesquota, s.salesytd, s.saleslastyear FROM sales.salesperson s JOIN humanresources.employee e ON e.businessentityid = s.businessentityid JOIN person.person p ON p.businessentityid = s.businessentityid JOIN person.businessentityaddress bea ON bea.businessentityid = s.businessentityid JOIN person.address a ON a.addressid = bea.addressid JOIN person.stateprovince sp ON sp.stateprovinceid = a.stateprovinceid JOIN person.countryregion cr ON cr.countryregioncode::text = sp.countryregioncode::text LEFT JOIN sales.salesterritory st ON st.territoryid = s.territoryid LEFT JOIN person.emailaddress ea ON ea.businessentityid = p.businessentityid LEFT JOIN person.personphone pp ON pp.businessentityid = p.businessentityid LEFT JOIN person.phonenumbertype pnt ON pnt.phonenumbertypeid = pp.phonenumbertypeid</query>
+    </view>
+    <view name="vsalespersonsalesbyfiscalyears" schema="sales">
+      <query>SELECT &#34;SalesPersonID&#34;, &#34;FullName&#34;, &#34;JobTitle&#34;, &#34;SalesTerritory&#34;, &#34;2012&#34;, &#34;2013&#34;, &#34;2014&#34; FROM public.crosstab(&#39;SELECT&#xA;    SalesPersonID&#xA;    ,FullName&#xA;    ,JobTitle&#xA;    ,SalesTerritory&#xA;    ,FiscalYear&#xA;    ,SalesTotal&#xA;FROM Sales.vSalesPersonSalesByFiscalYearsData&#xA;ORDER BY 2,4&#39;::text, &#39;SELECT unnest(&#39;&#39;{2012,2013,2014}&#39;&#39;::text[])&#39;::text) salestotal (&#34;SalesPersonID&#34; int, &#34;FullName&#34; text, &#34;JobTitle&#34; text, &#34;SalesTerritory&#34; text, &#34;2012&#34; numeric(12, 4), &#34;2013&#34; numeric(12, 4), &#34;2014&#34; numeric(12, 4))</query>
+    </view>
+    <view name="vsalespersonsalesbyfiscalyearsdata" schema="sales">
+      <query>SELECT salespersonid, fullname, jobtitle, salesterritory, sum(subtotal) AS salestotal, fiscalyear FROM (SELECT soh.salespersonid, ((p.firstname::text || &#39; &#39;::text) || COALESCE(p.middlename::text || &#39; &#39;::text, &#39;&#39;::text)) || p.lastname::text AS fullname, e.jobtitle, st.name AS salesterritory, soh.subtotal, extract (&#39;year&#39; FROM soh.orderdate + &#39;6 mons&#39;::interval) AS fiscalyear FROM sales.salesperson sp JOIN sales.salesorderheader soh ON sp.businessentityid = soh.salespersonid JOIN sales.salesterritory st ON sp.territoryid = st.territoryid JOIN humanresources.employee e ON soh.salespersonid = e.businessentityid JOIN person.person p ON p.businessentityid = sp.businessentityid) granular GROUP BY salespersonid, fullname, jobtitle, salesterritory, fiscalyear</query>
+    </view>
+    <view name="vstorewithaddresses" schema="sales">
+      <query>SELECT s.businessentityid, s.name, at.name AS addresstype, a.addressline1, a.addressline2, a.city, sp.name AS stateprovincename, a.postalcode, cr.name AS countryregionname FROM sales.store s JOIN person.businessentityaddress bea ON bea.businessentityid = s.businessentityid JOIN person.address a ON a.addressid = bea.addressid JOIN person.stateprovince sp ON sp.stateprovinceid = a.stateprovinceid JOIN person.countryregion cr ON cr.countryregioncode::text = sp.countryregioncode::text JOIN person.addresstype at ON at.addresstypeid = bea.addresstypeid</query>
+    </view>
+    <view name="vstorewithcontacts" schema="sales">
+      <query>SELECT s.businessentityid, s.name, ct.name AS contacttype, p.title, p.firstname, p.middlename, p.lastname, p.suffix, pp.phonenumber, pnt.name AS phonenumbertype, ea.emailaddress, p.emailpromotion FROM sales.store s JOIN person.businessentitycontact bec ON bec.businessentityid = s.businessentityid JOIN person.contacttype ct ON ct.contacttypeid = bec.contacttypeid JOIN person.person p ON p.businessentityid = bec.personid LEFT JOIN person.emailaddress ea ON ea.businessentityid = p.businessentityid LEFT JOIN person.personphone pp ON pp.businessentityid = p.businessentityid LEFT JOIN person.phonenumbertype pnt ON pnt.phonenumbertypeid = pp.phonenumbertypeid</query>
+    </view>
+    <view name="vstorewithdemographics" schema="sales">
+      <query>SELECT businessentityid, name, unnest(xpath(&#39;/ns:StoreSurvey/ns:AnnualSales/text()&#39;::text, demographics, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey}}&#39;::text[]))::varchar::money AS &#34;AnnualSales&#34;, unnest(xpath(&#39;/ns:StoreSurvey/ns:AnnualRevenue/text()&#39;::text, demographics, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey}}&#39;::text[]))::varchar::money AS &#34;AnnualRevenue&#34;, unnest(xpath(&#39;/ns:StoreSurvey/ns:BankName/text()&#39;::text, demographics, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey}}&#39;::text[]))::varchar(50) AS &#34;BankName&#34;, unnest(xpath(&#39;/ns:StoreSurvey/ns:BusinessType/text()&#39;::text, demographics, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey}}&#39;::text[]))::varchar(5) AS &#34;BusinessType&#34;, unnest(xpath(&#39;/ns:StoreSurvey/ns:YearOpened/text()&#39;::text, demographics, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey}}&#39;::text[]))::varchar::int AS &#34;YearOpened&#34;, unnest(xpath(&#39;/ns:StoreSurvey/ns:Specialty/text()&#39;::text, demographics, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey}}&#39;::text[]))::varchar(50) AS &#34;Specialty&#34;, unnest(xpath(&#39;/ns:StoreSurvey/ns:SquareFeet/text()&#39;::text, demographics, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey}}&#39;::text[]))::varchar::int AS &#34;SquareFeet&#34;, unnest(xpath(&#39;/ns:StoreSurvey/ns:Brands/text()&#39;::text, demographics, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey}}&#39;::text[]))::varchar(30) AS &#34;Brands&#34;, unnest(xpath(&#39;/ns:StoreSurvey/ns:Internet/text()&#39;::text, demographics, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey}}&#39;::text[]))::varchar(30) AS &#34;Internet&#34;, unnest(xpath(&#39;/ns:StoreSurvey/ns:NumberEmployees/text()&#39;::text, demographics, &#39;{{ns,http://schemas.microsoft.com/sqlserver/2004/07/adventure-works/StoreSurvey}}&#39;::text[]))::varchar::int AS &#34;NumberEmployees&#34; FROM sales.store</query>
+    </view>
+    <materialized-view name="vstateprovincecountryregion" schema="person">
+      <query>SELECT sp.stateprovinceid, sp.stateprovincecode, sp.isonlystateprovinceflag, sp.name AS stateprovincename, sp.territoryid, cr.countryregioncode, cr.name AS countryregionname FROM person.stateprovince sp JOIN person.countryregion cr ON sp.countryregioncode::text = cr.countryregioncode::text</query>
+    </materialized-view>
+    <materialized-view name="vproductanddescription" schema="production">
+      <query>SELECT p.productid, p.name, pm.name AS productmodel, pmx.cultureid, pd.description FROM production.product p JOIN production.productmodel pm ON p.productmodelid = pm.productmodelid JOIN production.productmodelproductdescriptionculture pmx ON pm.productmodelid = pmx.productmodelid JOIN production.productdescription pd ON pmx.productdescriptionid = pd.productdescriptionid</query>
+    </materialized-view>
+  </views>
+  <functions></functions>
+  <triggers></triggers>
+  <rules></rules>
+  <policies></policies>
+  <comments>
+    <comment on="schema" name="humanresources">Contains objects related to employees and departments.</comment>
+    <comment on="schema" name="person">Contains objects related to names and addresses of customers, vendors, and employees</comment>
+    <comment on="schema" name="production">Contains objects related to products, inventory, and manufacturing.</comment>
+    <comment on="schema" name="purchasing">Contains objects related to vendors and purchase orders.</comment>
+    <comment on="schema" name="sales">Contains objects related to customers, sales orders, and sales territories.</comment>
+    <comment on="table" schema="humanresources" name="department">Lookup table containing the departments within the Adventure Works Cycles company.</comment>
+    <comment on="column" schema="humanresources" table="department" name="departmentid">Primary key for Department records.</comment>
+    <comment on="column" schema="humanresources" table="department" name="name">Name of the department.</comment>
+    <comment on="column" schema="humanresources" table="department" name="groupname">Name of the group to which the department belongs.</comment>
+    <comment on="table" schema="humanresources" name="employee">Employee information such as salary, department, and title.</comment>
+    <comment on="column" schema="humanresources" table="employee" name="businessentityid">Primary key for Employee records.  Foreign key to BusinessEntity.BusinessEntityID.</comment>
+    <comment on="column" schema="humanresources" table="employee" name="nationalidnumber">Unique national identification number such as a social security number.</comment>
+    <comment on="column" schema="humanresources" table="employee" name="loginid">Network login.</comment>
+    <comment on="column" schema="humanresources" table="employee" name="jobtitle">Work title such as Buyer or Sales Representative.</comment>
+    <comment on="column" schema="humanresources" table="employee" name="birthdate">Date of birth.</comment>
+    <comment on="column" schema="humanresources" table="employee" name="maritalstatus">M = Married, S = Single</comment>
+    <comment on="column" schema="humanresources" table="employee" name="gender">M = Male, F = Female</comment>
+    <comment on="column" schema="humanresources" table="employee" name="hiredate">Employee hired on this date.</comment>
+    <comment on="column" schema="humanresources" table="employee" name="salariedflag">Job classification. 0 = Hourly, not exempt from collective bargaining. 1 = Salaried, exempt from collective bargaining.</comment>
+    <comment on="column" schema="humanresources" table="employee" name="vacationhours">Number of available vacation hours.</comment>
+    <comment on="column" schema="humanresources" table="employee" name="sickleavehours">Number of available sick leave hours.</comment>
+    <comment on="column" schema="humanresources" table="employee" name="currentflag">0 = Inactive, 1 = Active</comment>
+    <comment on="column" schema="humanresources" table="employee" name="organizationnode">Where the employee is located in corporate hierarchy.</comment>
+    <comment on="table" schema="humanresources" name="employeedepartmenthistory">Employee department transfers.</comment>
+    <comment on="column" schema="humanresources" table="employeedepartmenthistory" name="businessentityid">Employee identification number. Foreign key to Employee.BusinessEntityID.</comment>
+    <comment on="column" schema="humanresources" table="employeedepartmenthistory" name="departmentid">Department in which the employee worked including currently. Foreign key to Department.DepartmentID.</comment>
+    <comment on="column" schema="humanresources" table="employeedepartmenthistory" name="shiftid">Identifies which 8-hour shift the employee works. Foreign key to Shift.Shift.ID.</comment>
+    <comment on="column" schema="humanresources" table="employeedepartmenthistory" name="startdate">Date the employee started work in the department.</comment>
+    <comment on="column" schema="humanresources" table="employeedepartmenthistory" name="enddate">Date the employee left the department. NULL = Current department.</comment>
+    <comment on="table" schema="humanresources" name="employeepayhistory">Employee pay history.</comment>
+    <comment on="column" schema="humanresources" table="employeepayhistory" name="businessentityid">Employee identification number. Foreign key to Employee.BusinessEntityID.</comment>
+    <comment on="column" schema="humanresources" table="employeepayhistory" name="ratechangedate">Date the change in pay is effective</comment>
+    <comment on="column" schema="humanresources" table="employeepayhistory" name="rate">Salary hourly rate.</comment>
+    <comment on="column" schema="humanresources" table="employeepayhistory" name="payfrequency">1 = Salary received monthly, 2 = Salary received biweekly</comment>
+    <comment on="table" schema="humanresources" name="jobcandidate">RÃ©sumÃ©s submitted to Human Resources by job applicants.</comment>
+    <comment on="column" schema="humanresources" table="jobcandidate" name="jobcandidateid">Primary key for JobCandidate records.</comment>
+    <comment on="column" schema="humanresources" table="jobcandidate" name="businessentityid">Employee identification number if applicant was hired. Foreign key to Employee.BusinessEntityID.</comment>
+    <comment on="column" schema="humanresources" table="jobcandidate" name="resume">RÃ©sumÃ© in XML format.</comment>
+    <comment on="table" schema="humanresources" name="shift">Work shift lookup table.</comment>
+    <comment on="column" schema="humanresources" table="shift" name="shiftid">Primary key for Shift records.</comment>
+    <comment on="column" schema="humanresources" table="shift" name="name">Shift description.</comment>
+    <comment on="column" schema="humanresources" table="shift" name="starttime">Shift start time.</comment>
+    <comment on="column" schema="humanresources" table="shift" name="endtime">Shift end time.</comment>
+    <comment on="table" schema="person" name="address">Street address information for customers, employees, and vendors.</comment>
+    <comment on="column" schema="person" table="address" name="addressid">Primary key for Address records.</comment>
+    <comment on="column" schema="person" table="address" name="addressline1">First street address line.</comment>
+    <comment on="column" schema="person" table="address" name="addressline2">Second street address line.</comment>
+    <comment on="column" schema="person" table="address" name="city">Name of the city.</comment>
+    <comment on="column" schema="person" table="address" name="stateprovinceid">Unique identification number for the state or province. Foreign key to StateProvince table.</comment>
+    <comment on="column" schema="person" table="address" name="postalcode">Postal code for the street address.</comment>
+    <comment on="column" schema="person" table="address" name="spatiallocation">Latitude and longitude of this address.</comment>
+    <comment on="table" schema="person" name="businessentityaddress">Cross-reference table mapping customers, vendors, and employees to their addresses.</comment>
+    <comment on="column" schema="person" table="businessentityaddress" name="businessentityid">Primary key. Foreign key to BusinessEntity.BusinessEntityID.</comment>
+    <comment on="column" schema="person" table="businessentityaddress" name="addressid">Primary key. Foreign key to Address.AddressID.</comment>
+    <comment on="column" schema="person" table="businessentityaddress" name="addresstypeid">Primary key. Foreign key to AddressType.AddressTypeID.</comment>
+    <comment on="table" schema="person" name="countryregion">Lookup table containing the ISO standard codes for countries and regions.</comment>
+    <comment on="column" schema="person" table="countryregion" name="countryregioncode">ISO standard code for countries and regions.</comment>
+    <comment on="column" schema="person" table="countryregion" name="name">Country or region name.</comment>
+    <comment on="table" schema="person" name="emailaddress">Where to send a person email.</comment>
+    <comment on="column" schema="person" table="emailaddress" name="businessentityid">Primary key. Person associated with this email address.  Foreign key to Person.BusinessEntityID</comment>
+    <comment on="column" schema="person" table="emailaddress" name="emailaddressid">Primary key. ID of this email address.</comment>
+    <comment on="column" schema="person" table="emailaddress" name="emailaddress">E-mail address for the person.</comment>
+    <comment on="table" schema="person" name="person">Human beings involved with AdventureWorks: employees, customer contacts, and vendor contacts.</comment>
+    <comment on="column" schema="person" table="person" name="businessentityid">Primary key for Person records.</comment>
+    <comment on="column" schema="person" table="person" name="persontype">Primary type of person: SC = Store Contact, IN = Individual (retail) customer, SP = Sales person, EM = Employee (non-sales), VC = Vendor contact, GC = General contact</comment>
+    <comment on="column" schema="person" table="person" name="namestyle">0 = The data in FirstName and LastName are stored in western style (first name, last name) order.  1 = Eastern style (last name, first name) order.</comment>
+    <comment on="column" schema="person" table="person" name="title">A courtesy title. For example, Mr. or Ms.</comment>
+    <comment on="column" schema="person" table="person" name="firstname">First name of the person.</comment>
+    <comment on="column" schema="person" table="person" name="middlename">Middle name or middle initial of the person.</comment>
+    <comment on="column" schema="person" table="person" name="lastname">Last name of the person.</comment>
+    <comment on="column" schema="person" table="person" name="suffix">Surname suffix. For example, Sr. or Jr.</comment>
+    <comment on="column" schema="person" table="person" name="emailpromotion">0 = Contact does not wish to receive e-mail promotions, 1 = Contact does wish to receive e-mail promotions from AdventureWorks, 2 = Contact does wish to receive e-mail promotions from AdventureWorks and selected partners.</comment>
+    <comment on="column" schema="person" table="person" name="additionalcontactinfo">Additional contact information about the person stored in xml format.</comment>
+    <comment on="column" schema="person" table="person" name="demographics">Personal information such as hobbies, and income collected from online shoppers. Used for sales analysis.</comment>
+    <comment on="table" schema="person" name="personphone">Telephone number and type of a person.</comment>
+    <comment on="column" schema="person" table="personphone" name="businessentityid">Business entity identification number. Foreign key to Person.BusinessEntityID.</comment>
+    <comment on="column" schema="person" table="personphone" name="phonenumber">Telephone number identification number.</comment>
+    <comment on="column" schema="person" table="personphone" name="phonenumbertypeid">Kind of phone number. Foreign key to PhoneNumberType.PhoneNumberTypeID.</comment>
+    <comment on="table" schema="person" name="phonenumbertype">Type of phone number of a person.</comment>
+    <comment on="column" schema="person" table="phonenumbertype" name="phonenumbertypeid">Primary key for telephone number type records.</comment>
+    <comment on="column" schema="person" table="phonenumbertype" name="name">Name of the telephone number type</comment>
+    <comment on="table" schema="person" name="stateprovince">State and province lookup table.</comment>
+    <comment on="column" schema="person" table="stateprovince" name="stateprovinceid">Primary key for StateProvince records.</comment>
+    <comment on="column" schema="person" table="stateprovince" name="stateprovincecode">ISO standard state or province code.</comment>
+    <comment on="column" schema="person" table="stateprovince" name="countryregioncode">ISO standard country or region code. Foreign key to CountryRegion.CountryRegionCode.</comment>
+    <comment on="column" schema="person" table="stateprovince" name="isonlystateprovinceflag">0 = StateProvinceCode exists. 1 = StateProvinceCode unavailable, using CountryRegionCode.</comment>
+    <comment on="column" schema="person" table="stateprovince" name="name">State or province description.</comment>
+    <comment on="column" schema="person" table="stateprovince" name="territoryid">ID of the territory in which the state or province is located. Foreign key to SalesTerritory.SalesTerritoryID.</comment>
+    <comment on="table" schema="person" name="addresstype">Types of addresses stored in the Address table.</comment>
+    <comment on="column" schema="person" table="addresstype" name="addresstypeid">Primary key for AddressType records.</comment>
+    <comment on="column" schema="person" table="addresstype" name="name">Address type description. For example, Billing, Home, or Shipping.</comment>
+    <comment on="table" schema="person" name="businessentity">Source of the ID that connects vendors, customers, and employees with address and contact information.</comment>
+    <comment on="column" schema="person" table="businessentity" name="businessentityid">Primary key for all customers, vendors, and employees.</comment>
+    <comment on="table" schema="person" name="businessentitycontact">Cross-reference table mapping stores, vendors, and employees to people</comment>
+    <comment on="column" schema="person" table="businessentitycontact" name="businessentityid">Primary key. Foreign key to BusinessEntity.BusinessEntityID.</comment>
+    <comment on="column" schema="person" table="businessentitycontact" name="personid">Primary key. Foreign key to Person.BusinessEntityID.</comment>
+    <comment on="column" schema="person" table="businessentitycontact" name="contacttypeid">Primary key.  Foreign key to ContactType.ContactTypeID.</comment>
+    <comment on="table" schema="person" name="contacttype">Lookup table containing the types of business entity contacts.</comment>
+    <comment on="column" schema="person" table="contacttype" name="contacttypeid">Primary key for ContactType records.</comment>
+    <comment on="column" schema="person" table="contacttype" name="name">Contact type description.</comment>
+    <comment on="table" schema="person" name="password">One way hashed authentication information</comment>
+    <comment on="column" schema="person" table="password" name="passwordhash">Password for the e-mail account.</comment>
+    <comment on="column" schema="person" table="password" name="passwordsalt">Random value concatenated with the password string before the password is hashed.</comment>
+    <comment on="table" schema="production" name="billofmaterials">Items required to make bicycles and bicycle subassemblies. It identifies the heirarchical relationship between a parent product and its components.</comment>
+    <comment on="column" schema="production" table="billofmaterials" name="billofmaterialsid">Primary key for BillOfMaterials records.</comment>
+    <comment on="column" schema="production" table="billofmaterials" name="productassemblyid">Parent product identification number. Foreign key to Product.ProductID.</comment>
+    <comment on="column" schema="production" table="billofmaterials" name="componentid">Component identification number. Foreign key to Product.ProductID.</comment>
+    <comment on="column" schema="production" table="billofmaterials" name="startdate">Date the component started being used in the assembly item.</comment>
+    <comment on="column" schema="production" table="billofmaterials" name="enddate">Date the component stopped being used in the assembly item.</comment>
+    <comment on="column" schema="production" table="billofmaterials" name="unitmeasurecode">Standard code identifying the unit of measure for the quantity.</comment>
+    <comment on="column" schema="production" table="billofmaterials" name="bomlevel">Indicates the depth the component is from its parent (AssemblyID).</comment>
+    <comment on="column" schema="production" table="billofmaterials" name="perassemblyqty">Quantity of the component needed to create the assembly.</comment>
+    <comment on="table" schema="production" name="culture">Lookup table containing the languages in which some AdventureWorks data is stored.</comment>
+    <comment on="column" schema="production" table="culture" name="cultureid">Primary key for Culture records.</comment>
+    <comment on="column" schema="production" table="culture" name="name">Culture description.</comment>
+    <comment on="table" schema="production" name="document">Product maintenance documents.</comment>
+    <comment on="column" schema="production" table="document" name="title">Title of the document.</comment>
+    <comment on="column" schema="production" table="document" name="owner">Employee who controls the document.  Foreign key to Employee.BusinessEntityID</comment>
+    <comment on="column" schema="production" table="document" name="folderflag">0 = This is a folder, 1 = This is a document.</comment>
+    <comment on="column" schema="production" table="document" name="filename">File name of the document</comment>
+    <comment on="column" schema="production" table="document" name="fileextension">File extension indicating the document type. For example, .doc or .txt.</comment>
+    <comment on="column" schema="production" table="document" name="revision">Revision number of the document.</comment>
+    <comment on="column" schema="production" table="document" name="changenumber">Engineering change approval number.</comment>
+    <comment on="column" schema="production" table="document" name="status">1 = Pending approval, 2 = Approved, 3 = Obsolete</comment>
+    <comment on="column" schema="production" table="document" name="documentsummary">Document abstract.</comment>
+    <comment on="column" schema="production" table="document" name="document">Complete document.</comment>
+    <comment on="column" schema="production" table="document" name="rowguid">ROWGUIDCOL number uniquely identifying the record. Required for FileStream.</comment>
+    <comment on="column" schema="production" table="document" name="documentnode">Primary key for Document records.</comment>
+    <comment on="table" schema="production" name="illustration">Bicycle assembly diagrams.</comment>
+    <comment on="column" schema="production" table="illustration" name="illustrationid">Primary key for Illustration records.</comment>
+    <comment on="column" schema="production" table="illustration" name="diagram">Illustrations used in manufacturing instructions. Stored as XML.</comment>
+    <comment on="table" schema="production" name="location">Product inventory and manufacturing locations.</comment>
+    <comment on="column" schema="production" table="location" name="locationid">Primary key for Location records.</comment>
+    <comment on="column" schema="production" table="location" name="name">Location description.</comment>
+    <comment on="column" schema="production" table="location" name="costrate">Standard hourly cost of the manufacturing location.</comment>
+    <comment on="column" schema="production" table="location" name="availability">Work capacity (in hours) of the manufacturing location.</comment>
+    <comment on="table" schema="production" name="product">Products sold or used in the manfacturing of sold products.</comment>
+    <comment on="column" schema="production" table="product" name="productid">Primary key for Product records.</comment>
+    <comment on="column" schema="production" table="product" name="name">Name of the product.</comment>
+    <comment on="column" schema="production" table="product" name="productnumber">Unique product identification number.</comment>
+    <comment on="column" schema="production" table="product" name="makeflag">0 = Product is purchased, 1 = Product is manufactured in-house.</comment>
+    <comment on="column" schema="production" table="product" name="finishedgoodsflag">0 = Product is not a salable item. 1 = Product is salable.</comment>
+    <comment on="column" schema="production" table="product" name="color">Product color.</comment>
+    <comment on="column" schema="production" table="product" name="safetystocklevel">Minimum inventory quantity.</comment>
+    <comment on="column" schema="production" table="product" name="reorderpoint">Inventory level that triggers a purchase order or work order.</comment>
+    <comment on="column" schema="production" table="product" name="standardcost">Standard cost of the product.</comment>
+    <comment on="column" schema="production" table="product" name="listprice">Selling price.</comment>
+    <comment on="column" schema="production" table="product" name="size">Product size.</comment>
+    <comment on="column" schema="production" table="product" name="sizeunitmeasurecode">Unit of measure for Size column.</comment>
+    <comment on="column" schema="production" table="product" name="weightunitmeasurecode">Unit of measure for Weight column.</comment>
+    <comment on="column" schema="production" table="product" name="weight">Product weight.</comment>
+    <comment on="column" schema="production" table="product" name="daystomanufacture">Number of days required to manufacture the product.</comment>
+    <comment on="column" schema="production" table="product" name="productline">R = Road, M = Mountain, T = Touring, S = Standard</comment>
+    <comment on="column" schema="production" table="product" name="class">H = High, M = Medium, L = Low</comment>
+    <comment on="column" schema="production" table="product" name="style">W = Womens, M = Mens, U = Universal</comment>
+    <comment on="column" schema="production" table="product" name="productsubcategoryid">Product is a member of this product subcategory. Foreign key to ProductSubCategory.ProductSubCategoryID.</comment>
+    <comment on="column" schema="production" table="product" name="productmodelid">Product is a member of this product model. Foreign key to ProductModel.ProductModelID.</comment>
+    <comment on="column" schema="production" table="product" name="sellstartdate">Date the product was available for sale.</comment>
+    <comment on="column" schema="production" table="product" name="sellenddate">Date the product was no longer available for sale.</comment>
+    <comment on="column" schema="production" table="product" name="discontinueddate">Date the product was discontinued.</comment>
+    <comment on="table" schema="production" name="productcategory">High-level product categorization.</comment>
+    <comment on="column" schema="production" table="productcategory" name="productcategoryid">Primary key for ProductCategory records.</comment>
+    <comment on="column" schema="production" table="productcategory" name="name">Category description.</comment>
+    <comment on="table" schema="production" name="productcosthistory">Changes in the cost of a product over time.</comment>
+    <comment on="column" schema="production" table="productcosthistory" name="productid">Product identification number. Foreign key to Product.ProductID</comment>
+    <comment on="column" schema="production" table="productcosthistory" name="startdate">Product cost start date.</comment>
+    <comment on="column" schema="production" table="productcosthistory" name="enddate">Product cost end date.</comment>
+    <comment on="column" schema="production" table="productcosthistory" name="standardcost">Standard cost of the product.</comment>
+    <comment on="table" schema="production" name="productdescription">Product descriptions in several languages.</comment>
+    <comment on="column" schema="production" table="productdescription" name="productdescriptionid">Primary key for ProductDescription records.</comment>
+    <comment on="column" schema="production" table="productdescription" name="description">Description of the product.</comment>
+    <comment on="table" schema="production" name="productdocument">Cross-reference table mapping products to related product documents.</comment>
+    <comment on="column" schema="production" table="productdocument" name="productid">Product identification number. Foreign key to Product.ProductID.</comment>
+    <comment on="column" schema="production" table="productdocument" name="documentnode">Document identification number. Foreign key to Document.DocumentNode.</comment>
+    <comment on="table" schema="production" name="productinventory">Product inventory information.</comment>
+    <comment on="column" schema="production" table="productinventory" name="productid">Product identification number. Foreign key to Product.ProductID.</comment>
+    <comment on="column" schema="production" table="productinventory" name="locationid">Inventory location identification number. Foreign key to Location.LocationID.</comment>
+    <comment on="column" schema="production" table="productinventory" name="shelf">Storage compartment within an inventory location.</comment>
+    <comment on="column" schema="production" table="productinventory" name="bin">Storage container on a shelf in an inventory location.</comment>
+    <comment on="column" schema="production" table="productinventory" name="quantity">Quantity of products in the inventory location.</comment>
+    <comment on="table" schema="production" name="productlistpricehistory">Changes in the list price of a product over time.</comment>
+    <comment on="column" schema="production" table="productlistpricehistory" name="productid">Product identification number. Foreign key to Product.ProductID</comment>
+    <comment on="column" schema="production" table="productlistpricehistory" name="startdate">List price start date.</comment>
+    <comment on="column" schema="production" table="productlistpricehistory" name="enddate">List price end date</comment>
+    <comment on="column" schema="production" table="productlistpricehistory" name="listprice">Product list price.</comment>
+    <comment on="table" schema="production" name="productmodel">Product model classification.</comment>
+    <comment on="column" schema="production" table="productmodel" name="productmodelid">Primary key for ProductModel records.</comment>
+    <comment on="column" schema="production" table="productmodel" name="name">Product model description.</comment>
+    <comment on="column" schema="production" table="productmodel" name="catalogdescription">Detailed product catalog information in xml format.</comment>
+    <comment on="column" schema="production" table="productmodel" name="instructions">Manufacturing instructions in xml format.</comment>
+    <comment on="table" schema="production" name="productmodelillustration">Cross-reference table mapping product models and illustrations.</comment>
+    <comment on="column" schema="production" table="productmodelillustration" name="productmodelid">Primary key. Foreign key to ProductModel.ProductModelID.</comment>
+    <comment on="column" schema="production" table="productmodelillustration" name="illustrationid">Primary key. Foreign key to Illustration.IllustrationID.</comment>
+    <comment on="table" schema="production" name="productmodelproductdescriptionculture">Cross-reference table mapping product descriptions and the language the description is written in.</comment>
+    <comment on="column" schema="production" table="productmodelproductdescriptionculture" name="productmodelid">Primary key. Foreign key to ProductModel.ProductModelID.</comment>
+    <comment on="column" schema="production" table="productmodelproductdescriptionculture" name="productdescriptionid">Primary key. Foreign key to ProductDescription.ProductDescriptionID.</comment>
+    <comment on="column" schema="production" table="productmodelproductdescriptionculture" name="cultureid">Culture identification number. Foreign key to Culture.CultureID.</comment>
+    <comment on="table" schema="production" name="productphoto">Product images.</comment>
+    <comment on="column" schema="production" table="productphoto" name="productphotoid">Primary key for ProductPhoto records.</comment>
+    <comment on="column" schema="production" table="productphoto" name="thumbnailphoto">Small image of the product.</comment>
+    <comment on="column" schema="production" table="productphoto" name="thumbnailphotofilename">Small image file name.</comment>
+    <comment on="column" schema="production" table="productphoto" name="largephoto">Large image of the product.</comment>
+    <comment on="column" schema="production" table="productphoto" name="largephotofilename">Large image file name.</comment>
+    <comment on="table" schema="production" name="productproductphoto">Cross-reference table mapping products and product photos.</comment>
+    <comment on="column" schema="production" table="productproductphoto" name="productid">Product identification number. Foreign key to Product.ProductID.</comment>
+    <comment on="column" schema="production" table="productproductphoto" name="productphotoid">Product photo identification number. Foreign key to ProductPhoto.ProductPhotoID.</comment>
+    <comment on="column" schema="production" table="productproductphoto" name="primary">0 = Photo is not the principal image. 1 = Photo is the principal image.</comment>
+    <comment on="table" schema="production" name="productreview">Customer reviews of products they have purchased.</comment>
+    <comment on="column" schema="production" table="productreview" name="productreviewid">Primary key for ProductReview records.</comment>
+    <comment on="column" schema="production" table="productreview" name="productid">Product identification number. Foreign key to Product.ProductID.</comment>
+    <comment on="column" schema="production" table="productreview" name="reviewername">Name of the reviewer.</comment>
+    <comment on="column" schema="production" table="productreview" name="reviewdate">Date review was submitted.</comment>
+    <comment on="column" schema="production" table="productreview" name="emailaddress">Reviewer&#39;s e-mail address.</comment>
+    <comment on="column" schema="production" table="productreview" name="rating">Product rating given by the reviewer. Scale is 1 to 5 with 5 as the highest rating.</comment>
+    <comment on="column" schema="production" table="productreview" name="comments">Reviewer&#39;s comments</comment>
+    <comment on="table" schema="production" name="productsubcategory">Product subcategories. See ProductCategory table.</comment>
+    <comment on="column" schema="production" table="productsubcategory" name="productsubcategoryid">Primary key for ProductSubcategory records.</comment>
+    <comment on="column" schema="production" table="productsubcategory" name="productcategoryid">Product category identification number. Foreign key to ProductCategory.ProductCategoryID.</comment>
+    <comment on="column" schema="production" table="productsubcategory" name="name">Subcategory description.</comment>
+    <comment on="table" schema="production" name="scrapreason">Manufacturing failure reasons lookup table.</comment>
+    <comment on="column" schema="production" table="scrapreason" name="scrapreasonid">Primary key for ScrapReason records.</comment>
+    <comment on="column" schema="production" table="scrapreason" name="name">Failure description.</comment>
+    <comment on="table" schema="production" name="transactionhistory">Record of each purchase order, sales order, or work order transaction year to date.</comment>
+    <comment on="column" schema="production" table="transactionhistory" name="transactionid">Primary key for TransactionHistory records.</comment>
+    <comment on="column" schema="production" table="transactionhistory" name="productid">Product identification number. Foreign key to Product.ProductID.</comment>
+    <comment on="column" schema="production" table="transactionhistory" name="referenceorderid">Purchase order, sales order, or work order identification number.</comment>
+    <comment on="column" schema="production" table="transactionhistory" name="referenceorderlineid">Line number associated with the purchase order, sales order, or work order.</comment>
+    <comment on="column" schema="production" table="transactionhistory" name="transactiondate">Date and time of the transaction.</comment>
+    <comment on="column" schema="production" table="transactionhistory" name="transactiontype">W = WorkOrder, S = SalesOrder, P = PurchaseOrder</comment>
+    <comment on="column" schema="production" table="transactionhistory" name="quantity">Product quantity.</comment>
+    <comment on="column" schema="production" table="transactionhistory" name="actualcost">Product cost.</comment>
+    <comment on="table" schema="production" name="transactionhistoryarchive">Transactions for previous years.</comment>
+    <comment on="column" schema="production" table="transactionhistoryarchive" name="transactionid">Primary key for TransactionHistoryArchive records.</comment>
+    <comment on="column" schema="production" table="transactionhistoryarchive" name="productid">Product identification number. Foreign key to Product.ProductID.</comment>
+    <comment on="column" schema="production" table="transactionhistoryarchive" name="referenceorderid">Purchase order, sales order, or work order identification number.</comment>
+    <comment on="column" schema="production" table="transactionhistoryarchive" name="referenceorderlineid">Line number associated with the purchase order, sales order, or work order.</comment>
+    <comment on="column" schema="production" table="transactionhistoryarchive" name="transactiondate">Date and time of the transaction.</comment>
+    <comment on="column" schema="production" table="transactionhistoryarchive" name="transactiontype">W = Work Order, S = Sales Order, P = Purchase Order</comment>
+    <comment on="column" schema="production" table="transactionhistoryarchive" name="quantity">Product quantity.</comment>
+    <comment on="column" schema="production" table="transactionhistoryarchive" name="actualcost">Product cost.</comment>
+    <comment on="table" schema="production" name="unitmeasure">Unit of measure lookup table.</comment>
+    <comment on="column" schema="production" table="unitmeasure" name="unitmeasurecode">Primary key.</comment>
+    <comment on="column" schema="production" table="unitmeasure" name="name">Unit of measure description.</comment>
+    <comment on="table" schema="production" name="workorder">Manufacturing work orders.</comment>
+    <comment on="column" schema="production" table="workorder" name="workorderid">Primary key for WorkOrder records.</comment>
+    <comment on="column" schema="production" table="workorder" name="productid">Product identification number. Foreign key to Product.ProductID.</comment>
+    <comment on="column" schema="production" table="workorder" name="orderqty">Product quantity to build.</comment>
+    <comment on="column" schema="production" table="workorder" name="scrappedqty">Quantity that failed inspection.</comment>
+    <comment on="column" schema="production" table="workorder" name="startdate">Work order start date.</comment>
+    <comment on="column" schema="production" table="workorder" name="enddate">Work order end date.</comment>
+    <comment on="column" schema="production" table="workorder" name="duedate">Work order due date.</comment>
+    <comment on="column" schema="production" table="workorder" name="scrapreasonid">Reason for inspection failure.</comment>
+    <comment on="table" schema="production" name="workorderrouting">Work order details.</comment>
+    <comment on="column" schema="production" table="workorderrouting" name="workorderid">Primary key. Foreign key to WorkOrder.WorkOrderID.</comment>
+    <comment on="column" schema="production" table="workorderrouting" name="productid">Primary key. Foreign key to Product.ProductID.</comment>
+    <comment on="column" schema="production" table="workorderrouting" name="operationsequence">Primary key. Indicates the manufacturing process sequence.</comment>
+    <comment on="column" schema="production" table="workorderrouting" name="locationid">Manufacturing location where the part is processed. Foreign key to Location.LocationID.</comment>
+    <comment on="column" schema="production" table="workorderrouting" name="scheduledstartdate">Planned manufacturing start date.</comment>
+    <comment on="column" schema="production" table="workorderrouting" name="scheduledenddate">Planned manufacturing end date.</comment>
+    <comment on="column" schema="production" table="workorderrouting" name="actualstartdate">Actual start date.</comment>
+    <comment on="column" schema="production" table="workorderrouting" name="actualenddate">Actual end date.</comment>
+    <comment on="column" schema="production" table="workorderrouting" name="actualresourcehrs">Number of manufacturing hours used.</comment>
+    <comment on="column" schema="production" table="workorderrouting" name="plannedcost">Estimated manufacturing cost.</comment>
+    <comment on="column" schema="production" table="workorderrouting" name="actualcost">Actual manufacturing cost.</comment>
+    <comment on="table" schema="purchasing" name="purchaseorderdetail">Individual products associated with a specific purchase order. See PurchaseOrderHeader.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderdetail" name="purchaseorderid">Primary key. Foreign key to PurchaseOrderHeader.PurchaseOrderID.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderdetail" name="purchaseorderdetailid">Primary key. One line number per purchased product.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderdetail" name="duedate">Date the product is expected to be received.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderdetail" name="orderqty">Quantity ordered.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderdetail" name="productid">Product identification number. Foreign key to Product.ProductID.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderdetail" name="unitprice">Vendor&#39;s selling price of a single product.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderdetail" name="receivedqty">Quantity actually received from the vendor.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderdetail" name="rejectedqty">Quantity rejected during inspection.</comment>
+    <comment on="table" schema="purchasing" name="purchaseorderheader">General purchase order information. See PurchaseOrderDetail.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderheader" name="purchaseorderid">Primary key.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderheader" name="revisionnumber">Incremental number to track changes to the purchase order over time.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderheader" name="status">Order current status. 1 = Pending; 2 = Approved; 3 = Rejected; 4 = Complete</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderheader" name="employeeid">Employee who created the purchase order. Foreign key to Employee.BusinessEntityID.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderheader" name="vendorid">Vendor with whom the purchase order is placed. Foreign key to Vendor.BusinessEntityID.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderheader" name="shipmethodid">Shipping method. Foreign key to ShipMethod.ShipMethodID.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderheader" name="orderdate">Purchase order creation date.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderheader" name="shipdate">Estimated shipment date from the vendor.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderheader" name="subtotal">Purchase order subtotal. Computed as SUM(PurchaseOrderDetail.LineTotal)for the appropriate PurchaseOrderID.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderheader" name="taxamt">Tax amount.</comment>
+    <comment on="column" schema="purchasing" table="purchaseorderheader" name="freight">Shipping cost.</comment>
+    <comment on="table" schema="purchasing" name="productvendor">Cross-reference table mapping vendors with the products they supply.</comment>
+    <comment on="column" schema="purchasing" table="productvendor" name="productid">Primary key. Foreign key to Product.ProductID.</comment>
+    <comment on="column" schema="purchasing" table="productvendor" name="businessentityid">Primary key. Foreign key to Vendor.BusinessEntityID.</comment>
+    <comment on="column" schema="purchasing" table="productvendor" name="averageleadtime">The average span of time (in days) between placing an order with the vendor and receiving the purchased product.</comment>
+    <comment on="column" schema="purchasing" table="productvendor" name="standardprice">The vendor&#39;s usual selling price.</comment>
+    <comment on="column" schema="purchasing" table="productvendor" name="lastreceiptcost">The selling price when last purchased.</comment>
+    <comment on="column" schema="purchasing" table="productvendor" name="lastreceiptdate">Date the product was last received by the vendor.</comment>
+    <comment on="column" schema="purchasing" table="productvendor" name="minorderqty">The maximum quantity that should be ordered.</comment>
+    <comment on="column" schema="purchasing" table="productvendor" name="maxorderqty">The minimum quantity that should be ordered.</comment>
+    <comment on="column" schema="purchasing" table="productvendor" name="onorderqty">The quantity currently on order.</comment>
+    <comment on="column" schema="purchasing" table="productvendor" name="unitmeasurecode">The product&#39;s unit of measure.</comment>
+    <comment on="table" schema="purchasing" name="shipmethod">Shipping company lookup table.</comment>
+    <comment on="column" schema="purchasing" table="shipmethod" name="shipmethodid">Primary key for ShipMethod records.</comment>
+    <comment on="column" schema="purchasing" table="shipmethod" name="name">Shipping company name.</comment>
+    <comment on="column" schema="purchasing" table="shipmethod" name="shipbase">Minimum shipping charge.</comment>
+    <comment on="column" schema="purchasing" table="shipmethod" name="shiprate">Shipping charge per pound.</comment>
+    <comment on="table" schema="purchasing" name="vendor">Companies from whom Adventure Works Cycles purchases parts or other goods.</comment>
+    <comment on="column" schema="purchasing" table="vendor" name="businessentityid">Primary key for Vendor records.  Foreign key to BusinessEntity.BusinessEntityID</comment>
+    <comment on="column" schema="purchasing" table="vendor" name="accountnumber">Vendor account (identification) number.</comment>
+    <comment on="column" schema="purchasing" table="vendor" name="name">Company name.</comment>
+    <comment on="column" schema="purchasing" table="vendor" name="creditrating">1 = Superior, 2 = Excellent, 3 = Above average, 4 = Average, 5 = Below average</comment>
+    <comment on="column" schema="purchasing" table="vendor" name="preferredvendorstatus">0 = Do not use if another vendor is available. 1 = Preferred over other vendors supplying the same product.</comment>
+    <comment on="column" schema="purchasing" table="vendor" name="activeflag">0 = Vendor no longer used. 1 = Vendor is actively used.</comment>
+    <comment on="column" schema="purchasing" table="vendor" name="purchasingwebserviceurl">Vendor URL.</comment>
+    <comment on="table" schema="sales" name="customer">Current customer information. Also see the Person and Store tables.</comment>
+    <comment on="column" schema="sales" table="customer" name="customerid">Primary key.</comment>
+    <comment on="column" schema="sales" table="customer" name="personid">Foreign key to Person.BusinessEntityID</comment>
+    <comment on="column" schema="sales" table="customer" name="storeid">Foreign key to Store.BusinessEntityID</comment>
+    <comment on="column" schema="sales" table="customer" name="territoryid">ID of the territory in which the customer is located. Foreign key to SalesTerritory.SalesTerritoryID.</comment>
+    <comment on="table" schema="sales" name="creditcard">Customer credit card information.</comment>
+    <comment on="column" schema="sales" table="creditcard" name="creditcardid">Primary key for CreditCard records.</comment>
+    <comment on="column" schema="sales" table="creditcard" name="cardtype">Credit card name.</comment>
+    <comment on="column" schema="sales" table="creditcard" name="cardnumber">Credit card number.</comment>
+    <comment on="column" schema="sales" table="creditcard" name="expmonth">Credit card expiration month.</comment>
+    <comment on="column" schema="sales" table="creditcard" name="expyear">Credit card expiration year.</comment>
+    <comment on="table" schema="sales" name="currencyrate">Currency exchange rates.</comment>
+    <comment on="column" schema="sales" table="currencyrate" name="currencyrateid">Primary key for CurrencyRate records.</comment>
+    <comment on="column" schema="sales" table="currencyrate" name="currencyratedate">Date and time the exchange rate was obtained.</comment>
+    <comment on="column" schema="sales" table="currencyrate" name="fromcurrencycode">Exchange rate was converted from this currency code.</comment>
+    <comment on="column" schema="sales" table="currencyrate" name="tocurrencycode">Exchange rate was converted to this currency code.</comment>
+    <comment on="column" schema="sales" table="currencyrate" name="averagerate">Average exchange rate for the day.</comment>
+    <comment on="column" schema="sales" table="currencyrate" name="endofdayrate">Final exchange rate for the day.</comment>
+    <comment on="table" schema="sales" name="countryregioncurrency">Cross-reference table mapping ISO currency codes to a country or region.</comment>
+    <comment on="column" schema="sales" table="countryregioncurrency" name="countryregioncode">ISO code for countries and regions. Foreign key to CountryRegion.CountryRegionCode.</comment>
+    <comment on="column" schema="sales" table="countryregioncurrency" name="currencycode">ISO standard currency code. Foreign key to Currency.CurrencyCode.</comment>
+    <comment on="table" schema="sales" name="currency">Lookup table containing standard ISO currencies.</comment>
+    <comment on="column" schema="sales" table="currency" name="currencycode">The ISO code for the Currency.</comment>
+    <comment on="column" schema="sales" table="currency" name="name">Currency name.</comment>
+    <comment on="table" schema="sales" name="personcreditcard">Cross-reference table mapping people to their credit card information in the CreditCard table.</comment>
+    <comment on="column" schema="sales" table="personcreditcard" name="businessentityid">Business entity identification number. Foreign key to Person.BusinessEntityID.</comment>
+    <comment on="column" schema="sales" table="personcreditcard" name="creditcardid">Credit card identification number. Foreign key to CreditCard.CreditCardID.</comment>
+    <comment on="table" schema="sales" name="store">Customers (resellers) of Adventure Works products.</comment>
+    <comment on="column" schema="sales" table="store" name="businessentityid">Primary key. Foreign key to Customer.BusinessEntityID.</comment>
+    <comment on="column" schema="sales" table="store" name="name">Name of the store.</comment>
+    <comment on="column" schema="sales" table="store" name="salespersonid">ID of the sales person assigned to the customer. Foreign key to SalesPerson.BusinessEntityID.</comment>
+    <comment on="column" schema="sales" table="store" name="demographics">Demographic informationg about the store such as the number of employees, annual sales and store type.</comment>
+    <comment on="table" schema="sales" name="shoppingcartitem">Contains online customer orders until the order is submitted or cancelled.</comment>
+    <comment on="column" schema="sales" table="shoppingcartitem" name="shoppingcartitemid">Primary key for ShoppingCartItem records.</comment>
+    <comment on="column" schema="sales" table="shoppingcartitem" name="shoppingcartid">Shopping cart identification number.</comment>
+    <comment on="column" schema="sales" table="shoppingcartitem" name="quantity">Product quantity ordered.</comment>
+    <comment on="column" schema="sales" table="shoppingcartitem" name="productid">Product ordered. Foreign key to Product.ProductID.</comment>
+    <comment on="column" schema="sales" table="shoppingcartitem" name="datecreated">Date the time the record was created.</comment>
+    <comment on="table" schema="sales" name="specialoffer">Sale discounts lookup table.</comment>
+    <comment on="column" schema="sales" table="specialoffer" name="specialofferid">Primary key for SpecialOffer records.</comment>
+    <comment on="column" schema="sales" table="specialoffer" name="description">Discount description.</comment>
+    <comment on="column" schema="sales" table="specialoffer" name="discountpct">Discount precentage.</comment>
+    <comment on="column" schema="sales" table="specialoffer" name="type">Discount type category.</comment>
+    <comment on="column" schema="sales" table="specialoffer" name="category">Group the discount applies to such as Reseller or Customer.</comment>
+    <comment on="column" schema="sales" table="specialoffer" name="startdate">Discount start date.</comment>
+    <comment on="column" schema="sales" table="specialoffer" name="enddate">Discount end date.</comment>
+    <comment on="column" schema="sales" table="specialoffer" name="minqty">Minimum discount percent allowed.</comment>
+    <comment on="column" schema="sales" table="specialoffer" name="maxqty">Maximum discount percent allowed.</comment>
+    <comment on="table" schema="sales" name="salesorderdetail">Individual products associated with a specific sales order. See SalesOrderHeader.</comment>
+    <comment on="column" schema="sales" table="salesorderdetail" name="salesorderid">Primary key. Foreign key to SalesOrderHeader.SalesOrderID.</comment>
+    <comment on="column" schema="sales" table="salesorderdetail" name="salesorderdetailid">Primary key. One incremental unique number per product sold.</comment>
+    <comment on="column" schema="sales" table="salesorderdetail" name="carriertrackingnumber">Shipment tracking number supplied by the shipper.</comment>
+    <comment on="column" schema="sales" table="salesorderdetail" name="orderqty">Quantity ordered per product.</comment>
+    <comment on="column" schema="sales" table="salesorderdetail" name="productid">Product sold to customer. Foreign key to Product.ProductID.</comment>
+    <comment on="column" schema="sales" table="salesorderdetail" name="specialofferid">Promotional code. Foreign key to SpecialOffer.SpecialOfferID.</comment>
+    <comment on="column" schema="sales" table="salesorderdetail" name="unitprice">Selling price of a single product.</comment>
+    <comment on="column" schema="sales" table="salesorderdetail" name="unitpricediscount">Discount amount.</comment>
+    <comment on="table" schema="sales" name="salesorderheader">General sales order information.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="salesorderid">Primary key.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="revisionnumber">Incremental number to track changes to the sales order over time.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="orderdate">Dates the sales order was created.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="duedate">Date the order is due to the customer.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="shipdate">Date the order was shipped to the customer.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="status">Order current status. 1 = In process; 2 = Approved; 3 = Backordered; 4 = Rejected; 5 = Shipped; 6 = Cancelled</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="onlineorderflag">0 = Order placed by sales person. 1 = Order placed online by customer.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="purchaseordernumber">Customer purchase order number reference.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="accountnumber">Financial accounting number reference.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="customerid">Customer identification number. Foreign key to Customer.BusinessEntityID.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="salespersonid">Sales person who created the sales order. Foreign key to SalesPerson.BusinessEntityID.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="territoryid">Territory in which the sale was made. Foreign key to SalesTerritory.SalesTerritoryID.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="billtoaddressid">Customer billing address. Foreign key to Address.AddressID.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="shiptoaddressid">Customer shipping address. Foreign key to Address.AddressID.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="shipmethodid">Shipping method. Foreign key to ShipMethod.ShipMethodID.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="creditcardid">Credit card identification number. Foreign key to CreditCard.CreditCardID.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="creditcardapprovalcode">Approval code provided by the credit card company.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="currencyrateid">Currency exchange rate used. Foreign key to CurrencyRate.CurrencyRateID.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="subtotal">Sales subtotal. Computed as SUM(SalesOrderDetail.LineTotal)for the appropriate SalesOrderID.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="taxamt">Tax amount.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="freight">Shipping cost.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="totaldue">Total due from customer. Computed as Subtotal + TaxAmt + Freight.</comment>
+    <comment on="column" schema="sales" table="salesorderheader" name="comment">Sales representative comments.</comment>
+    <comment on="table" schema="sales" name="salesorderheadersalesreason">Cross-reference table mapping sales orders to sales reason codes.</comment>
+    <comment on="column" schema="sales" table="salesorderheadersalesreason" name="salesorderid">Primary key. Foreign key to SalesOrderHeader.SalesOrderID.</comment>
+    <comment on="column" schema="sales" table="salesorderheadersalesreason" name="salesreasonid">Primary key. Foreign key to SalesReason.SalesReasonID.</comment>
+    <comment on="table" schema="sales" name="specialofferproduct">Cross-reference table mapping products to special offer discounts.</comment>
+    <comment on="column" schema="sales" table="specialofferproduct" name="specialofferid">Primary key for SpecialOfferProduct records.</comment>
+    <comment on="column" schema="sales" table="specialofferproduct" name="productid">Product identification number. Foreign key to Product.ProductID.</comment>
+    <comment on="table" schema="sales" name="salesperson">Sales representative current information.</comment>
+    <comment on="column" schema="sales" table="salesperson" name="businessentityid">Primary key for SalesPerson records. Foreign key to Employee.BusinessEntityID</comment>
+    <comment on="column" schema="sales" table="salesperson" name="territoryid">Territory currently assigned to. Foreign key to SalesTerritory.SalesTerritoryID.</comment>
+    <comment on="column" schema="sales" table="salesperson" name="salesquota">Projected yearly sales.</comment>
+    <comment on="column" schema="sales" table="salesperson" name="bonus">Bonus due if quota is met.</comment>
+    <comment on="column" schema="sales" table="salesperson" name="commissionpct">Commision percent received per sale.</comment>
+    <comment on="column" schema="sales" table="salesperson" name="salesytd">Sales total year to date.</comment>
+    <comment on="column" schema="sales" table="salesperson" name="saleslastyear">Sales total of previous year.</comment>
+    <comment on="table" schema="sales" name="salespersonquotahistory">Sales performance tracking.</comment>
+    <comment on="column" schema="sales" table="salespersonquotahistory" name="businessentityid">Sales person identification number. Foreign key to SalesPerson.BusinessEntityID.</comment>
+    <comment on="column" schema="sales" table="salespersonquotahistory" name="quotadate">Sales quota date.</comment>
+    <comment on="column" schema="sales" table="salespersonquotahistory" name="salesquota">Sales quota amount.</comment>
+    <comment on="table" schema="sales" name="salesreason">Lookup table of customer purchase reasons.</comment>
+    <comment on="column" schema="sales" table="salesreason" name="salesreasonid">Primary key for SalesReason records.</comment>
+    <comment on="column" schema="sales" table="salesreason" name="name">Sales reason description.</comment>
+    <comment on="column" schema="sales" table="salesreason" name="reasontype">Category the sales reason belongs to.</comment>
+    <comment on="table" schema="sales" name="salesterritory">Sales territory lookup table.</comment>
+    <comment on="column" schema="sales" table="salesterritory" name="territoryid">Primary key for SalesTerritory records.</comment>
+    <comment on="column" schema="sales" table="salesterritory" name="name">Sales territory description</comment>
+    <comment on="column" schema="sales" table="salesterritory" name="countryregioncode">ISO standard country or region code. Foreign key to CountryRegion.CountryRegionCode.</comment>
+    <comment on="column" schema="sales" table="salesterritory" name="group">Geographic area to which the sales territory belong.</comment>
+    <comment on="column" schema="sales" table="salesterritory" name="salesytd">Sales in the territory year to date.</comment>
+    <comment on="column" schema="sales" table="salesterritory" name="saleslastyear">Sales in the territory the previous year.</comment>
+    <comment on="column" schema="sales" table="salesterritory" name="costytd">Business costs in the territory year to date.</comment>
+    <comment on="column" schema="sales" table="salesterritory" name="costlastyear">Business costs in the territory the previous year.</comment>
+    <comment on="table" schema="sales" name="salesterritoryhistory">Sales representative transfers to other sales territories.</comment>
+    <comment on="column" schema="sales" table="salesterritoryhistory" name="businessentityid">Primary key. The sales rep.  Foreign key to SalesPerson.BusinessEntityID.</comment>
+    <comment on="column" schema="sales" table="salesterritoryhistory" name="territoryid">Primary key. Territory identification number. Foreign key to SalesTerritory.SalesTerritoryID.</comment>
+    <comment on="column" schema="sales" table="salesterritoryhistory" name="startdate">Primary key. Date the sales representive started work in the territory.</comment>
+    <comment on="column" schema="sales" table="salesterritoryhistory" name="enddate">Date the sales representative left work in the territory.</comment>
+    <comment on="table" schema="sales" name="salestaxrate">Tax rate lookup table.</comment>
+    <comment on="column" schema="sales" table="salestaxrate" name="salestaxrateid">Primary key for SalesTaxRate records.</comment>
+    <comment on="column" schema="sales" table="salestaxrate" name="stateprovinceid">State, province, or country/region the sales tax applies to.</comment>
+    <comment on="column" schema="sales" table="salestaxrate" name="taxtype">1 = Tax applied to retail transactions, 2 = Tax applied to wholesale transactions, 3 = Tax applied to all sales (retail and wholesale) transactions.</comment>
+    <comment on="column" schema="sales" table="salestaxrate" name="taxrate">Tax rate amount.</comment>
+    <comment on="column" schema="sales" table="salestaxrate" name="name">Tax rate description.</comment>
+  </comments>
+  <layouts>
+    <layout name="Default Diagram" default="true"></layout>
+  </layouts>
+</pgd>
