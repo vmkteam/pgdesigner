@@ -15,14 +15,15 @@ import (
 
 var (
 	ErrInternal = zenrpc.NewStringError(http.StatusInternalServerError, "internal error")
-	ErrReadOnly = zenrpc.NewStringError(http.StatusForbidden, "read-only mode: editing is disabled")
 )
 
-// writeMethods lists RPC method names that modify project state.
-// Blocked in read-only mode via middleware. Names are without namespace prefix
-// because zenrpc passes only the method part to middleware.
-var writeMethods = map[string]bool{
+// blockedMethods lists RPC methods blocked in read-only (public demo) mode.
+// Includes: all write methods + dangerous read methods (file access, quit, state mutation).
+// Names are without namespace prefix because zenrpc passes only the method part to middleware.
+var blockedMethods = map[string]bool{
+	// Project write methods
 	RPC.ProjectService.SaveProject:           true,
+	RPC.ProjectService.SaveProjectAs:         true,
 	RPC.ProjectService.SaveLayout:            true,
 	RPC.ProjectService.SetAutoSave:           true,
 	RPC.ProjectService.UpdateTable:           true,
@@ -35,14 +36,21 @@ var writeMethods = map[string]bool{
 	RPC.ProjectService.IgnoreLintRules:       true,
 	RPC.ProjectService.UnignoreLintRules:     true,
 	RPC.ProjectService.UpdateProjectSettings: true,
-	RPC.ProjectService.SaveProjectAs:         true,
+	// App methods dangerous for public demo
+	RPC.AppService.Quit:           true, // kills server
+	RPC.AppService.OpenFile:       true, // arbitrary file read + DB connect
+	RPC.AppService.Register:       true, // writes to disk
+	RPC.AppService.GetRecentFiles: true, // leaks server paths
+	RPC.AppService.OpenDemo:       true, // shared state mutation
+	RPC.AppService.NewProject:     true, // shared state mutation
+	RPC.AppService.CloseProject:   true, // shared state mutation
 }
 
 // readOnlyMiddleware blocks write methods in read-only mode.
 func readOnlyMiddleware(next zenrpc.InvokeFunc) zenrpc.InvokeFunc {
 	return func(ctx context.Context, method string, params json.RawMessage) zenrpc.Response {
-		if writeMethods[method] {
-			return zenrpc.Response{Error: ErrReadOnly}
+		if blockedMethods[method] {
+			return zenrpc.NewResponseError(zenrpc.IDFromContext(ctx), http.StatusForbidden, "read-only mode: editing is disabled", nil)
 		}
 		return next(ctx, method, params)
 	}

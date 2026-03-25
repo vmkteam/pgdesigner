@@ -51,6 +51,7 @@ type ProjectInfo struct {
 	Schemas         []string `json:"schemas"`
 	DefaultNullable bool     `json:"defaultNullable"`
 	IsDemo          bool     `json:"isDemo"`
+	IsReadOnly      bool     `json:"isReadOnly"`
 	IsRegistered    bool     `json:"isRegistered"`
 	FilePath        string   `json:"filePath"`
 }

@@ -103,6 +103,12 @@ func (s ProjectService) GetDDL() string {
 //zenrpc:rows default rows per table
 //zenrpc:return string
 func (s ProjectService) GenerateTestData(seed int64, rows int) (string, error) {
+	if rows <= 0 {
+		rows = 50
+	}
+	if rows > 1000 {
+		rows = 1000
+	}
 	var buf strings.Builder
 	opts := gendata.Options{Seed: seed, Rows: rows}
 	if err := gendata.Generate(&buf, s.getProject(), opts); err != nil {
