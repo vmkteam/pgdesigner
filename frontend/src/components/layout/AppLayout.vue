@@ -24,6 +24,7 @@ import AboutDialog from '../ui/AboutDialog.vue'
 import ProjectSettingsDialog from '../ui/ProjectSettingsDialog.vue'
 import WelcomeScreen from '../ui/WelcomeScreen.vue'
 import OpenDialog from '../ui/OpenDialog.vue'
+import SaveDialog from '../ui/SaveDialog.vue'
 import AppDialog from '../ui/AppDialog.vue'
 import ToastContainer from '../ui/ToastContainer.vue'
 
@@ -188,6 +189,7 @@ onMounted(() => {
     <ProjectSettingsDialog :open="ui.settingsOpen" @close="ui.settingsOpen = false" />
 
     <OpenDialog />
+    <SaveDialog />
     <AppDialog />
     <ToastContainer />
 

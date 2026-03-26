@@ -40,10 +40,14 @@ var blockedMethods = map[string]bool{
 	RPC.AppService.Quit:           true, // kills server
 	RPC.AppService.OpenFile:       true, // arbitrary file read + DB connect
 	RPC.AppService.Register:       true, // writes to disk
-	RPC.AppService.GetRecentFiles: true, // leaks server paths
-	RPC.AppService.OpenDemo:       true, // shared state mutation
-	RPC.AppService.NewProject:     true, // shared state mutation
-	RPC.AppService.CloseProject:   true, // shared state mutation
+	RPC.AppService.GetRecentFiles:     true, // leaks server paths
+	RPC.AppService.GetRecentFilesInfo: true, // leaks server paths
+	RPC.AppService.RemoveRecentFile:   true, // writes to disk
+	RPC.AppService.ListDirectory:      true, // leaks server filesystem
+	RPC.AppService.GetHomePath:        true, // leaks server filesystem
+	RPC.AppService.OpenDemo:           true, // shared state mutation
+	RPC.AppService.NewProject:         true, // shared state mutation
+	RPC.AppService.CloseProject:       true, // shared state mutation
 }
 
 // readOnlyMiddleware blocks write methods in read-only mode.
@@ -82,7 +86,7 @@ func New(project *pgd.Project, quitCh chan struct{}) *zenrpc.Server {
 
 // NewWithStore returns a new zenrpc Server with ProjectService backed by a ProjectStore.
 func NewWithStore(opts ServerOptions) *zenrpc.Server {
-	ps := NewProjectServiceWithStore(opts.Store, opts.IsRegisteredFn)
+	ps := NewProjectServiceWithStore(opts.Store, opts.IsRegisteredFn, opts.Config.AddRecentFile)
 	srv := zenrpc.NewServer(zenrpc.Options{
 		ExposeSMD: true,
 		AllowCORS: true,

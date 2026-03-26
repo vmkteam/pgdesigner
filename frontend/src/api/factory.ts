@@ -43,4 +43,7 @@ export type {
   IProjectGenerateTestDataParams,
   IDemoSchema,
   IDiffExample,
+  IDirEntry,
+  IDirectoryListing,
+  IRecentFile,
 } from './factory.generated'

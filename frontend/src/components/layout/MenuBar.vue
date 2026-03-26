@@ -16,8 +16,8 @@ import {
 } from 'reka-ui'
 
 import api from '@/api/factory'
-import { appPrompt } from '@/composables/useAppDialog'
 import { confirmUnsaved } from '@/composables/useConfirmUnsaved'
+import { appSaveAs } from '@/composables/useSaveDialog'
 import { showToast } from '@/composables/useToast'
 
 const store = useProjectStore()
@@ -47,8 +47,9 @@ async function fileOpen() {
 async function fileSaveAs() {
   const name = store.info?.name || 'untitled'
   const fp = store.info?.filePath || ''
-  const defaultPath = fp && !fp.startsWith('postgres') ? fp : `${name}.pgd`
-  const path = await appPrompt('Save as (.pgd):', 'Save As', defaultPath, true)
+  const defaultDir = fp && !fp.startsWith('postgres') ? fp.substring(0, fp.lastIndexOf('/')) : ''
+  const defaultName = fp ? fp.substring(fp.lastIndexOf('/') + 1) : `${name}.pgd`
+  const path = await appSaveAs(defaultDir, defaultName)
   if (!path) return
   try {
     await api.project.saveProjectAs({ path })
@@ -166,7 +167,7 @@ const menus = computed<Menu[]>(() => [
       { label: 'New', shortcut: mod + 'N', action: fileNew },
       { label: 'Open...', shortcut: mod + 'O', action: fileOpen },
       { label: 'Save', shortcut: mod + 'S', action: () => store.saveProject(), disabled: store.autoSave || !store.info?.filePath },
-      { label: 'Save As...', shortcut: mod + '⇧S', action: fileSaveAs },
+      { label: 'Save As...', shortcut: mod + '⇧S', action: fileSaveAs, disabled: ui.isWelcome },
       { label: '', separator: true },
       { label: 'Auto Save', checkbox: true, checked: store.autoSave, action: () => store.toggleAutoSave() },
       { label: '', separator: true },

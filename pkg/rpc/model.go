@@ -306,6 +306,30 @@ type IndexColDetail struct {
 	Opclass string `json:"opclass,omitempty"`
 }
 
+// DirEntry represents a file or directory in a directory listing.
+type DirEntry struct {
+	Name      string `json:"name"`
+	IsDir     bool   `json:"isDir"`
+	Size      int64  `json:"size"`
+	ModTime   string `json:"modTime"`
+	Supported bool   `json:"supported"`
+}
+
+// DirectoryListing holds the result of listing a directory.
+type DirectoryListing struct {
+	Path    string     `json:"path"`
+	Entries []DirEntry `json:"entries"`
+}
+
+// RecentFile holds metadata about a recently opened file.
+type RecentFile struct {
+	Path    string `json:"path"`
+	Name    string `json:"name"`
+	Size    int64  `json:"size"`
+	ModTime string `json:"modTime"`
+	Exists  bool   `json:"exists"`
+}
+
 // TypeInfo describes a type available for column autocomplete.
 type TypeInfo struct {
 	Name     string `json:"name"`

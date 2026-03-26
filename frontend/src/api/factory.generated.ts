@@ -98,6 +98,36 @@ export interface IDiffExample {
   description: string
 }
 
+export interface IDirEntry {
+  name: string,
+  isDir: boolean,
+  size: number,
+  modTime: string,
+  supported: boolean
+}
+
+export interface IDirectoryListing {
+  path: string,
+  entries: Array<IDirEntry>
+}
+
+export interface IRecentFile {
+  path: string,
+  name: string,
+  size: number,
+  modTime: string,
+  exists: boolean
+}
+
+export interface IAppListDirectoryParams {
+  path: string,
+  showAll: boolean
+}
+
+export interface IAppRemoveRecentFileParams {
+  path: string
+}
+
 export interface IDiffHazard {
   level: string, // dangerous, warning, info
   code: string, // DELETES_DATA, TABLE_REWRITE, etc.
@@ -483,10 +513,22 @@ export const factory = (send: any) => ({
       return send('app.CloseProject')
     },
     /**
+     * GetHomePath returns the user's home directory path.
+     */
+    getHomePath(): Promise<string> {
+      return send('app.GetHomePath')
+    },
+    /**
      * GetRecentFiles returns the list of recently opened files.
      */
     getRecentFiles(): Promise<Array<string>> {
       return send('app.GetRecentFiles')
+    },
+    /**
+     * GetRecentFilesInfo returns recent files with metadata.
+     */
+    getRecentFilesInfo(): Promise<Array<IRecentFile>> {
+      return send('app.GetRecentFilesInfo')
     },
     /**
      * ListDemoSchemas returns available embedded demo schemas.
@@ -499,6 +541,12 @@ export const factory = (send: any) => ({
      */
     listDiffExamples(): Promise<Array<IDiffExample>> {
       return send('app.ListDiffExamples')
+    },
+    /**
+     * ListDirectory lists files and subdirectories at the given path.
+     */
+    listDirectory(params: IAppListDirectoryParams): Promise<IDirectoryListing> {
+      return send('app.ListDirectory', params)
     },
     /**
      * NewProject creates a new empty project, replacing the current one.
@@ -539,6 +587,12 @@ zenrpc
      */
     register(params: IAppRegisterParams): Promise<boolean> {
       return send('app.Register', params)
+    },
+    /**
+     * RemoveRecentFile removes a path from the recent files list.
+     */
+    removeRecentFile(params: IAppRemoveRecentFileParams): Promise<boolean> {
+      return send('app.RemoveRecentFile', params)
     },
     /**
      * RunDiffExample loads a diff pair and returns the diff result.

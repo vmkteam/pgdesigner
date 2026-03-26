@@ -82,6 +82,10 @@ func NewWithStore(s *store.ProjectStore, opts ...AppOption) *App {
 					cfg.AddRecentFile(path)
 					return cfg.Save()
 				},
+				RemoveRecentFile: func(path string) error {
+					cfg.RemoveRecentFile(path)
+					return cfg.Save()
+				},
 			},
 		}),
 		quitCh: quitCh,

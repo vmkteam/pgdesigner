@@ -11,22 +11,26 @@ import (
 )
 
 var RPC = struct {
-	AppService     struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, ListDiffExamples, RunDiffExample string }
+	AppService     struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, GetHomePath, ListDirectory, RemoveRecentFile, GetRecentFilesInfo, ListDiffExamples, RunDiffExample string }
 	ProjectService struct{ GetInfo, GetSchema, GetDDL, GenerateTestData, Lint, ListObjects, GetTable, SaveProject, SaveProjectAs, SaveLayout, IsDirty, GetAutoSave, SetAutoSave, ListTypes, UpdateTable, PreviewDiff, DiffUnsaved, FixLintIssues, IgnoreLintRules, GetIgnoredRules, UnignoreLintRules, CreateTable, DeleteTable, CreateSchema, DeleteSchema, MoveTable, GetProjectSettings, UpdateProjectSettings, LintTable, Singularize string }
 }{
-	AppService: struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, ListDiffExamples, RunDiffExample string }{
-		Quit:             "quit",
-		Ping:             "ping",
-		About:            "about",
-		ListDemoSchemas:  "listdemoschemas",
-		OpenDemo:         "opendemo",
-		OpenFile:         "openfile",
-		NewProject:       "newproject",
-		CloseProject:     "closeproject",
-		Register:         "register",
-		GetRecentFiles:   "getrecentfiles",
-		ListDiffExamples: "listdiffexamples",
-		RunDiffExample:   "rundiffexample",
+	AppService: struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, GetHomePath, ListDirectory, RemoveRecentFile, GetRecentFilesInfo, ListDiffExamples, RunDiffExample string }{
+		Quit:               "quit",
+		Ping:               "ping",
+		About:              "about",
+		ListDemoSchemas:    "listdemoschemas",
+		OpenDemo:           "opendemo",
+		OpenFile:           "openfile",
+		NewProject:         "newproject",
+		CloseProject:       "closeproject",
+		Register:           "register",
+		GetRecentFiles:     "getrecentfiles",
+		GetHomePath:        "gethomepath",
+		ListDirectory:      "listdirectory",
+		RemoveRecentFile:   "removerecentfile",
+		GetRecentFilesInfo: "getrecentfilesinfo",
+		ListDiffExamples:   "listdiffexamples",
+		RunDiffExample:     "rundiffexample",
 	},
 	ProjectService: struct{ GetInfo, GetSchema, GetDDL, GenerateTestData, Lint, ListObjects, GetTable, SaveProject, SaveProjectAs, SaveLayout, IsDirty, GetAutoSave, SetAutoSave, ListTypes, UpdateTable, PreviewDiff, DiffUnsaved, FixLintIssues, IgnoreLintRules, GetIgnoredRules, UnignoreLintRules, CreateTable, DeleteTable, CreateSchema, DeleteSchema, MoveTable, GetProjectSettings, UpdateProjectSettings, LintTable, Singularize string }{
 		GetInfo:               "getinfo",
@@ -229,6 +233,130 @@ zenrpc`,
 					TypeName:    "[]",
 					Items: map[string]string{
 						"type": smd.String,
+					},
+				},
+			},
+			"GetHomePath": {
+				Description: `GetHomePath returns the user's home directory path.`,
+				Parameters:  []smd.JSONSchema{},
+				Returns: smd.JSONSchema{
+					Description: `string`,
+					Type:        smd.String,
+				},
+			},
+			"ListDirectory": {
+				Description: `ListDirectory lists files and subdirectories at the given path.
+Returns entries sorted: directories first (alphabetical), then files (alphabetical).
+Hidden files (starting with .) are excluded.`,
+				Parameters: []smd.JSONSchema{
+					{
+						Name:        "path",
+						Description: `absolute directory path (~ expanded server-side)`,
+						Type:        smd.String,
+					},
+					{
+						Name:        "showAll",
+						Description: `if true, show all files; if false, only supported extensions`,
+						Type:        smd.Boolean,
+					},
+				},
+				Returns: smd.JSONSchema{
+					Description: `DirectoryListing`,
+					Optional:    true,
+					Type:        smd.Object,
+					TypeName:    "DirectoryListing",
+					Properties: smd.PropertyList{
+						{
+							Name: "path",
+							Type: smd.String,
+						},
+						{
+							Name: "entries",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DirEntry",
+							},
+						},
+					},
+					Definitions: map[string]smd.Definition{
+						"DirEntry": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name: "isDir",
+									Type: smd.Boolean,
+								},
+								{
+									Name: "size",
+									Type: smd.Integer,
+								},
+								{
+									Name: "modTime",
+									Type: smd.String,
+								},
+								{
+									Name: "supported",
+									Type: smd.Boolean,
+								},
+							},
+						},
+					},
+				},
+			},
+			"RemoveRecentFile": {
+				Description: `RemoveRecentFile removes a path from the recent files list.`,
+				Parameters: []smd.JSONSchema{
+					{
+						Name:        "path",
+						Description: `file path to remove`,
+						Type:        smd.String,
+					},
+				},
+				Returns: smd.JSONSchema{
+					Description: `bool`,
+					Type:        smd.Boolean,
+				},
+			},
+			"GetRecentFilesInfo": {
+				Description: `GetRecentFilesInfo returns recent files with metadata (size, mod time, exists).`,
+				Parameters:  []smd.JSONSchema{},
+				Returns: smd.JSONSchema{
+					Description: `[]RecentFile`,
+					Type:        smd.Array,
+					TypeName:    "[]RecentFile",
+					Items: map[string]string{
+						"$ref": "#/definitions/RecentFile",
+					},
+					Definitions: map[string]smd.Definition{
+						"RecentFile": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "path",
+									Type: smd.String,
+								},
+								{
+									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name: "size",
+									Type: smd.Integer,
+								},
+								{
+									Name: "modTime",
+									Type: smd.String,
+								},
+								{
+									Name: "exists",
+									Type: smd.Boolean,
+								},
+							},
+						},
 					},
 				},
 			},
@@ -439,6 +567,51 @@ func (s AppService) Invoke(ctx context.Context, method string, params json.RawMe
 
 	case RPC.AppService.GetRecentFiles:
 		resp.Set(s.GetRecentFiles())
+
+	case RPC.AppService.GetHomePath:
+		resp.Set(s.GetHomePath())
+
+	case RPC.AppService.ListDirectory:
+		var args = struct {
+			Path    string `json:"path"`
+			ShowAll bool   `json:"showAll"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"path", "showAll"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.ListDirectory(args.Path, args.ShowAll))
+
+	case RPC.AppService.RemoveRecentFile:
+		var args = struct {
+			Path string `json:"path"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"path"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.RemoveRecentFile(args.Path))
+
+	case RPC.AppService.GetRecentFilesInfo:
+		resp.Set(s.GetRecentFilesInfo())
 
 	case RPC.AppService.ListDiffExamples:
 		resp.Set(s.ListDiffExamples())

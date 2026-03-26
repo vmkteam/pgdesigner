@@ -19,6 +19,7 @@ type ProjectService struct {
 	project        *pgd.Project
 	store          *store.ProjectStore // nil for read-only mode
 	isRegisteredFn func() bool         // callback to check registration status
+	addRecentFile  func(path string) error
 }
 
 // NewProjectService creates a read-only ProjectService.
@@ -27,8 +28,8 @@ func NewProjectService(project *pgd.Project) *ProjectService {
 }
 
 // NewProjectServiceWithStore creates a ProjectService backed by a ProjectStore (read-write).
-func NewProjectServiceWithStore(s *store.ProjectStore, isRegisteredFn func() bool) *ProjectService {
-	return &ProjectService{project: s.Project(), store: s, isRegisteredFn: isRegisteredFn}
+func NewProjectServiceWithStore(s *store.ProjectStore, isRegisteredFn func() bool, addRecentFile func(string) error) *ProjectService {
+	return &ProjectService{project: s.Project(), store: s, isRegisteredFn: isRegisteredFn, addRecentFile: addRecentFile}
 }
 
 // getProject returns the current project. When backed by a store, always returns the
@@ -176,7 +177,13 @@ func (s ProjectService) SaveProjectAs(path string) (bool, error) {
 	if s.store == nil {
 		return false, errors.New("read-only mode")
 	}
-	return true, s.store.SaveAs(path)
+	if err := s.store.SaveAs(path); err != nil {
+		return false, err
+	}
+	if s.addRecentFile != nil {
+		_ = s.addRecentFile(path)
+	}
+	return true, nil
 }
 
 // SaveLayout updates table positions in the default layout.

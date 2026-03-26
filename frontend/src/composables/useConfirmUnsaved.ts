@@ -1,6 +1,7 @@
 import api from '@/api/factory'
 import { useProjectStore } from '@/stores/project'
-import { appConfirmSave, appPrompt } from './useAppDialog'
+import { appConfirmSave } from './useAppDialog'
+import { appSaveAs } from './useSaveDialog'
 import { showToast } from './useToast'
 
 /**
@@ -28,7 +29,10 @@ export async function confirmUnsaved(): Promise<boolean> {
     try {
       if (!store.info?.filePath) {
         // No file path — need Save As
-        const path = await appPrompt('Save as (.pgd):', 'Save As', `${name}.pgd`, true)
+        const fp = store.info?.filePath || ''
+        const defaultDir = fp ? fp.substring(0, fp.lastIndexOf('/')) : ''
+        const defaultName = `${name}.pgd`
+        const path = await appSaveAs(defaultDir, defaultName)
         if (!path) return false
         await api.project.saveProjectAs({ path })
       } else {

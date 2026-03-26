@@ -92,3 +92,14 @@ func (c *Config) AddRecentFile(path string) {
 	}
 	c.RecentFiles = files
 }
+
+// RemoveRecentFile removes a path from the recent files list.
+func (c *Config) RemoveRecentFile(path string) {
+	files := make([]string, 0, len(c.RecentFiles))
+	for _, f := range c.RecentFiles {
+		if f != path {
+			files = append(files, f)
+		}
+	}
+	c.RecentFiles = files
+}
