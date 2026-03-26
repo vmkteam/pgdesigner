@@ -36,6 +36,7 @@ var blockedMethods = map[string]bool{
 	RPC.ProjectService.IgnoreLintRules:       true,
 	RPC.ProjectService.UnignoreLintRules:     true,
 	RPC.ProjectService.UpdateProjectSettings: true,
+	RPC.ProjectService.SaveTextFile:          true,
 	// App methods dangerous for public demo
 	RPC.AppService.Quit:               true, // kills server
 	RPC.AppService.OpenFile:           true, // arbitrary file read + DB connect

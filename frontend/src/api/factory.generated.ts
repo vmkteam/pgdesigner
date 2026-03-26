@@ -467,6 +467,11 @@ export interface IProjectSaveProjectAsParams {
   path: string
 }
 
+export interface IProjectSaveTextFileParams {
+  path: string,
+  content: string
+}
+
 export interface IProjectSetAutoSaveParams {
   enabled: boolean
 }
@@ -481,7 +486,8 @@ export interface IProjectSettings {
   defaultNullable: string, // Defaults
   defaultOnDelete: string,
   defaultOnUpdate: string,
-  lintIgnoreRules: string // Lint
+  lintIgnoreRules: string, // Lint
+  autoSaveDDL: string // Export: "true" or "false"
 }
 
 export interface IProjectSingularizeParams {
@@ -844,6 +850,12 @@ It does NOT modify the project — only computes the diff.
      */
     saveProjectAs(params: IProjectSaveProjectAsParams): Promise<boolean> {
       return send('project.SaveProjectAs', params)
+    },
+    /**
+     * SaveTextFile writes text content to the specified file path.
+     */
+    saveTextFile(params: IProjectSaveTextFileParams): Promise<boolean> {
+      return send('project.SaveTextFile', params)
     },
     /**
      * SetAutoSave enables or disables auto-save after each mutation.

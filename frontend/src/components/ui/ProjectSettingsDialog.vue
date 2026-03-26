@@ -59,6 +59,7 @@ const hints: Record<string, string> = {
   defaultOnDelete: 'Default FK ON DELETE action for new foreign keys. NO ACTION = error if referenced row deleted, CASCADE = delete referencing rows',
   defaultOnUpdate: 'Default FK ON UPDATE action for new foreign keys. NO ACTION = error if referenced key updated, CASCADE = update referencing columns',
   lintIgnoreRules: 'Comma-separated lint rule codes to suppress project-wide (e.g. W015,I009). Use Check Diagram to see all available codes',
+  autoSaveDDL: 'Automatically generate and save a .sql file next to the .pgd file on every Save (Cmd+S). The SQL file contains the full DDL (CREATE TABLE, etc.)',
 }
 </script>
 
@@ -75,26 +76,26 @@ const hints: Record<string, string> = {
         <label class="psd-field">
           <span class="psd-label">Name</span>
           <input v-model="form.name" class="psd-input" />
-          <span class="psd-hint" :title="hints.name">?</span>
+          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.name }}</span></span>
         </label>
         <label class="psd-field">
           <span class="psd-label">Description</span>
           <input v-model="form.description" class="psd-input" />
-          <span class="psd-hint" :title="hints.description">?</span>
+          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.description }}</span></span>
         </label>
         <label class="psd-field">
           <span class="psd-label">PG Version</span>
           <select v-model="form.pgVersion" class="psd-select">
             <option v-for="v in pgVersions" :key="v" :value="v">PostgreSQL {{ v }}</option>
           </select>
-          <span class="psd-hint" :title="hints.pgVersion">?</span>
+          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.pgVersion }}</span></span>
         </label>
         <label class="psd-field">
           <span class="psd-label">Default Schema</span>
           <select v-model="form.defaultSchema" class="psd-select">
             <option v-for="s in store.info?.schemas || ['public']" :key="s" :value="s">{{ s }}</option>
           </select>
-          <span class="psd-hint" :title="hints.defaultSchema">?</span>
+          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.defaultSchema }}</span></span>
         </label>
 
         <!-- Naming -->
@@ -104,14 +105,14 @@ const hints: Record<string, string> = {
           <select v-model="form.namingConvention" class="psd-select">
             <option v-for="c in namingConventions" :key="c.value" :value="c.value">{{ c.label }}</option>
           </select>
-          <span class="psd-hint" :title="hints.namingConvention">?</span>
+          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.namingConvention }}</span></span>
         </label>
         <label class="psd-field">
           <span class="psd-label">Tables</span>
           <select v-model="form.namingTables" class="psd-select">
             <option v-for="t in tableNaming" :key="t.value" :value="t.value">{{ t.label }}</option>
           </select>
-          <span class="psd-hint" :title="hints.namingTables">?</span>
+          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.namingTables }}</span></span>
         </label>
 
         <!-- Defaults -->
@@ -122,21 +123,21 @@ const hints: Record<string, string> = {
             <option value="true">true</option>
             <option value="false">false</option>
           </select>
-          <span class="psd-hint" :title="hints.defaultNullable">?</span>
+          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.defaultNullable }}</span></span>
         </label>
         <label class="psd-field">
           <span class="psd-label">ON DELETE</span>
           <select v-model="form.defaultOnDelete" class="psd-select">
             <option v-for="a in fkActions" :key="a" :value="a">{{ a }}</option>
           </select>
-          <span class="psd-hint" :title="hints.defaultOnDelete">?</span>
+          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.defaultOnDelete }}</span></span>
         </label>
         <label class="psd-field">
           <span class="psd-label">ON UPDATE</span>
           <select v-model="form.defaultOnUpdate" class="psd-select">
             <option v-for="a in fkActions" :key="a" :value="a">{{ a }}</option>
           </select>
-          <span class="psd-hint" :title="hints.defaultOnUpdate">?</span>
+          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.defaultOnUpdate }}</span></span>
         </label>
 
         <!-- Lint -->
@@ -144,7 +145,15 @@ const hints: Record<string, string> = {
         <label class="psd-field">
           <span class="psd-label">Ignore Rules</span>
           <input v-model="form.lintIgnoreRules" class="psd-input" placeholder="W015,I009" />
-          <span class="psd-hint" :title="hints.lintIgnoreRules">?</span>
+          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.lintIgnoreRules }}</span></span>
+        </label>
+
+        <!-- Export -->
+        <div class="psd-section">Export</div>
+        <label class="psd-field">
+          <span class="psd-label psd-label-check"><input type="checkbox" :checked="form.autoSaveDDL !== 'false'" @change="form.autoSaveDDL = ($event.target as HTMLInputElement).checked ? '' : 'false'" /></span>
+          <span class="psd-check-text">Auto-save .sql on save</span>
+          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.autoSaveDDL }}</span></span>
         </label>
 
         <!-- Actions -->
@@ -183,17 +192,46 @@ const hints: Record<string, string> = {
   margin-top: 0.615rem; padding-bottom: 0.231rem; border-bottom: 1px solid var(--color-border-subtle);
 }
 .psd-field { display: flex; align-items: center; gap: 0.615rem; }
+.psd-label-check {
+  width: 7rem; flex-shrink: 0; display: flex; justify-content: flex-end; cursor: pointer;
+}
+.psd-label-check input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  width: 0.923rem; height: 0.923rem; margin: 0; cursor: pointer;
+  border: 1px solid var(--color-border); background: var(--color-bg-surface);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.psd-label-check input[type="checkbox"]:checked {
+  background: var(--color-accent); border-color: var(--color-accent);
+}
+.psd-label-check input[type="checkbox"]:checked::after {
+  content: ''; width: 0.25rem; height: 0.462rem;
+  border: solid white; border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg); margin-top: -0.077rem;
+}
+.psd-check-text { flex: 1; font-size: 0.846rem; color: var(--color-text-primary); cursor: pointer; }
 .psd-label {
   width: 7rem; flex-shrink: 0; font-size: 0.846rem; color: var(--color-text-secondary); text-align: right;
 }
 .psd-hint {
+  position: relative;
   display: inline-flex; align-items: center; justify-content: center;
   width: 1.077rem; height: 1.077rem; border-radius: 50%;
   font-size: 0.692rem; font-weight: 700; line-height: 1;
   color: var(--color-text-muted); border: 1px solid var(--color-border);
   cursor: help; flex-shrink: 0;
 }
+.psd-hint::before { content: '?'; }
 .psd-hint:hover { color: var(--color-accent); border-color: var(--color-accent); }
+.psd-hint-popup {
+  display: none; position: absolute; bottom: 100%; right: 0;
+  width: 20rem; padding: 0.385rem 0.538rem; margin-bottom: 0.308rem;
+  font-size: 0.692rem; font-weight: 400; line-height: 1.4;
+  color: var(--color-text-primary); background: var(--color-bg-surface);
+  border: 1px solid var(--color-border); box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  z-index: 100; white-space: normal;
+}
+.psd-hint:hover .psd-hint-popup { display: block; }
 .psd-input, .psd-select {
   flex: 1; padding: 0.231rem 0.385rem; font-size: 0.923rem;
   border: 1px solid var(--color-border); background: var(--color-bg-surface);

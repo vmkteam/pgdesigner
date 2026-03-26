@@ -4,7 +4,9 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -108,7 +110,20 @@ func (s *ProjectStore) saveLocked() error {
 	s.saved = deepCopyProject(s.project)
 	// Remove backup — the .pgd is now up to date.
 	os.Remove(s.filePath + ".bak") //nolint:errcheck
+	// Auto-save DDL next to .pgd (best-effort).
+	s.autoSaveDDL()
 	return nil
+}
+
+func (s *ProjectStore) autoSaveDDL() {
+	if s.filePath == "" || s.project.ProjectMeta.Settings.AutoSaveDDL == "false" {
+		return
+	}
+	sqlPath := strings.TrimSuffix(s.filePath, filepath.Ext(s.filePath)) + ".sql"
+	ddl := pgd.GenerateDDL(s.project)
+	if err := os.WriteFile(sqlPath, []byte(ddl), 0o644); err != nil {
+		log.Printf("warning: auto-save DDL to %s: %v", sqlPath, err)
+	}
 }
 
 // SaveAs writes the project to a new file path and updates the store path.
@@ -121,6 +136,7 @@ func (s *ProjectStore) SaveAs(path string) error {
 	s.filePath = path
 	s.dirty = false
 	s.saved = deepCopyProject(s.project)
+	s.autoSaveDDL()
 	return nil
 }
 
@@ -648,6 +664,7 @@ type ProjectSettingsInput struct {
 	DefaultOnDelete  string
 	DefaultOnUpdate  string
 	LintIgnoreRules  string
+	AutoSaveDDL      string
 }
 
 // UpdateProjectSettings updates project-level metadata and settings.
@@ -663,6 +680,7 @@ func (s *ProjectStore) UpdateProjectSettings(in ProjectSettingsInput) error {
 	s.project.ProjectMeta.Settings.Defaults.Nullable = in.DefaultNullable
 	s.project.ProjectMeta.Settings.Defaults.OnDelete = in.DefaultOnDelete
 	s.project.ProjectMeta.Settings.Defaults.OnUpdate = in.DefaultOnUpdate
+	s.project.ProjectMeta.Settings.AutoSaveDDL = in.AutoSaveDDL
 	if in.LintIgnoreRules != "" {
 		if s.project.ProjectMeta.Settings.Lint == nil {
 			s.project.ProjectMeta.Settings.Lint = &pgd.Lint{}

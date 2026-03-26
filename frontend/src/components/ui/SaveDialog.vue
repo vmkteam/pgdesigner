@@ -59,6 +59,7 @@ function onKeydown(e: KeyboardEvent) {
             mode="save"
             :initial-dir="saveDialogState?.defaultDir ?? ''"
             :initial-file-name="saveDialogState?.defaultName ?? 'untitled.pgd'"
+            :default-extension="saveDialogState?.defaultExtension ?? '.pgd'"
             :show-filter="false"
             @save="onSave"
           />

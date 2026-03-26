@@ -10,6 +10,7 @@ const props = withDefaults(defineProps<{
   initialFileName?: string
   mode?: 'open' | 'save'
   showFilter?: boolean
+  defaultExtension?: string
 }>(), {
   initialDir: '',
   initialFileName: '',
@@ -141,7 +142,8 @@ async function toggleShowAll() {
 function doSave() {
   let name = fileName.value.trim()
   if (!name) return
-  if (!name.endsWith('.pgd')) name += '.pgd'
+  const ext = props.defaultExtension || '.pgd'
+  if (!name.includes('.')) name += ext
   fileName.value = name
   const fullPath = currentDir.value + '/' + name
   emit('save', fullPath)

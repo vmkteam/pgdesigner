@@ -2,11 +2,15 @@
 import { computed, ref, watch } from 'vue'
 import { useClipboard } from '@vueuse/core'
 import { DialogRoot, DialogOverlay, DialogContent, DialogTitle, DialogClose } from 'reka-ui'
+import { useProjectStore } from '@/stores/project'
 import { useUiStore } from '@/stores/ui'
 import type { IDiffUnsavedResult } from '@/api/factory'
 import api from '@/api/factory'
+import { appSaveAs } from '@/composables/useSaveDialog'
+import { showToast } from '@/composables/useToast'
 import SqlViewer from './SqlViewer.vue'
 
+const store = useProjectStore()
 const ui = useUiStore()
 const result = ref<IDiffUnsavedResult | null>(null)
 const loading = ref(false)
@@ -43,6 +47,21 @@ const hazardCount = computed(() => {
 function copySQL() {
   if (!result.value?.sql) return
   copy(result.value.sql)
+}
+
+async function saveSQL() {
+  if (!result.value?.sql) return
+  const fp = store.info?.filePath || ''
+  const defaultDir = fp ? fp.substring(0, fp.lastIndexOf('/')) : ''
+  const defaultName = new Date().toISOString().slice(0, 10) + '.sql'
+  const path = await appSaveAs(defaultDir, defaultName, '.sql')
+  if (!path) return
+  try {
+    await api.project.saveTextFile({ path, content: result.value.sql })
+    showToast('Saved to ' + path.substring(path.lastIndexOf('/') + 1))
+  } catch (e) {
+    showToast('Save failed: ' + (e instanceof Error ? e.message : e), 'error')
+  }
 }
 
 const actionClass: Record<string, string> = { add: 'act-add', drop: 'act-drop', alter: 'act-alter' }
@@ -88,6 +107,7 @@ const hazardClass: Record<string, string> = { dangerous: 'hz-dangerous', warning
         <span v-if="hasChanges" class="dlg-info">{{ result!.sql.split('\n').length }} lines</span>
         <span v-else />
         <div class="dlg-actions">
+          <button class="dlg-btn" :disabled="!hasChanges" @click="saveSQL">Save .sql...</button>
           <button class="dlg-btn" :disabled="!hasChanges" @click="copySQL">{{ copied ? 'Copied!' : 'Copy SQL' }}</button>
           <button class="dlg-btn" @click="close">Close</button>
         </div>

@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vmkteam/pgdesigner/pkg/pgd"
 )
 
 func TestAppManager_NewProject(t *testing.T) {
@@ -213,4 +214,129 @@ func Test_expandHome(t *testing.T) {
 			assert.Equal(t, tt.want, expandHome(tt.input))
 		})
 	}
+}
+
+func testProject() *pgd.Project {
+	return &pgd.Project{
+		PgVersion:     "18",
+		DefaultSchema: "public",
+		Schemas: []pgd.Schema{
+			{Name: "public", Tables: []pgd.Table{
+				{Name: "users"}, {Name: "orders"}, {Name: "audit_log"},
+			}},
+			{Name: "billing", Tables: []pgd.Table{
+				{Name: "invoices"}, {Name: "payments"},
+			}},
+		},
+		Views:      &pgd.Views{Views: []pgd.View{{Name: "v_users", Schema: "public"}}},
+		Functions:  []pgd.Function{{Name: "fn_test", Schema: "public"}},
+		Triggers:   []pgd.Trigger{{Name: "trg_test", Schema: "public"}},
+		Sequences:  []pgd.Sequence{{Name: "seq_users", Schema: "public"}},
+		Extensions: []pgd.Extension{{Name: "pg_trgm"}},
+		Types:      &pgd.Types{Enums: []pgd.Enum{{Name: "status", Schema: "public"}}},
+	}
+}
+
+func Test_filterProject_tables(t *testing.T) {
+	t.Run("filter specific tables", func(t *testing.T) {
+		p := testProject()
+		opts := ImportDSNOptions{Tables: []string{"public.users", "billing.invoices"}}
+		cats := toSet(nil)
+		filterProject(p, opts, cats)
+
+		assert.Len(t, p.Schemas, 2)
+		assert.Len(t, p.Schemas[0].Tables, 1)
+		assert.Equal(t, "users", p.Schemas[0].Tables[0].Name)
+		assert.Len(t, p.Schemas[1].Tables, 1)
+		assert.Equal(t, "invoices", p.Schemas[1].Tables[0].Name)
+	})
+
+	t.Run("empty tables = keep all", func(t *testing.T) {
+		p := testProject()
+		opts := ImportDSNOptions{}
+		cats := toSet(nil)
+		filterProject(p, opts, cats)
+
+		assert.Len(t, p.Schemas, 2)
+		assert.Len(t, p.Schemas[0].Tables, 3)
+		assert.Len(t, p.Schemas[1].Tables, 2)
+	})
+
+	t.Run("removes empty schemas", func(t *testing.T) {
+		p := testProject()
+		opts := ImportDSNOptions{Tables: []string{"public.users"}}
+		cats := toSet(nil)
+		filterProject(p, opts, cats)
+
+		assert.Len(t, p.Schemas, 1)
+		assert.Equal(t, "public", p.Schemas[0].Name)
+	})
+}
+
+func Test_filterProject_categories(t *testing.T) {
+	t.Run("no categories = remove all non-table objects", func(t *testing.T) {
+		p := testProject()
+		cats := toSet(nil)
+		filterProject(p, ImportDSNOptions{}, cats)
+
+		assert.Nil(t, p.Views)
+		assert.Nil(t, p.Functions)
+		assert.Nil(t, p.Triggers)
+		assert.Nil(t, p.Sequences)
+		assert.Nil(t, p.Extensions)
+		assert.Nil(t, p.Types.Enums)
+	})
+
+	t.Run("views category keeps views", func(t *testing.T) {
+		p := testProject()
+		cats := toSet([]string{"views"})
+		filterProject(p, ImportDSNOptions{}, cats)
+
+		require.NotNil(t, p.Views)
+		assert.Len(t, p.Views.Views, 1)
+		assert.Nil(t, p.Functions)
+	})
+
+	t.Run("multiple categories", func(t *testing.T) {
+		p := testProject()
+		cats := toSet([]string{"functions", "enums", "extensions"})
+		filterProject(p, ImportDSNOptions{}, cats)
+
+		assert.Nil(t, p.Views)
+		assert.Len(t, p.Functions, 1)
+		assert.Nil(t, p.Triggers)
+		assert.Nil(t, p.Sequences)
+		assert.Len(t, p.Extensions, 1)
+		require.NotNil(t, p.Types)
+		assert.Len(t, p.Types.Enums, 1)
+	})
+
+	t.Run("sequences category", func(t *testing.T) {
+		p := testProject()
+		cats := toSet([]string{"sequences"})
+		filterProject(p, ImportDSNOptions{}, cats)
+
+		assert.Len(t, p.Sequences, 1)
+		assert.Nil(t, p.Functions)
+	})
+}
+
+func Test_toSet(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		s := toSet(nil)
+		assert.Empty(t, s)
+	})
+
+	t.Run("values", func(t *testing.T) {
+		s := toSet([]string{"a", "b", "c"})
+		assert.Len(t, s, 3)
+		assert.True(t, s["a"])
+		assert.True(t, s["b"])
+		assert.False(t, s["d"])
+	})
+
+	t.Run("duplicates", func(t *testing.T) {
+		s := toSet([]string{"a", "a", "b"})
+		assert.Len(t, s, 2)
+	})
 }

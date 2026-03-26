@@ -12,7 +12,7 @@ import (
 
 var RPC = struct {
 	AppService     struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, GetHomePath, ListDirectory, RemoveRecentFile, GetRecentFilesInfo, ListDiffExamples, RunDiffExample, CheckForUpdate, DismissUpdate, IntrospectDSN, ImportDSN string }
-	ProjectService struct{ GetInfo, GetSchema, GetDDL, GenerateTestData, Lint, ListObjects, GetTable, SaveProject, SaveProjectAs, SaveLayout, IsDirty, GetAutoSave, SetAutoSave, ListTypes, UpdateTable, PreviewDiff, DiffUnsaved, FixLintIssues, IgnoreLintRules, GetIgnoredRules, UnignoreLintRules, CreateTable, DeleteTable, CreateSchema, DeleteSchema, MoveTable, GetProjectSettings, UpdateProjectSettings, LintTable, Singularize string }
+	ProjectService struct{ GetInfo, GetSchema, GetDDL, GenerateTestData, Lint, ListObjects, GetTable, SaveProject, SaveProjectAs, SaveTextFile, SaveLayout, IsDirty, GetAutoSave, SetAutoSave, ListTypes, UpdateTable, PreviewDiff, DiffUnsaved, FixLintIssues, IgnoreLintRules, GetIgnoredRules, UnignoreLintRules, CreateTable, DeleteTable, CreateSchema, DeleteSchema, MoveTable, GetProjectSettings, UpdateProjectSettings, LintTable, Singularize string }
 }{
 	AppService: struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, GetHomePath, ListDirectory, RemoveRecentFile, GetRecentFilesInfo, ListDiffExamples, RunDiffExample, CheckForUpdate, DismissUpdate, IntrospectDSN, ImportDSN string }{
 		Quit:               "quit",
@@ -36,7 +36,7 @@ var RPC = struct {
 		IntrospectDSN:      "introspectdsn",
 		ImportDSN:          "importdsn",
 	},
-	ProjectService: struct{ GetInfo, GetSchema, GetDDL, GenerateTestData, Lint, ListObjects, GetTable, SaveProject, SaveProjectAs, SaveLayout, IsDirty, GetAutoSave, SetAutoSave, ListTypes, UpdateTable, PreviewDiff, DiffUnsaved, FixLintIssues, IgnoreLintRules, GetIgnoredRules, UnignoreLintRules, CreateTable, DeleteTable, CreateSchema, DeleteSchema, MoveTable, GetProjectSettings, UpdateProjectSettings, LintTable, Singularize string }{
+	ProjectService: struct{ GetInfo, GetSchema, GetDDL, GenerateTestData, Lint, ListObjects, GetTable, SaveProject, SaveProjectAs, SaveTextFile, SaveLayout, IsDirty, GetAutoSave, SetAutoSave, ListTypes, UpdateTable, PreviewDiff, DiffUnsaved, FixLintIssues, IgnoreLintRules, GetIgnoredRules, UnignoreLintRules, CreateTable, DeleteTable, CreateSchema, DeleteSchema, MoveTable, GetProjectSettings, UpdateProjectSettings, LintTable, Singularize string }{
 		GetInfo:               "getinfo",
 		GetSchema:             "getschema",
 		GetDDL:                "getddl",
@@ -46,6 +46,7 @@ var RPC = struct {
 		GetTable:              "gettable",
 		SaveProject:           "saveproject",
 		SaveProjectAs:         "saveprojectas",
+		SaveTextFile:          "savetextfile",
 		SaveLayout:            "savelayout",
 		IsDirty:               "isdirty",
 		GetAutoSave:           "getautosave",
@@ -1731,6 +1732,26 @@ func (ProjectService) SMD() smd.ServiceInfo {
 					{
 						Name:        "path",
 						Description: `new file path (.pgd)`,
+						Type:        smd.String,
+					},
+				},
+				Returns: smd.JSONSchema{
+					Description: `bool`,
+					Type:        smd.Boolean,
+				},
+			},
+			"SaveTextFile": {
+				Description: `SaveTextFile writes text content to the specified file path.
+Used for saving DDL, diff patches, and other generated text.`,
+				Parameters: []smd.JSONSchema{
+					{
+						Name:        "path",
+						Description: `absolute file path`,
+						Type:        smd.String,
+					},
+					{
+						Name:        "content",
+						Description: `file content`,
 						Type:        smd.String,
 					},
 				},
@@ -3819,6 +3840,26 @@ func (s ProjectService) Invoke(ctx context.Context, method string, params json.R
 		}
 
 		resp.Set(s.SaveProjectAs(args.Path))
+
+	case RPC.ProjectService.SaveTextFile:
+		var args = struct {
+			Path    string `json:"path"`
+			Content string `json:"content"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"path", "content"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.SaveTextFile(args.Path, args.Content))
 
 	case RPC.ProjectService.SaveLayout:
 		var args = struct {

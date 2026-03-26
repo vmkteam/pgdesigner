@@ -133,6 +133,8 @@ type ProjectSettings struct {
 	DefaultOnUpdate string `json:"defaultOnUpdate"`
 	// Lint
 	LintIgnoreRules string `json:"lintIgnoreRules"`
+	// Export
+	AutoSaveDDL string `json:"autoSaveDDL"`
 }
 
 // LayoutPosition holds a table position for layout save.

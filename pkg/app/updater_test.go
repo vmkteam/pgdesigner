@@ -16,8 +16,8 @@ func Test_isNewer(t *testing.T) {
 		{"v0.1.0", "v0.1.0", false},
 		{"v1.0.0", "v1.0.1", true},
 		{"v1.0.0", "v2.0.0", true},
-		{"0.1.0", "v0.2.0", true},   // no v prefix on current
-		{"v0.1.0", "0.2.0", true},   // no v prefix on latest
+		{"0.1.0", "v0.2.0", true},    // no v prefix on current
+		{"v0.1.0", "0.2.0", true},    // no v prefix on latest
 		{"dev", "v0.1.0", false},     // invalid current
 		{"v0.1.0", "invalid", false}, // invalid latest
 		{"", "", false},
