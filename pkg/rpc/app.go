@@ -30,7 +30,7 @@ type AppService struct {
 	config  ConfigCallbacks
 	quitCh  chan struct{}
 	version string
-	mu      sync.Mutex
+	mu      sync.Mutex //nolint:govet // zenrpc generates value-receiver methods; mutex is safe because AppService is always used via pointer
 	timer   *time.Timer
 }
 
@@ -262,4 +262,39 @@ func (s *AppService) RunDiffExample(name string) (*DiffUnsavedResult, error) {
 		SQL:     result.SQL,
 		Changes: NewDiffChanges(result.Changes),
 	}, nil
+}
+
+// IntrospectDSN connects to a PostgreSQL database and returns a preview of available objects.
+//
+//zenrpc:dsn PostgreSQL connection string
+//zenrpc:return DSNPreview
+func (s *AppService) IntrospectDSN(dsn string) (*DSNPreview, error) {
+	result, err := s.mgr.IntrospectDSN(dsn)
+	if err != nil {
+		return nil, err
+	}
+	return NewDSNPreview(result), nil
+}
+
+// ImportDSN imports schema from PostgreSQL with filtering options.
+//
+//zenrpc:dsn        PostgreSQL connection string
+//zenrpc:schemas    schemas to import (empty = all)
+//zenrpc:tables     specific tables to import as "schema.table" (empty = all in selected schemas)
+//zenrpc:categories object categories to include: views, matviews, functions, triggers, enums, domains, sequences, extensions
+//zenrpc:return bool
+func (s *AppService) ImportDSN(dsn string, schemas []string, tables []string, categories []string) (bool, error) {
+	if s.store == nil {
+		return false, errors.New("store not available")
+	}
+	project, err := s.mgr.ImportDSN(dsn, designer.ImportDSNOptions{
+		Schemas:    schemas,
+		Tables:     tables,
+		Categories: categories,
+	})
+	if err != nil {
+		return false, err
+	}
+	s.store.ReplaceProject(project, "")
+	return true, nil
 }

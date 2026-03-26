@@ -46,4 +46,9 @@ export type {
   IDirEntry,
   IDirectoryListing,
   IRecentFile,
+  IDSNPreview,
+  IDSNSchemaPreview,
+  IDSNTablePreview,
+  IDSNObjectPreview,
+  IDSNRolePreview,
 } from './factory.generated'

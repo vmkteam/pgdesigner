@@ -11,10 +11,10 @@ import (
 )
 
 var RPC = struct {
-	AppService     struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, GetHomePath, ListDirectory, RemoveRecentFile, GetRecentFilesInfo, ListDiffExamples, RunDiffExample string }
+	AppService     struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, GetHomePath, ListDirectory, RemoveRecentFile, GetRecentFilesInfo, ListDiffExamples, RunDiffExample, IntrospectDSN, ImportDSN string }
 	ProjectService struct{ GetInfo, GetSchema, GetDDL, GenerateTestData, Lint, ListObjects, GetTable, SaveProject, SaveProjectAs, SaveLayout, IsDirty, GetAutoSave, SetAutoSave, ListTypes, UpdateTable, PreviewDiff, DiffUnsaved, FixLintIssues, IgnoreLintRules, GetIgnoredRules, UnignoreLintRules, CreateTable, DeleteTable, CreateSchema, DeleteSchema, MoveTable, GetProjectSettings, UpdateProjectSettings, LintTable, Singularize string }
 }{
-	AppService: struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, GetHomePath, ListDirectory, RemoveRecentFile, GetRecentFilesInfo, ListDiffExamples, RunDiffExample string }{
+	AppService: struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, GetHomePath, ListDirectory, RemoveRecentFile, GetRecentFilesInfo, ListDiffExamples, RunDiffExample, IntrospectDSN, ImportDSN string }{
 		Quit:               "quit",
 		Ping:               "ping",
 		About:              "about",
@@ -31,6 +31,8 @@ var RPC = struct {
 		GetRecentFilesInfo: "getrecentfilesinfo",
 		ListDiffExamples:   "listdiffexamples",
 		RunDiffExample:     "rundiffexample",
+		IntrospectDSN:      "introspectdsn",
+		ImportDSN:          "importdsn",
 	},
 	ProjectService: struct{ GetInfo, GetSchema, GetDDL, GenerateTestData, Lint, ListObjects, GetTable, SaveProject, SaveProjectAs, SaveLayout, IsDirty, GetAutoSave, SetAutoSave, ListTypes, UpdateTable, PreviewDiff, DiffUnsaved, FixLintIssues, IgnoreLintRules, GetIgnoredRules, UnignoreLintRules, CreateTable, DeleteTable, CreateSchema, DeleteSchema, MoveTable, GetProjectSettings, UpdateProjectSettings, LintTable, Singularize string }{
 		GetInfo:               "getinfo",
@@ -480,6 +482,224 @@ Hidden files (starting with .) are excluded.`,
 					},
 				},
 			},
+			"IntrospectDSN": {
+				Description: `IntrospectDSN connects to a PostgreSQL database and returns a preview of available objects.`,
+				Parameters: []smd.JSONSchema{
+					{
+						Name:        "dsn",
+						Description: `PostgreSQL connection string`,
+						Type:        smd.String,
+					},
+				},
+				Returns: smd.JSONSchema{
+					Description: `DSNPreview`,
+					Optional:    true,
+					Type:        smd.Object,
+					TypeName:    "DSNPreview",
+					Properties: smd.PropertyList{
+						{
+							Name: "database",
+							Type: smd.String,
+						},
+						{
+							Name: "pgVersion",
+							Type: smd.String,
+						},
+						{
+							Name: "schemas",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNSchemaPreview",
+							},
+						},
+						{
+							Name: "views",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "matViews",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "functions",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "triggers",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "enums",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "domains",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "sequences",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "extensions",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "roles",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNRolePreview",
+							},
+						},
+						{
+							Name: "grants",
+							Type: smd.Integer,
+						},
+						{
+							Name: "defaultPrivileges",
+							Type: smd.Integer,
+						},
+					},
+					Definitions: map[string]smd.Definition{
+						"DSNSchemaPreview": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name: "tables",
+									Type: smd.Array,
+									Items: map[string]string{
+										"$ref": "#/definitions/DSNTablePreview",
+									},
+								},
+							},
+						},
+						"DSNTablePreview": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name: "columns",
+									Type: smd.Integer,
+								},
+								{
+									Name: "indexes",
+									Type: smd.Integer,
+								},
+								{
+									Name: "fks",
+									Type: smd.Integer,
+								},
+								{
+									Name: "partitioned",
+									Type: smd.Boolean,
+								},
+							},
+						},
+						"DSNObjectPreview": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name: "schema",
+									Type: smd.String,
+								},
+							},
+						},
+						"DSNRolePreview": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name: "login",
+									Type: smd.Boolean,
+								},
+								{
+									Name: "members",
+									Type: smd.Integer,
+								},
+							},
+						},
+					},
+				},
+			},
+			"ImportDSN": {
+				Description: `ImportDSN imports schema from PostgreSQL with filtering options.`,
+				Parameters: []smd.JSONSchema{
+					{
+						Name:        "dsn",
+						Description: `PostgreSQL connection string`,
+						Type:        smd.String,
+					},
+					{
+						Name:        "schemas",
+						Description: `schemas to import (empty = all)`,
+						Type:        smd.Array,
+						TypeName:    "[]",
+						Items: map[string]string{
+							"type": smd.String,
+						},
+					},
+					{
+						Name:        "tables",
+						Description: `specific tables to import as "schema.table" (empty = all in selected schemas)`,
+						Type:        smd.Array,
+						TypeName:    "[]",
+						Items: map[string]string{
+							"type": smd.String,
+						},
+					},
+					{
+						Name:        "categories",
+						Description: `object categories to include: views, matviews, functions, triggers, enums, domains, sequences, extensions`,
+						Type:        smd.Array,
+						TypeName:    "[]",
+						Items: map[string]string{
+							"type": smd.String,
+						},
+					},
+				},
+				Returns: smd.JSONSchema{
+					Description: `bool`,
+					Type:        smd.Boolean,
+				},
+			},
 		},
 	}
 }
@@ -634,6 +854,47 @@ func (s AppService) Invoke(ctx context.Context, method string, params json.RawMe
 		}
 
 		resp.Set(s.RunDiffExample(args.Name))
+
+	case RPC.AppService.IntrospectDSN:
+		var args = struct {
+			Dsn string `json:"dsn"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"dsn"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.IntrospectDSN(args.Dsn))
+
+	case RPC.AppService.ImportDSN:
+		var args = struct {
+			Dsn        string   `json:"dsn"`
+			Schemas    []string `json:"schemas"`
+			Tables     []string `json:"tables"`
+			Categories []string `json:"categories"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"dsn", "schemas", "tables", "categories"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.ImportDSN(args.Dsn, args.Schemas, args.Tables, args.Categories))
 
 	default:
 		resp = zenrpc.NewResponseError(nil, zenrpc.MethodNotFound, "", nil)

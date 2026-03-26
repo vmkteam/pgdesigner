@@ -65,6 +65,52 @@ type DemoSchema struct {
 	FKs    int    `json:"fks"`
 }
 
+// DSNPreview holds a lightweight catalog of database objects.
+type DSNPreview struct {
+	Database          string             `json:"database"`
+	PgVersion         string             `json:"pgVersion"`
+	Schemas           []DSNSchemaPreview `json:"schemas"`
+	Views             []DSNObjectPreview `json:"views"`
+	MatViews          []DSNObjectPreview `json:"matViews"`
+	Functions         []DSNObjectPreview `json:"functions"`
+	Triggers          []DSNObjectPreview `json:"triggers"`
+	Enums             []DSNObjectPreview `json:"enums"`
+	Domains           []DSNObjectPreview `json:"domains"`
+	Sequences         []DSNObjectPreview `json:"sequences"`
+	Extensions        []DSNObjectPreview `json:"extensions"`
+	Roles             []DSNRolePreview   `json:"roles"`
+	Grants            int                `json:"grants"`
+	DefaultPrivileges int                `json:"defaultPrivileges"`
+}
+
+// DSNSchemaPreview holds schema name and table summaries.
+type DSNSchemaPreview struct {
+	Name   string            `json:"name"`
+	Tables []DSNTablePreview `json:"tables"`
+}
+
+// DSNTablePreview holds lightweight table metadata.
+type DSNTablePreview struct {
+	Name        string `json:"name"`
+	Columns     int    `json:"columns"`
+	Indexes     int    `json:"indexes"`
+	FKs         int    `json:"fks"`
+	Partitioned bool   `json:"partitioned"`
+}
+
+// DSNObjectPreview holds name and schema for a database object.
+type DSNObjectPreview struct {
+	Name   string `json:"name"`
+	Schema string `json:"schema"`
+}
+
+// DSNRolePreview holds lightweight role metadata.
+type DSNRolePreview struct {
+	Name    string `json:"name"`
+	Login   bool   `json:"login"`
+	Members int    `json:"members"`
+}
+
 // DiffExample describes an available pre-built diff example.
 type DiffExample struct {
 	Name        string `json:"name"`

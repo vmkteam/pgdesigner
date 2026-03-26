@@ -13,6 +13,7 @@ import (
 	pgddemo "github.com/vmkteam/pgdesigner/demo/schemas/pgd"
 	"github.com/vmkteam/pgdesigner/pkg/designer/diff"
 	"github.com/vmkteam/pgdesigner/pkg/format"
+	"github.com/vmkteam/pgdesigner/pkg/format/pgre"
 	"github.com/vmkteam/pgdesigner/pkg/pgd"
 )
 
@@ -102,6 +103,101 @@ func (m *AppManager) OpenFile(path string) (*pgd.Project, string, error) {
 		return nil, "", fmt.Errorf("loading %s: %w", path, err)
 	}
 	return project, pgdFilePath(path), nil
+}
+
+// IntrospectDSN connects to a PostgreSQL database and returns a lightweight preview.
+func (m *AppManager) IntrospectDSN(dsn string) (*pgre.PreviewResult, error) {
+	return pgre.Preview(dsn)
+}
+
+// ImportDSNOptions controls what to import from a PostgreSQL database.
+type ImportDSNOptions struct {
+	Schemas    []string // schemas to import (empty = all)
+	Tables     []string // "schema.table" to import (empty = all in selected schemas)
+	Categories []string // object categories: views, matviews, functions, triggers, enums, domains, sequences, extensions
+}
+
+// ImportDSN imports a schema from PostgreSQL with filtering.
+func (m *AppManager) ImportDSN(dsn string, opts ImportDSNOptions) (*pgd.Project, error) {
+	cats := toSet(opts.Categories)
+	full := cats["views"] || cats["matviews"] || cats["functions"] || cats["triggers"] || cats["enums"] || cats["domains"]
+
+	project, err := format.LoadFile(dsn,
+		format.WithSchemas(opts.Schemas...),
+		format.WithFull(full),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("importing from DSN: %w", err)
+	}
+
+	filterProject(project, opts, cats)
+	return project, nil
+}
+
+// filterProject removes unselected objects from the project.
+func filterProject(p *pgd.Project, opts ImportDSNOptions, cats map[string]bool) {
+	// Filter tables if specific list given
+	if len(opts.Tables) > 0 {
+		selected := toSet(opts.Tables)
+		for i := range p.Schemas {
+			tables := p.Schemas[i].Tables[:0]
+			for _, t := range p.Schemas[i].Tables {
+				if selected[p.Schemas[i].Name+"."+t.Name] {
+					tables = append(tables, t)
+				}
+			}
+			p.Schemas[i].Tables = tables
+		}
+	}
+
+	// Remove empty schemas (no tables left)
+	schemas := p.Schemas[:0]
+	for _, s := range p.Schemas {
+		if len(s.Tables) > 0 {
+			schemas = append(schemas, s)
+		}
+	}
+	p.Schemas = schemas
+
+	// Filter categories
+	if !cats["views"] && !cats["matviews"] {
+		p.Views = nil
+	} else if p.Views != nil {
+		if !cats["views"] {
+			p.Views.Views = nil
+		}
+		if !cats["matviews"] {
+			p.Views.MatViews = nil
+		}
+	}
+	if !cats["functions"] {
+		p.Functions = nil
+	}
+	if !cats["triggers"] {
+		p.Triggers = nil
+	}
+	if !cats["sequences"] {
+		p.Sequences = nil
+	}
+	if !cats["extensions"] {
+		p.Extensions = nil
+	}
+	if p.Types != nil {
+		if !cats["enums"] {
+			p.Types.Enums = nil
+		}
+		if !cats["domains"] {
+			p.Types.Domains = nil
+		}
+	}
+}
+
+func toSet(ss []string) map[string]bool {
+	m := make(map[string]bool, len(ss))
+	for _, s := range ss {
+		m[s] = true
+	}
+	return m
 }
 
 // OpenDemo loads an embedded demo schema by name.

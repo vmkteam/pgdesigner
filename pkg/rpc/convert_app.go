@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/vmkteam/pgdesigner/pkg/designer"
+	"github.com/vmkteam/pgdesigner/pkg/format/pgre"
 )
 
 // NewDemoSchemaFromInfo converts domain DemoSchemaInfo to RPC DemoSchema.
@@ -84,6 +85,51 @@ func NewRecentFilesFromInfo(rs []designer.RecentFileInfo) []RecentFile {
 	out := make([]RecentFile, len(rs))
 	for i, r := range rs {
 		out[i] = NewRecentFileFromInfo(r)
+	}
+	return out
+}
+
+// NewDSNPreview converts pgre.PreviewResult to RPC DSNPreview.
+func NewDSNPreview(p *pgre.PreviewResult) *DSNPreview {
+	schemas := make([]DSNSchemaPreview, len(p.Schemas))
+	for i, s := range p.Schemas {
+		tables := make([]DSNTablePreview, len(s.Tables))
+		for j, t := range s.Tables {
+			tables[j] = DSNTablePreview{
+				Name: t.Name, Columns: t.Columns, Indexes: t.Indexes,
+				FKs: t.FKs, Partitioned: t.Partitioned,
+			}
+		}
+		schemas[i] = DSNSchemaPreview{Name: s.Name, Tables: tables}
+	}
+
+	roles := make([]DSNRolePreview, len(p.Roles))
+	for i, r := range p.Roles {
+		roles[i] = DSNRolePreview{Name: r.Name, Login: r.Login, Members: r.Members}
+	}
+
+	return &DSNPreview{
+		Database:          p.Database,
+		PgVersion:         p.PgVersion,
+		Schemas:           schemas,
+		Views:             newDSNObjects(p.Views),
+		MatViews:          newDSNObjects(p.MatViews),
+		Functions:         newDSNObjects(p.Functions),
+		Triggers:          newDSNObjects(p.Triggers),
+		Enums:             newDSNObjects(p.Enums),
+		Domains:           newDSNObjects(p.Domains),
+		Sequences:         newDSNObjects(p.Sequences),
+		Extensions:        newDSNObjects(p.Extensions),
+		Roles:             roles,
+		Grants:            p.Grants,
+		DefaultPrivileges: p.DefaultPrivileges,
+	}
+}
+
+func newDSNObjects(objs []pgre.ObjectPreview) []DSNObjectPreview {
+	out := make([]DSNObjectPreview, len(objs))
+	for i, o := range objs {
+		out[i] = DSNObjectPreview{Name: o.Name, Schema: o.Schema}
 	}
 	return out
 }

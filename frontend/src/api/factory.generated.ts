@@ -128,6 +128,58 @@ export interface IAppRemoveRecentFileParams {
   path: string
 }
 
+export interface IAppIntrospectDSNParams {
+  dsn: string
+}
+
+export interface IAppImportDSNParams {
+  dsn: string,
+  schemas: Array<string>,
+  tables: Array<string>,
+  categories: Array<string>
+}
+
+export interface IDSNPreview {
+  database: string,
+  pgVersion: string,
+  schemas: Array<IDSNSchemaPreview>,
+  views: Array<IDSNObjectPreview>,
+  matViews: Array<IDSNObjectPreview>,
+  functions: Array<IDSNObjectPreview>,
+  triggers: Array<IDSNObjectPreview>,
+  enums: Array<IDSNObjectPreview>,
+  domains: Array<IDSNObjectPreview>,
+  sequences: Array<IDSNObjectPreview>,
+  extensions: Array<IDSNObjectPreview>,
+  roles: Array<IDSNRolePreview>,
+  grants: number,
+  defaultPrivileges: number
+}
+
+export interface IDSNSchemaPreview {
+  name: string,
+  tables: Array<IDSNTablePreview>
+}
+
+export interface IDSNTablePreview {
+  name: string,
+  columns: number,
+  indexes: number,
+  fks: number,
+  partitioned: boolean
+}
+
+export interface IDSNObjectPreview {
+  name: string,
+  schema: string
+}
+
+export interface IDSNRolePreview {
+  name: string,
+  login: boolean,
+  members: number
+}
+
 export interface IDiffHazard {
   level: string, // dangerous, warning, info
   code: string, // DELETES_DATA, TABLE_REWRITE, etc.
@@ -599,6 +651,18 @@ zenrpc
      */
     runDiffExample(params: IAppRunDiffExampleParams): Promise<IDiffUnsavedResult> {
       return send('app.RunDiffExample', params)
+    },
+    /**
+     * IntrospectDSN connects to PostgreSQL and returns a preview of available objects.
+     */
+    introspectDSN(params: IAppIntrospectDSNParams): Promise<IDSNPreview> {
+      return send('app.IntrospectDSN', params)
+    },
+    /**
+     * ImportDSN imports schema from PostgreSQL with filtering options.
+     */
+    importDSN(params: IAppImportDSNParams): Promise<boolean> {
+      return send('app.ImportDSN', params)
     }
   },
   project: {
