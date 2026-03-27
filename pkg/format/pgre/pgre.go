@@ -16,25 +16,36 @@ type Options struct {
 	Full    bool     // include views, functions, triggers, extensions, domains, enums
 }
 
+// defaultSchemaFilter excludes system schemas from introspection queries.
+const defaultSchemaFilter = "AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast') AND n.nspname NOT LIKE 'pg_temp_%'"
+
 // Connect introspects a PostgreSQL database and returns a pgd.Project.
 func Connect(dsn string, opts Options) (*pgd.Project, error) {
+	db, err := connectDB(dsn)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	intr := &introspector{db: db, ctx: context.Background(), opts: opts}
+	return intr.introspect()
+}
+
+// connectDB parses DSN, connects, and verifies connectivity.
+func connectDB(dsn string) (*pg.DB, error) {
 	pgOpts, err := parseDSN(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("parsing DSN: %w", err)
 	}
 
 	db := pg.Connect(pgOpts)
-	defer db.Close()
 
-	ctx := context.Background()
-
-	// Check connection
 	if _, err := db.ExecOne("SELECT 1"); err != nil {
+		db.Close()
 		return nil, fmt.Errorf("connecting to database: %w", err)
 	}
 
-	intr := &introspector{db: db, ctx: ctx, opts: opts}
-	return intr.introspect()
+	return db, nil
 }
 
 // IsDSN returns true if the input looks like a PostgreSQL DSN.

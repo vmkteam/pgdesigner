@@ -11,33 +11,43 @@ import (
 )
 
 var RPC = struct {
-	AppService     struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, ListDiffExamples, RunDiffExample string }
-	ProjectService struct{ GetInfo, GetSchema, GetDDL, GenerateTestData, Lint, ListObjects, GetTable, SaveProject, SaveProjectAs, SaveLayout, IsDirty, GetAutoSave, SetAutoSave, ListTypes, UpdateTable, PreviewDiff, DiffUnsaved, FixLintIssues, IgnoreLintRules, GetIgnoredRules, UnignoreLintRules, CreateTable, DeleteTable, CreateSchema, DeleteSchema, MoveTable, GetProjectSettings, UpdateProjectSettings, LintTable, Singularize string }
+	AppService     struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, GetHomePath, ListDirectory, RemoveRecentFile, GetRecentFilesInfo, ListDiffExamples, RunDiffExample, CheckForUpdate, DismissUpdate, IntrospectDSN, ImportDSN string }
+	ProjectService struct{ GetInfo, GetSchema, GetDDL, GetTableDDL, GenerateTestData, Lint, ListObjects, GetTable, SaveProject, SaveProjectAs, SaveTextFile, SaveLayout, IsDirty, GetAutoSave, SetAutoSave, ListTypes, UpdateTable, PreviewDiff, DiffUnsaved, FixLintIssues, IgnoreLintRules, GetIgnoredRules, UnignoreLintRules, CreateTable, DeleteTable, CreateSchema, DeleteSchema, MoveTable, GetProjectSettings, UpdateProjectSettings, LintTable, Singularize string }
 }{
-	AppService: struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, ListDiffExamples, RunDiffExample string }{
-		Quit:             "quit",
-		Ping:             "ping",
-		About:            "about",
-		ListDemoSchemas:  "listdemoschemas",
-		OpenDemo:         "opendemo",
-		OpenFile:         "openfile",
-		NewProject:       "newproject",
-		CloseProject:     "closeproject",
-		Register:         "register",
-		GetRecentFiles:   "getrecentfiles",
-		ListDiffExamples: "listdiffexamples",
-		RunDiffExample:   "rundiffexample",
+	AppService: struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, GetHomePath, ListDirectory, RemoveRecentFile, GetRecentFilesInfo, ListDiffExamples, RunDiffExample, CheckForUpdate, DismissUpdate, IntrospectDSN, ImportDSN string }{
+		Quit:               "quit",
+		Ping:               "ping",
+		About:              "about",
+		ListDemoSchemas:    "listdemoschemas",
+		OpenDemo:           "opendemo",
+		OpenFile:           "openfile",
+		NewProject:         "newproject",
+		CloseProject:       "closeproject",
+		Register:           "register",
+		GetRecentFiles:     "getrecentfiles",
+		GetHomePath:        "gethomepath",
+		ListDirectory:      "listdirectory",
+		RemoveRecentFile:   "removerecentfile",
+		GetRecentFilesInfo: "getrecentfilesinfo",
+		ListDiffExamples:   "listdiffexamples",
+		RunDiffExample:     "rundiffexample",
+		CheckForUpdate:     "checkforupdate",
+		DismissUpdate:      "dismissupdate",
+		IntrospectDSN:      "introspectdsn",
+		ImportDSN:          "importdsn",
 	},
-	ProjectService: struct{ GetInfo, GetSchema, GetDDL, GenerateTestData, Lint, ListObjects, GetTable, SaveProject, SaveProjectAs, SaveLayout, IsDirty, GetAutoSave, SetAutoSave, ListTypes, UpdateTable, PreviewDiff, DiffUnsaved, FixLintIssues, IgnoreLintRules, GetIgnoredRules, UnignoreLintRules, CreateTable, DeleteTable, CreateSchema, DeleteSchema, MoveTable, GetProjectSettings, UpdateProjectSettings, LintTable, Singularize string }{
+	ProjectService: struct{ GetInfo, GetSchema, GetDDL, GetTableDDL, GenerateTestData, Lint, ListObjects, GetTable, SaveProject, SaveProjectAs, SaveTextFile, SaveLayout, IsDirty, GetAutoSave, SetAutoSave, ListTypes, UpdateTable, PreviewDiff, DiffUnsaved, FixLintIssues, IgnoreLintRules, GetIgnoredRules, UnignoreLintRules, CreateTable, DeleteTable, CreateSchema, DeleteSchema, MoveTable, GetProjectSettings, UpdateProjectSettings, LintTable, Singularize string }{
 		GetInfo:               "getinfo",
 		GetSchema:             "getschema",
 		GetDDL:                "getddl",
+		GetTableDDL:           "gettableddl",
 		GenerateTestData:      "generatetestdata",
 		Lint:                  "lint",
 		ListObjects:           "listobjects",
 		GetTable:              "gettable",
 		SaveProject:           "saveproject",
 		SaveProjectAs:         "saveprojectas",
+		SaveTextFile:          "savetextfile",
 		SaveLayout:            "savelayout",
 		IsDirty:               "isdirty",
 		GetAutoSave:           "getautosave",
@@ -232,6 +242,130 @@ zenrpc`,
 					},
 				},
 			},
+			"GetHomePath": {
+				Description: `GetHomePath returns the user's home directory path.`,
+				Parameters:  []smd.JSONSchema{},
+				Returns: smd.JSONSchema{
+					Description: `string`,
+					Type:        smd.String,
+				},
+			},
+			"ListDirectory": {
+				Description: `ListDirectory lists files and subdirectories at the given path.
+Returns entries sorted: directories first (alphabetical), then files (alphabetical).
+Hidden files (starting with .) are excluded.`,
+				Parameters: []smd.JSONSchema{
+					{
+						Name:        "path",
+						Description: `absolute directory path (~ expanded server-side)`,
+						Type:        smd.String,
+					},
+					{
+						Name:        "showAll",
+						Description: `if true, show all files; if false, only supported extensions`,
+						Type:        smd.Boolean,
+					},
+				},
+				Returns: smd.JSONSchema{
+					Description: `DirectoryListing`,
+					Optional:    true,
+					Type:        smd.Object,
+					TypeName:    "DirectoryListing",
+					Properties: smd.PropertyList{
+						{
+							Name: "path",
+							Type: smd.String,
+						},
+						{
+							Name: "entries",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DirEntry",
+							},
+						},
+					},
+					Definitions: map[string]smd.Definition{
+						"DirEntry": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name: "isDir",
+									Type: smd.Boolean,
+								},
+								{
+									Name: "size",
+									Type: smd.Integer,
+								},
+								{
+									Name: "modTime",
+									Type: smd.String,
+								},
+								{
+									Name: "supported",
+									Type: smd.Boolean,
+								},
+							},
+						},
+					},
+				},
+			},
+			"RemoveRecentFile": {
+				Description: `RemoveRecentFile removes a path from the recent files list.`,
+				Parameters: []smd.JSONSchema{
+					{
+						Name:        "path",
+						Description: `file path to remove`,
+						Type:        smd.String,
+					},
+				},
+				Returns: smd.JSONSchema{
+					Description: `bool`,
+					Type:        smd.Boolean,
+				},
+			},
+			"GetRecentFilesInfo": {
+				Description: `GetRecentFilesInfo returns recent files with metadata (size, mod time, exists).`,
+				Parameters:  []smd.JSONSchema{},
+				Returns: smd.JSONSchema{
+					Description: `[]RecentFile`,
+					Type:        smd.Array,
+					TypeName:    "[]RecentFile",
+					Items: map[string]string{
+						"$ref": "#/definitions/RecentFile",
+					},
+					Definitions: map[string]smd.Definition{
+						"RecentFile": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "path",
+									Type: smd.String,
+								},
+								{
+									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name: "size",
+									Type: smd.Integer,
+								},
+								{
+									Name: "modTime",
+									Type: smd.String,
+								},
+								{
+									Name: "exists",
+									Type: smd.Boolean,
+								},
+							},
+						},
+					},
+				},
+			},
 			"ListDiffExamples": {
 				Description: `ListDiffExamples returns available pre-built diff examples.`,
 				Parameters:  []smd.JSONSchema{},
@@ -352,6 +486,271 @@ zenrpc`,
 					},
 				},
 			},
+			"CheckForUpdate": {
+				Description: `CheckForUpdate checks GitHub Releases for a newer version of PgDesigner.
+Results are cached for 24 hours. Safe to call in read-only mode.`,
+				Parameters: []smd.JSONSchema{},
+				Returns: smd.JSONSchema{
+					Description: `UpdateInfo`,
+					Optional:    true,
+					Type:        smd.Object,
+					TypeName:    "UpdateInfo",
+					Properties: smd.PropertyList{
+						{
+							Name: "currentVersion",
+							Type: smd.String,
+						},
+						{
+							Name: "latestVersion",
+							Type: smd.String,
+						},
+						{
+							Name: "updateAvailable",
+							Type: smd.Boolean,
+						},
+						{
+							Name: "releaseURL",
+							Type: smd.String,
+						},
+						{
+							Name: "shouldNotify",
+							Type: smd.Boolean,
+						},
+					},
+				},
+			},
+			"DismissUpdate": {
+				Description: `DismissUpdate records that the user has dismissed the update notification for the given version.`,
+				Parameters: []smd.JSONSchema{
+					{
+						Name:        "version",
+						Description: `version string to dismiss (e.g. "v0.2.0")`,
+						Type:        smd.String,
+					},
+				},
+				Returns: smd.JSONSchema{
+					Description: `bool`,
+					Type:        smd.Boolean,
+				},
+			},
+			"IntrospectDSN": {
+				Description: `IntrospectDSN connects to a PostgreSQL database and returns a preview of available objects.`,
+				Parameters: []smd.JSONSchema{
+					{
+						Name:        "dsn",
+						Description: `PostgreSQL connection string`,
+						Type:        smd.String,
+					},
+				},
+				Returns: smd.JSONSchema{
+					Description: `DSNPreview`,
+					Optional:    true,
+					Type:        smd.Object,
+					TypeName:    "DSNPreview",
+					Properties: smd.PropertyList{
+						{
+							Name: "database",
+							Type: smd.String,
+						},
+						{
+							Name: "pgVersion",
+							Type: smd.String,
+						},
+						{
+							Name: "schemas",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNSchemaPreview",
+							},
+						},
+						{
+							Name: "views",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "matViews",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "functions",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "triggers",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "enums",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "domains",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "sequences",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "extensions",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNObjectPreview",
+							},
+						},
+						{
+							Name: "roles",
+							Type: smd.Array,
+							Items: map[string]string{
+								"$ref": "#/definitions/DSNRolePreview",
+							},
+						},
+						{
+							Name: "grants",
+							Type: smd.Integer,
+						},
+						{
+							Name: "defaultPrivileges",
+							Type: smd.Integer,
+						},
+					},
+					Definitions: map[string]smd.Definition{
+						"DSNSchemaPreview": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name: "tables",
+									Type: smd.Array,
+									Items: map[string]string{
+										"$ref": "#/definitions/DSNTablePreview",
+									},
+								},
+							},
+						},
+						"DSNTablePreview": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name: "columns",
+									Type: smd.Integer,
+								},
+								{
+									Name: "indexes",
+									Type: smd.Integer,
+								},
+								{
+									Name: "fks",
+									Type: smd.Integer,
+								},
+								{
+									Name: "partitioned",
+									Type: smd.Boolean,
+								},
+							},
+						},
+						"DSNObjectPreview": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name: "schema",
+									Type: smd.String,
+								},
+							},
+						},
+						"DSNRolePreview": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name: "login",
+									Type: smd.Boolean,
+								},
+								{
+									Name: "members",
+									Type: smd.Integer,
+								},
+							},
+						},
+					},
+				},
+			},
+			"ImportDSN": {
+				Description: `ImportDSN imports schema from PostgreSQL with filtering options.`,
+				Parameters: []smd.JSONSchema{
+					{
+						Name:        "dsn",
+						Description: `PostgreSQL connection string`,
+						Type:        smd.String,
+					},
+					{
+						Name:        "schemas",
+						Description: `schemas to import (empty = all)`,
+						Type:        smd.Array,
+						TypeName:    "[]",
+						Items: map[string]string{
+							"type": smd.String,
+						},
+					},
+					{
+						Name:        "tables",
+						Description: `specific tables to import as "schema.table" (empty = all in selected schemas)`,
+						Type:        smd.Array,
+						TypeName:    "[]",
+						Items: map[string]string{
+							"type": smd.String,
+						},
+					},
+					{
+						Name:        "categories",
+						Description: `object categories to include: views, matviews, functions, triggers, enums, domains, sequences, extensions`,
+						Type:        smd.Array,
+						TypeName:    "[]",
+						Items: map[string]string{
+							"type": smd.String,
+						},
+					},
+				},
+				Returns: smd.JSONSchema{
+					Description: `bool`,
+					Type:        smd.Boolean,
+				},
+			},
 		},
 	}
 }
@@ -440,6 +839,51 @@ func (s AppService) Invoke(ctx context.Context, method string, params json.RawMe
 	case RPC.AppService.GetRecentFiles:
 		resp.Set(s.GetRecentFiles())
 
+	case RPC.AppService.GetHomePath:
+		resp.Set(s.GetHomePath())
+
+	case RPC.AppService.ListDirectory:
+		var args = struct {
+			Path    string `json:"path"`
+			ShowAll bool   `json:"showAll"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"path", "showAll"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.ListDirectory(args.Path, args.ShowAll))
+
+	case RPC.AppService.RemoveRecentFile:
+		var args = struct {
+			Path string `json:"path"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"path"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.RemoveRecentFile(args.Path))
+
+	case RPC.AppService.GetRecentFilesInfo:
+		resp.Set(s.GetRecentFilesInfo())
+
 	case RPC.AppService.ListDiffExamples:
 		resp.Set(s.ListDiffExamples())
 
@@ -461,6 +905,69 @@ func (s AppService) Invoke(ctx context.Context, method string, params json.RawMe
 		}
 
 		resp.Set(s.RunDiffExample(args.Name))
+
+	case RPC.AppService.CheckForUpdate:
+		resp.Set(s.CheckForUpdate())
+
+	case RPC.AppService.DismissUpdate:
+		var args = struct {
+			Version string `json:"version"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"version"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.DismissUpdate(args.Version))
+
+	case RPC.AppService.IntrospectDSN:
+		var args = struct {
+			Dsn string `json:"dsn"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"dsn"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.IntrospectDSN(args.Dsn))
+
+	case RPC.AppService.ImportDSN:
+		var args = struct {
+			Dsn        string   `json:"dsn"`
+			Schemas    []string `json:"schemas"`
+			Tables     []string `json:"tables"`
+			Categories []string `json:"categories"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"dsn", "schemas", "tables", "categories"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.ImportDSN(args.Dsn, args.Schemas, args.Tables, args.Categories))
 
 	default:
 		resp = zenrpc.NewResponseError(nil, zenrpc.MethodNotFound, "", nil)
@@ -529,6 +1036,10 @@ func (ProjectService) SMD() smd.ServiceInfo {
 						},
 						{
 							Name: "filePath",
+							Type: smd.String,
+						},
+						{
+							Name: "workDir",
 							Type: smd.String,
 						},
 					},
@@ -670,6 +1181,20 @@ func (ProjectService) SMD() smd.ServiceInfo {
 			"GetDDL": {
 				Description: `GetDDL returns the full DDL for the project.`,
 				Parameters:  []smd.JSONSchema{},
+				Returns: smd.JSONSchema{
+					Description: `string`,
+					Type:        smd.String,
+				},
+			},
+			"GetTableDDL": {
+				Description: `GetTableDDL returns the DDL for a single table (CREATE TABLE + indexes + FK + comments).`,
+				Parameters: []smd.JSONSchema{
+					{
+						Name:        "name",
+						Description: `table name`,
+						Type:        smd.String,
+					},
+				},
 				Returns: smd.JSONSchema{
 					Description: `string`,
 					Type:        smd.String,
@@ -1226,6 +1751,26 @@ func (ProjectService) SMD() smd.ServiceInfo {
 					{
 						Name:        "path",
 						Description: `new file path (.pgd)`,
+						Type:        smd.String,
+					},
+				},
+				Returns: smd.JSONSchema{
+					Description: `bool`,
+					Type:        smd.Boolean,
+				},
+			},
+			"SaveTextFile": {
+				Description: `SaveTextFile writes text content to the specified file path.
+Used for saving DDL, diff patches, and other generated text.`,
+				Parameters: []smd.JSONSchema{
+					{
+						Name:        "path",
+						Description: `absolute file path`,
+						Type:        smd.String,
+					},
+					{
+						Name:        "content",
+						Description: `file content`,
 						Type:        smd.String,
 					},
 				},
@@ -3100,6 +3645,11 @@ It does NOT modify the project — only computes the diff.`,
 							Description: `Lint`,
 							Type:        smd.String,
 						},
+						{
+							Name:        "autoSaveDDL",
+							Description: `Export`,
+							Type:        smd.String,
+						},
 					},
 				},
 			},
@@ -3153,6 +3703,11 @@ It does NOT modify the project — only computes the diff.`,
 							{
 								Name:        "lintIgnoreRules",
 								Description: `Lint`,
+								Type:        smd.String,
+							},
+							{
+								Name:        "autoSaveDDL",
+								Description: `Export`,
 								Type:        smd.String,
 							},
 						},
@@ -3248,6 +3803,25 @@ func (s ProjectService) Invoke(ctx context.Context, method string, params json.R
 	case RPC.ProjectService.GetDDL:
 		resp.Set(s.GetDDL())
 
+	case RPC.ProjectService.GetTableDDL:
+		var args = struct {
+			Name string `json:"name"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"name"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.GetTableDDL(args.Name))
+
 	case RPC.ProjectService.GenerateTestData:
 		var args = struct {
 			Seed int64 `json:"seed"`
@@ -3314,6 +3888,26 @@ func (s ProjectService) Invoke(ctx context.Context, method string, params json.R
 		}
 
 		resp.Set(s.SaveProjectAs(args.Path))
+
+	case RPC.ProjectService.SaveTextFile:
+		var args = struct {
+			Path    string `json:"path"`
+			Content string `json:"content"`
+		}{}
+
+		if zenrpc.IsArray(params) {
+			if params, err = zenrpc.ConvertToObject([]string{"path", "content"}, params); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		if len(params) > 0 {
+			if err := json.Unmarshal(params, &args); err != nil {
+				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
+			}
+		}
+
+		resp.Set(s.SaveTextFile(args.Path, args.Content))
 
 	case RPC.ProjectService.SaveLayout:
 		var args = struct {

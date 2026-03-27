@@ -1,5 +1,6 @@
 /* Code generated from jsonrpc schema by rpcgen v2.5.x with typescript v1.0.0; DO NOT EDIT. */
 /* eslint-disable */
+// @ts-nocheck
 export interface IAboutInfo {
   name: string,
   description: string,
@@ -12,6 +13,26 @@ export interface IAboutInfo {
   github: string
 }
 
+export interface IAppDismissUpdateParams {
+  version: string
+}
+
+export interface IAppImportDSNParams {
+  dsn: string,
+  schemas: Array<string>,
+  tables: Array<string>,
+  categories: Array<string>
+}
+
+export interface IAppIntrospectDSNParams {
+  dsn: string
+}
+
+export interface IAppListDirectoryParams {
+  path: string,
+  showAll: boolean
+}
+
 export interface IAppOpenDemoParams {
   name: string
 }
@@ -22,6 +43,10 @@ export interface IAppOpenFileParams {
 
 export interface IAppRegisterParams {
   email: string
+}
+
+export interface IAppRemoveRecentFileParams {
+  path: string
 }
 
 export interface IAppRunDiffExampleParams {
@@ -76,6 +101,47 @@ export interface IColumnInput {
   collation: string
 }
 
+export interface IDSNObjectPreview {
+  name: string,
+  schema: string
+}
+
+export interface IDSNPreview {
+  database: string,
+  pgVersion: string,
+  schemas: Array<IDSNSchemaPreview>,
+  views: Array<IDSNObjectPreview>,
+  matViews: Array<IDSNObjectPreview>,
+  functions: Array<IDSNObjectPreview>,
+  triggers: Array<IDSNObjectPreview>,
+  enums: Array<IDSNObjectPreview>,
+  domains: Array<IDSNObjectPreview>,
+  sequences: Array<IDSNObjectPreview>,
+  extensions: Array<IDSNObjectPreview>,
+  roles: Array<IDSNRolePreview>,
+  grants: number,
+  defaultPrivileges: number
+}
+
+export interface IDSNRolePreview {
+  name: string,
+  login: boolean,
+  members: number
+}
+
+export interface IDSNSchemaPreview {
+  name: string,
+  tables: Array<IDSNTablePreview>
+}
+
+export interface IDSNTablePreview {
+  name: string,
+  columns: number,
+  indexes: number,
+  fks: number,
+  partitioned: boolean
+}
+
 export interface IDemoSchema {
   name: string,
   title: string,
@@ -107,6 +173,19 @@ export interface IDiffHazard {
 export interface IDiffUnsavedResult {
   changes: Array<IDiffChange>,
   sql: string // full ALTER script
+}
+
+export interface IDirEntry {
+  name: string,
+  isDir: boolean,
+  size: number,
+  modTime: string,
+  supported: boolean
+}
+
+export interface IDirectoryListing {
+  path: string,
+  entries: Array<IDirEntry>
 }
 
 export interface IERDColumn {
@@ -335,6 +414,10 @@ export interface IProjectGenerateTestDataParams {
   rows: number
 }
 
+export interface IProjectGetTableDDLParams {
+  name: string
+}
+
 export interface IProjectGetTableParams {
   name: string
 }
@@ -356,7 +439,8 @@ export interface IProjectInfo {
   isDemo: boolean,
   isReadOnly: boolean,
   isRegistered: boolean,
-  filePath: string
+  filePath: string,
+  workDir: string
 }
 
 export interface IProjectLintTableParams {
@@ -388,6 +472,11 @@ export interface IProjectSaveProjectAsParams {
   path: string
 }
 
+export interface IProjectSaveTextFileParams {
+  path: string,
+  content: string
+}
+
 export interface IProjectSetAutoSaveParams {
   enabled: boolean
 }
@@ -402,7 +491,8 @@ export interface IProjectSettings {
   defaultNullable: string, // Defaults
   defaultOnDelete: string,
   defaultOnUpdate: string,
-  lintIgnoreRules: string // Lint
+  lintIgnoreRules: string, // Lint
+  autoSaveDDL: string // Export
 }
 
 export interface IProjectSingularizeParams {
@@ -430,6 +520,14 @@ export interface IProjectUpdateTableParams {
   indexes: Array<IIndexInput>,
   partitionBy?: IPartitionByRPC,
   partitions: Array<IPartitionRPC>
+}
+
+export interface IRecentFile {
+  path: string,
+  name: string,
+  size: number,
+  modTime: string,
+  exists: boolean
 }
 
 export interface ITableDetail {
@@ -468,6 +566,14 @@ export interface IUniqueInput {
   nullsDistinct: boolean
 }
 
+export interface IUpdateInfo {
+  currentVersion: string,
+  latestVersion: string,
+  updateAvailable: boolean,
+  releaseURL: string,
+  shouldNotify: boolean
+}
+
 export const factory = (send: any) => ({
   app: {
     /**
@@ -477,16 +583,53 @@ export const factory = (send: any) => ({
       return send('app.About')
     },
     /**
+     * CheckForUpdate checks GitHub Releases for a newer version of PgDesigner.
+Results are cached for 24 hours. Safe to call in read-only mode.
+     */
+    checkForUpdate(): Promise<IUpdateInfo> {
+      return send('app.CheckForUpdate')
+    },
+    /**
      * CloseProject replaces current project with empty one (returns to welcome screen).
      */
     closeProject(): Promise<boolean> {
       return send('app.CloseProject')
     },
     /**
+     * DismissUpdate records that the user has dismissed the update notification for the given version.
+     */
+    dismissUpdate(params: IAppDismissUpdateParams): Promise<boolean> {
+      return send('app.DismissUpdate', params)
+    },
+    /**
+     * GetHomePath returns the user's home directory path.
+     */
+    getHomePath(): Promise<string> {
+      return send('app.GetHomePath')
+    },
+    /**
      * GetRecentFiles returns the list of recently opened files.
      */
     getRecentFiles(): Promise<Array<string>> {
       return send('app.GetRecentFiles')
+    },
+    /**
+     * GetRecentFilesInfo returns recent files with metadata (size, mod time, exists).
+     */
+    getRecentFilesInfo(): Promise<Array<IRecentFile>> {
+      return send('app.GetRecentFilesInfo')
+    },
+    /**
+     * ImportDSN imports schema from PostgreSQL with filtering options.
+     */
+    importDSN(params: IAppImportDSNParams): Promise<boolean> {
+      return send('app.ImportDSN', params)
+    },
+    /**
+     * IntrospectDSN connects to a PostgreSQL database and returns a preview of available objects.
+     */
+    introspectDSN(params: IAppIntrospectDSNParams): Promise<IDSNPreview> {
+      return send('app.IntrospectDSN', params)
     },
     /**
      * ListDemoSchemas returns available embedded demo schemas.
@@ -499,6 +642,14 @@ export const factory = (send: any) => ({
      */
     listDiffExamples(): Promise<Array<IDiffExample>> {
       return send('app.ListDiffExamples')
+    },
+    /**
+     * ListDirectory lists files and subdirectories at the given path.
+Returns entries sorted: directories first (alphabetical), then files (alphabetical).
+Hidden files (starting with .) are excluded.
+     */
+    listDirectory(params: IAppListDirectoryParams): Promise<IDirectoryListing> {
+      return send('app.ListDirectory', params)
     },
     /**
      * NewProject creates a new empty project, replacing the current one.
@@ -539,6 +690,12 @@ zenrpc
      */
     register(params: IAppRegisterParams): Promise<boolean> {
       return send('app.Register', params)
+    },
+    /**
+     * RemoveRecentFile removes a path from the recent files list.
+     */
+    removeRecentFile(params: IAppRemoveRecentFileParams): Promise<boolean> {
+      return send('app.RemoveRecentFile', params)
     },
     /**
      * RunDiffExample loads a diff pair and returns the diff result.
@@ -633,6 +790,12 @@ zenrpc
       return send('project.GetTable', params)
     },
     /**
+     * GetTableDDL returns the DDL for a single table (CREATE TABLE + indexes + FK + comments).
+     */
+    getTableDDL(params: IProjectGetTableDDLParams): Promise<string> {
+      return send('project.GetTableDDL', params)
+    },
+    /**
      * IgnoreLintRules adds rules to project or table ignore list.
      */
     ignoreLintRules(params: IProjectIgnoreLintRulesParams): Promise<Array<ILintIssue>> {
@@ -698,6 +861,13 @@ It does NOT modify the project — only computes the diff.
      */
     saveProjectAs(params: IProjectSaveProjectAsParams): Promise<boolean> {
       return send('project.SaveProjectAs', params)
+    },
+    /**
+     * SaveTextFile writes text content to the specified file path.
+Used for saving DDL, diff patches, and other generated text.
+     */
+    saveTextFile(params: IProjectSaveTextFileParams): Promise<boolean> {
+      return send('project.SaveTextFile', params)
     },
     /**
      * SetAutoSave enables or disables auto-save after each mutation.

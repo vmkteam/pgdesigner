@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, useTemplateRef } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogTitle } from 'reka-ui'
 import { useUiStore } from '@/stores/ui'
 import { useEditorStore } from '@/stores/editor'
@@ -129,7 +130,7 @@ function onColumnPropUpdate(index: number, field: string, value: string | number
   }
 }
 
-const gridRef = ref<InstanceType<typeof ColumnGrid> | null>(null)
+const gridRef = useTemplateRef<InstanceType<typeof ColumnGrid>>('gridRef')
 
 function onAddColumn() {
   if (!editor.draft) return
@@ -215,6 +216,28 @@ function onTogglePK(columnName: string) {
   }))
 }
 
+function onGoToIndex(indexName: string) {
+  activeTab.value = 'indexes'
+  ui.tableEditorFocusItem = indexName
+}
+
+function onCreateIndex(columnName: string) {
+  if (!editor.draft) return
+  const tableName = editor.draft.name.replace(/.*\./, '')
+  const name = `ix_${tableName}_${columnName}`
+  if (editor.draft.indexes?.some(ix => ix.name === name)) {
+    onGoToIndex(name)
+    return
+  }
+  const newIndex = {
+    name, unique: false, nullsDistinct: false, using: 'btree',
+    columns: [{ name: columnName, order: '', nulls: '', opclass: '' }], expressions: [], where: '', include: [],
+  }
+  editor.draft.indexes = [...(editor.draft.indexes || []), newIndex]
+  activeTab.value = 'indexes'
+  ui.tableEditorFocusItem = name
+}
+
 function onConstraintPKUpdate(pk: IPKDetail | null) {
   if (!editor.draft) return
   editor.draft.pk = pk ?? undefined
@@ -268,8 +291,7 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => document.addEventListener('keydown', onKeydown))
-onUnmounted(() => document.removeEventListener('keydown', onKeydown))
+useEventListener(document, 'keydown', onKeydown)
 </script>
 
 <template>
@@ -317,8 +339,12 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
                 <ColumnProperties
                   :column="editor.draft.columns[selectedCol]!"
                   :index="selectedCol"
+                  :indexes="editor.draft.indexes || []"
+                  :table-name="editor.draft.name.replace(/.*\./, '')"
                   @update="onColumnPropUpdate"
                   @toggle-p-k="onTogglePK"
+                  @go-to-index="onGoToIndex"
+                  @create-index="onCreateIndex"
                 />
               </div>
             </div>
@@ -366,7 +392,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 
         <div v-if="editor.serverErrors.length" class="dlg-errors">
           <span v-for="(err, i) in editor.serverErrors" :key="i" class="dlg-error-msg">{{ err }}</span>
-          <button class="dlg-error-close" @click="editor.serverErrors = []">x</button>
+          <button class="dlg-error-close" @click="editor.clearServerErrors()">x</button>
         </div>
 
         <div class="dlg-footer">

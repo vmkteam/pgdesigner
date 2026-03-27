@@ -1,41 +1,45 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
+import { useClipboard, whenever } from '@vueuse/core'
 import { DialogRoot, DialogOverlay, DialogContent, DialogTitle, DialogClose } from 'reka-ui'
 import { useProjectStore } from '@/stores/project'
 import { useUiStore } from '@/stores/ui'
+import api from '@/api/factory'
+import { appSaveAs } from '@/composables/useSaveDialog'
+import { showToast } from '@/composables/useToast'
 import SqlViewer from './SqlViewer.vue'
 
 const store = useProjectStore()
 const ui = useUiStore()
-const copied = ref(false)
+const { copy, copied } = useClipboard({ copiedDuring: 2000 })
 
 const isOpen = computed(() => ui.activeDialog === 'ddl')
 
-watch(isOpen, (open) => {
-  if (open && !store.ddl) {
-    store.loadDDL()
-  }
-  copied.value = false
+whenever(isOpen, () => {
+  if (!store.ddl) store.loadDDL()
 })
 
 function close() {
   ui.closeDialog()
 }
 
-async function copyDDL() {
-  await navigator.clipboard.writeText(store.ddl)
-  copied.value = true
-  setTimeout(() => { copied.value = false }, 2000)
+function copyDDL() {
+  copy(store.ddl)
 }
 
-function downloadSQL() {
+async function saveSQL() {
   if (!store.ddl) return
-  const name = (store.info?.name || 'schema') + '.sql'
-  const blob = new Blob([store.ddl], { type: 'text/sql' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url; a.download = name; a.click()
-  URL.revokeObjectURL(url)
+  const name = store.info?.name || 'schema'
+  const fp = store.info?.filePath || ''
+  const defaultDir = fp ? fp.substring(0, fp.lastIndexOf('/')) : ''
+  const path = await appSaveAs(defaultDir, name + '.sql', '.sql')
+  if (!path) return
+  try {
+    await api.project.saveTextFile({ path, content: store.ddl })
+    showToast('Saved to ' + path.substring(path.lastIndexOf('/') + 1))
+  } catch (e) {
+    showToast('Save failed: ' + (e instanceof Error ? e.message : e), 'error')
+  }
 }
 </script>
 
@@ -55,7 +59,7 @@ function downloadSQL() {
         <span v-if="store.ddl" class="text-xs" style="color: var(--color-text-muted)">{{ store.ddl.split('\n').length }} lines</span>
         <span v-else />
         <div class="flex gap-1">
-          <button class="dlg-btn" :disabled="!store.ddl" @click="downloadSQL">Download .sql</button>
+          <button class="dlg-btn" :disabled="!store.ddl" @click="saveSQL">Save .sql...</button>
           <button class="dlg-btn" :disabled="!store.ddl" @click="copyDDL">
             {{ copied ? 'Copied!' : 'Copy' }}
           </button>

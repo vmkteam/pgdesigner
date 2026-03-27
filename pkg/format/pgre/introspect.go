@@ -37,6 +37,7 @@ type pgColumn struct {
 	AttGenerated   string
 	AttCompression string
 	AttStorage     string
+	TypeStorage    string
 	Comment        string
 	Collation      string
 }
@@ -211,7 +212,7 @@ func (i *introspector) introspect() (*pgd.Project, error) {
 
 func (i *introspector) schemaFilter() string {
 	if len(i.opts.Schemas) == 0 {
-		return "AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast') AND n.nspname NOT LIKE 'pg_temp_%'"
+		return defaultSchemaFilter
 	}
 	quoted := make([]string, len(i.opts.Schemas))
 	for j, s := range i.opts.Schemas {
@@ -248,9 +249,11 @@ func (i *introspector) queryColumns(tableOID int) ([]pgColumn, error) {
 		       COALESCE(a.attgenerated::text, '') AS att_generated,
 		       COALESCE(a.attcompression::text, '') AS att_compression,
 		       a.attstorage::text AS att_storage,
+		       t.typstorage::text AS type_storage,
 		       COALESCE(col_description(a.attrelid, a.attnum), '') AS comment,
 		       COALESCE(coll.collname, '') AS collation
 		FROM pg_attribute a
+		JOIN pg_type t ON t.oid = a.atttypid
 		LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
 		LEFT JOIN pg_collation coll ON coll.oid = a.attcollation AND a.attcollation <> 0
 		WHERE a.attrelid = ?

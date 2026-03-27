@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick, useTemplateRef } from 'vue'
+import { useElementBounding } from '@vueuse/core'
 import api from '@/api/factory'
 import type { ITypeInfo } from '@/api/factory'
 
@@ -14,11 +15,10 @@ const query = ref(props.modelValue)
 const allTypes = ref<ITypeInfo[]>([])
 const showDropdown = ref(true)
 const selectedIdx = ref(0)
-const inputRef = ref<HTMLInputElement>()
+const inputRef = useTemplateRef<HTMLInputElement>('inputRef')
 const preventBlur = ref(false)
-const dropdownTop = ref(0)
-const dropdownLeft = ref(0)
-const dropdownWidth = ref(0)
+const { bottom: dropdownTop, left: dropdownLeft, width: inputWidth } = useElementBounding(inputRef)
+const dropdownWidth = computed(() => Math.max(inputWidth.value, 220))
 
 const filtered = computed(() => {
   const q = query.value.toLowerCase()
@@ -28,20 +28,11 @@ const filtered = computed(() => {
 
 watch(query, () => { selectedIdx.value = 0; showDropdown.value = true })
 
-function updateDropdownPos() {
-  if (!inputRef.value) return
-  const r = inputRef.value.getBoundingClientRect()
-  dropdownTop.value = r.bottom
-  dropdownLeft.value = r.left
-  dropdownWidth.value = Math.max(r.width, 220)
-}
-
 onMounted(async () => {
   try { allTypes.value = await api.project.listTypes() } catch { /* ignore */ }
   await nextTick()
   inputRef.value?.focus()
   inputRef.value?.select()
-  updateDropdownPos()
 })
 
 function select(name: string) {
@@ -110,8 +101,7 @@ function categoryBadge(cat: string) {
       class="ta-input"
       @keydown="onKeydown"
       @blur="onBlur"
-      @focus="showDropdown = true; updateDropdownPos()"
-      @input="updateDropdownPos()"
+      @focus="showDropdown = true"
     />
     <div
       v-if="showDropdown && filtered.length"

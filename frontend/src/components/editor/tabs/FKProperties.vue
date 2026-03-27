@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import type { IFKDetail } from '@/api/factory'
+import api from '@/api/factory'
 
 const props = defineProps<{
   fk: IFKDetail
@@ -11,6 +13,19 @@ const props = defineProps<{
 const emit = defineEmits<{
   update: [idx: number, data: IFKDetail]
 }>()
+
+// Target table columns for referenced column dropdown
+const targetColumns = ref<string[]>([])
+
+watch(() => props.fk.toTable, async (toTable) => {
+  if (!toTable) { targetColumns.value = []; return }
+  try {
+    const data = await api.project.getTable({ name: toTable })
+    targetColumns.value = (data.columns || []).map(c => c.name)
+  } catch {
+    targetColumns.value = []
+  }
+}, { immediate: true })
 
 function set(field: string, value: string | boolean | IFKDetail['columns']) {
   emit('update', props.idx, { ...props.fk, [field]: value })
@@ -57,7 +72,10 @@ const REF_ACTIONS = ['no action', 'restrict', 'cascade', 'set null', 'set defaul
         <option v-for="c in columns" :key="c" :value="c">{{ c }}</option>
       </select>
       <span class="fp-arrow">→</span>
-      <input class="fp-pair-input" :value="cp.references" placeholder="referenced col" @change="updateColPair(i, 'references', ($event.target as HTMLInputElement).value)" />
+      <select class="fp-pair-select" :value="cp.references" @change="updateColPair(i, 'references', ($event.target as HTMLSelectElement).value)">
+        <option value="">(referenced)</option>
+        <option v-for="c in targetColumns" :key="c" :value="c">{{ c }}</option>
+      </select>
       <button class="fp-btn-del" @click="removeColPair(i)">×</button>
     </div>
     <button class="fp-btn-add" @click="addColPair">+ Add pair</button>

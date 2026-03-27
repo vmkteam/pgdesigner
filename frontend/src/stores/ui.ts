@@ -1,5 +1,8 @@
-import { ref, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { useDark, useToggle } from '@vueuse/core'
+import api from '@/api/factory'
+import type { IUpdateInfo } from '@/api/factory'
 
 export type DialogType = 'ddl' | 'lint' | 'diff' | 'testdata' | null
 export type Theme = 'light' | 'dark'
@@ -18,21 +21,33 @@ export const useUiStore = defineStore('ui', () => {
   const isWelcome = ref(false)
   const openDialogOpen = ref(false)
 
+  // Update checker
+  const updateInfo = ref<IUpdateInfo | null>(null)
+  const updateDismissed = ref(false)
+
+  async function checkForUpdate() {
+    try {
+      const result = await api.app.checkForUpdate()
+      if (result) updateInfo.value = result
+    } catch { /* silently ignore — update check is best-effort */ }
+  }
+
+  async function dismissUpdate() {
+    if (!updateInfo.value?.latestVersion) return
+    try {
+      await api.app.dismissUpdate({ version: updateInfo.value.latestVersion })
+      updateDismissed.value = true
+    } catch { /* ignore */ }
+  }
+
   // Theme
-  const theme = ref<Theme>(
-    (localStorage.getItem('pgd-theme') as Theme) || 'light',
-  )
-
-  function toggleTheme() {
-    theme.value = theme.value === 'light' ? 'dark' : 'light'
-  }
-
-  function applyTheme() {
-    document.documentElement.classList.toggle('dark', theme.value === 'dark')
-    localStorage.setItem('pgd-theme', theme.value)
-  }
-
-  watch(theme, applyTheme, { immediate: true })
+  const isDark = useDark({ storageKey: 'pgd-theme' })
+  const toggleDark = useToggle(isDark)
+  const theme = computed<Theme>({
+    get: () => isDark.value ? 'dark' : 'light',
+    set: (v) => { isDark.value = v === 'dark' },
+  })
+  function toggleTheme() { toggleDark() }
 
   function openDDL() { activeDialog.value = 'ddl' }
   function openLint() { activeDialog.value = 'lint' }
@@ -55,8 +70,9 @@ export const useUiStore = defineStore('ui', () => {
 
   return {
     activeDialog, tableEditorName, tableEditorTab, tableEditorFocusFK, tableEditorFocusItem, theme, goToOpen, keyboardRefOpen, aboutOpen, settingsOpen, exporting, isWelcome, openDialogOpen,
+    updateInfo, updateDismissed,
     openDDL, openLint, openDiff, openTestData, closeDialog,
     openTableEditor, closeTableEditor,
-    toggleTheme,
+    toggleTheme, checkForUpdate, dismissUpdate,
   }
 })

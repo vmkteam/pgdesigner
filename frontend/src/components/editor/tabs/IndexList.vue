@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { onMounted, nextTick, useTemplateRef } from 'vue'
+import { whenever } from '@vueuse/core'
 import type { IIndexDetail } from '@/api/factory'
 import IndexProperties from './IndexProperties.vue'
 import { useListKeyboard } from '@/composables/useListKeyboard'
@@ -36,7 +37,7 @@ function onUpdateIndex(idx: number, data: IIndexDetail) {
   emit('updateIndexes', copy)
 }
 
-const tableRef = ref<HTMLElement>()
+const tableRef = useTemplateRef<HTMLElement>('tableRef')
 
 const { editingIdx, editName, editError, startEdit: startEditName, commit: commitEditName, onEditKeydown } = useInlineEdit({
   getName: (i) => (props.indexes || [])[i]?.name || '',
@@ -54,8 +55,7 @@ const { selectedIdx, onKeydown: onListKeydown } = useListKeyboard({
 
 onMounted(() => nextTick(() => tableRef.value?.focus()))
 
-watch(() => props.focusItem, (name) => {
-  if (!name) return
+whenever(() => props.focusItem, (name) => {
   const idx = (props.indexes || []).findIndex(i => i.name === name)
   if (idx >= 0) selectedIdx.value = idx
 }, { immediate: true })
@@ -81,7 +81,7 @@ function onKeydown(e: KeyboardEvent) {
         </thead>
         <tbody>
           <tr
-            v-for="(idx, i) in (indexes || [])" :key="i"
+            v-for="(idx, i) in (indexes || [])" :key="idx.name || i"
             :class="{ 'row-selected': selectedIdx === i }"
             @click="selectedIdx = i"
           >

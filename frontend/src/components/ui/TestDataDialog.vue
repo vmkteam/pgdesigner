@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useClipboard } from '@vueuse/core'
 import { DialogRoot, DialogOverlay, DialogContent, DialogTitle, DialogClose } from 'reka-ui'
 import { useProjectStore } from '@/stores/project'
 import { useUiStore } from '@/stores/ui'
+import api from '@/api/factory'
+import { appSaveAs } from '@/composables/useSaveDialog'
+import { showToast } from '@/composables/useToast'
 import SqlViewer from './SqlViewer.vue'
 
 const store = useProjectStore()
 const ui = useUiStore()
-const copied = ref(false)
+const { copy, copied } = useClipboard({ copiedDuring: 2000 })
 const seed = ref(0)
 const rows = ref(50)
 
@@ -15,8 +19,7 @@ const isOpen = computed(() => ui.activeDialog === 'testdata')
 
 watch(isOpen, (open) => {
   if (open) {
-    store.testData = ''
-    copied.value = false
+    store.clearTestData()
   }
 })
 
@@ -28,10 +31,20 @@ function generate() {
   store.loadTestData(seed.value, rows.value)
 }
 
-async function copySQL() {
-  await navigator.clipboard.writeText(store.testData)
-  copied.value = true
-  setTimeout(() => { copied.value = false }, 2000)
+function copySQL() {
+  copy(store.testData)
+}
+
+async function saveSQL() {
+  if (!store.testData) return
+  const path = await appSaveAs(undefined, 'testdata.sql', '.sql')
+  if (!path) return
+  try {
+    await api.project.saveTextFile({ path, content: store.testData })
+    showToast('Saved to ' + path.substring(path.lastIndexOf('/') + 1))
+  } catch (e) {
+    showToast('Save failed: ' + (e instanceof Error ? e.message : e), 'error')
+  }
 }
 
 const lineCount = computed(() => store.testData ? store.testData.split('\n').length : 0)
@@ -78,6 +91,7 @@ const rowOptions = [10, 25, 50, 100, 250, 500, 1000]
         <span v-if="store.testData" class="text-xs" style="color: var(--color-text-muted)">{{ lineCount }} lines</span>
         <span v-else />
         <div class="flex gap-1">
+          <button class="dlg-btn" :disabled="!store.testData" @click="saveSQL">Save .sql...</button>
           <button class="dlg-btn" :disabled="!store.testData" @click="copySQL">
             {{ copied ? 'Copied!' : 'Copy' }}
           </button>

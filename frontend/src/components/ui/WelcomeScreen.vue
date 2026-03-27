@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/api/factory'
-import type { IDemoSchema } from '@/api/factory'
+import type { IDemoSchema, IRecentFile, IAboutInfo } from '@/api/factory'
 import { useProjectStore } from '@/stores/project'
 import { useUiStore } from '@/stores/ui'
 import { showToast } from '@/composables/useToast'
@@ -10,17 +10,22 @@ const store = useProjectStore()
 const ui = useUiStore()
 
 const demos = ref<IDemoSchema[]>([])
-const recentFiles = ref<string[]>([])
+const recentFiles = ref<IRecentFile[]>([])
+const about = ref<IAboutInfo | null>(null)
 const loadingDemo = ref<string | null>(null)
+
+const topRecent = computed(() => recentFiles.value.filter(f => f.exists).slice(0, 2))
 
 onMounted(async () => {
   try {
-    const [d, r] = await Promise.all([
+    const [d, r, a] = await Promise.all([
       api.app.listDemoSchemas(),
-      api.app.getRecentFiles(),
+      api.app.getRecentFilesInfo(),
+      api.app.about(),
     ])
     demos.value = d
     recentFiles.value = r ?? []
+    about.value = a
   } catch { /* ignore */ }
 })
 
@@ -106,18 +111,19 @@ function openFile() {
         </button>
       </div>
 
-      <div v-if="recentFiles.length" class="ws-section">
+      <div v-if="topRecent.length" class="ws-section">
         <div class="ws-section-title">Recent Files</div>
         <div class="ws-recent">
-          <button v-for="f in recentFiles" :key="f" class="ws-recent-item" :title="f" @click="openRecent(f)">
-            {{ f }}
+          <button v-for="f in topRecent" :key="f.path" class="ws-recent-item" :title="f.path" @click="openRecent(f.path)">
+            <span class="ws-recent-name">{{ f.name }}</span>
+            <span class="ws-recent-path">{{ f.path }}</span>
           </button>
         </div>
       </div>
 
-      <div v-if="!store.info?.isRegistered" class="ws-footer">
-        Unregistered — non-commercial use only.
-        <a href="https://pgdesigner.io/pricing" target="_blank" class="ws-footer-link">Buy License $19</a>
+      <div class="ws-footer">
+        <div v-if="!store.info?.isRegistered">Unregistered — non-commercial use only. <a href="https://pgdesigner.io/pricing" target="_blank" class="ws-footer-link">Buy License $19</a></div>
+        <div v-if="about" class="ws-version">{{ about.version }}</div>
       </div>
     </div>
   </div>
@@ -173,18 +179,25 @@ function openFile() {
 .ws-action-icon { font-size: 1.077rem; font-weight: 700; color: var(--color-accent); width: 1.231rem; text-align: center; }
 .ws-action-hint { font-size: 0.692rem; color: var(--color-text-muted); margin-left: auto; }
 
-.ws-recent { display: flex; flex-direction: column; gap: 0.077rem; }
+.ws-recent { display: flex; flex-direction: column; gap: 0.154rem; }
 .ws-recent-item {
-  font-size: 0.769rem; color: var(--color-text-secondary); padding: 0.231rem 0.615rem;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  background: transparent; border: none; text-align: left; width: 100%; cursor: pointer;
+  display: flex; flex-direction: column; gap: 0.077rem;
+  padding: 0.385rem 0.615rem;
+  background: transparent; border: 1px solid transparent;
+  text-align: left; width: 100%; cursor: pointer;
 }
-.ws-recent-item:hover { color: var(--color-text-primary); background: var(--color-bg-hover); }
+.ws-recent-item:hover { background: var(--color-bg-hover); border-color: var(--color-border); }
+.ws-recent-name { font-size: 0.846rem; font-weight: 600; color: var(--color-text-primary); }
+.ws-recent-path {
+  font-size: 0.692rem; color: var(--color-text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
 .ws-footer {
   margin-top: 0.615rem; padding-top: 0.769rem; border-top: 1px solid var(--color-border);
   font-size: 0.769rem; color: var(--color-text-muted); text-align: center;
 }
+.ws-version { margin-top: 0.231rem; }
 .ws-footer-link { color: var(--color-accent); text-decoration: none; }
 .ws-footer-link:hover { text-decoration: underline; }
 

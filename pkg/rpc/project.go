@@ -3,6 +3,8 @@ package rpc
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/vmkteam/pgdesigner/pkg/designer/diff"
@@ -19,16 +21,20 @@ type ProjectService struct {
 	project        *pgd.Project
 	store          *store.ProjectStore // nil for read-only mode
 	isRegisteredFn func() bool         // callback to check registration status
+	addRecentFile  func(path string) error
+	workDir        string
 }
 
 // NewProjectService creates a read-only ProjectService.
 func NewProjectService(project *pgd.Project) *ProjectService {
-	return &ProjectService{project: project}
+	wd, _ := os.Getwd()
+	return &ProjectService{project: project, workDir: wd}
 }
 
 // NewProjectServiceWithStore creates a ProjectService backed by a ProjectStore (read-write).
-func NewProjectServiceWithStore(s *store.ProjectStore, isRegisteredFn func() bool) *ProjectService {
-	return &ProjectService{project: s.Project(), store: s, isRegisteredFn: isRegisteredFn}
+func NewProjectServiceWithStore(s *store.ProjectStore, isRegisteredFn func() bool, addRecentFile func(string) error) *ProjectService {
+	wd, _ := os.Getwd()
+	return &ProjectService{project: s.Project(), store: s, isRegisteredFn: isRegisteredFn, addRecentFile: addRecentFile, workDir: wd}
 }
 
 // getProject returns the current project. When backed by a store, always returns the
@@ -80,6 +86,7 @@ func (s ProjectService) GetInfo() ProjectInfo {
 		IsDemo:          isDemo,
 		IsRegistered:    isRegistered,
 		FilePath:        filePath,
+		WorkDir:         s.workDir,
 	}
 }
 
@@ -95,6 +102,18 @@ func (s ProjectService) GetSchema() ERDSchema {
 //zenrpc:return string
 func (s ProjectService) GetDDL() string {
 	return pgd.GenerateDDL(s.getProject())
+}
+
+// GetTableDDL returns the DDL for a single table (CREATE TABLE + indexes + FK + comments).
+//
+//zenrpc:name table name
+//zenrpc:return string
+func (s ProjectService) GetTableDDL(name string) (string, error) {
+	ddl := pgd.GenerateTableDDL(s.getProject(), name)
+	if ddl == "" {
+		return "", fmt.Errorf("table %q not found", name)
+	}
+	return ddl, nil
 }
 
 // GenerateTestData returns INSERT statements with fake test data.
@@ -176,7 +195,33 @@ func (s ProjectService) SaveProjectAs(path string) (bool, error) {
 	if s.store == nil {
 		return false, errors.New("read-only mode")
 	}
-	return true, s.store.SaveAs(path)
+	if err := s.store.SaveAs(path); err != nil {
+		return false, err
+	}
+	if s.addRecentFile != nil {
+		_ = s.addRecentFile(path)
+	}
+	return true, nil
+}
+
+// SaveTextFile writes text content to the specified file path.
+// Used for saving DDL, diff patches, and other generated text.
+//
+//zenrpc:path    absolute file path
+//zenrpc:content file content
+//zenrpc:return  bool
+func (s ProjectService) SaveTextFile(path string, content string) (bool, error) {
+	if s.store == nil {
+		return false, errors.New("read-only mode")
+	}
+	path = filepath.Clean(path)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return false, fmt.Errorf("creating directory: %w", err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		return false, fmt.Errorf("writing file: %w", err)
+	}
+	return true, nil
 }
 
 // SaveLayout updates table positions in the default layout.
@@ -188,7 +233,12 @@ func (s ProjectService) SaveLayout(positions []LayoutPosition) (bool, error) {
 		return false, errors.New("read-only mode")
 	}
 	entities := MapV(positions, func(p LayoutPosition) pgd.LayoutEntity {
-		return pgd.LayoutEntity{Table: p.Name, Schema: p.Schema, X: p.X, Y: p.Y}
+		// Strip schema prefix from table name if present (frontend sends qualified names).
+		table := p.Name
+		if p.Schema != "" && strings.HasPrefix(table, p.Schema+".") {
+			table = strings.TrimPrefix(table, p.Schema+".")
+		}
+		return pgd.LayoutEntity{Table: table, Schema: p.Schema, X: p.X, Y: p.Y}
 	})
 	return true, s.store.UpdateLayout(entities)
 }
@@ -666,6 +716,7 @@ func (s ProjectService) GetProjectSettings() ProjectSettings {
 		DefaultOnDelete:  p.ProjectMeta.Settings.Defaults.OnDelete,
 		DefaultOnUpdate:  p.ProjectMeta.Settings.Defaults.OnUpdate,
 		LintIgnoreRules:  lintIgnore,
+		AutoSaveDDL:      p.ProjectMeta.Settings.AutoSaveDDL,
 	}
 }
 
@@ -688,6 +739,7 @@ func (s ProjectService) UpdateProjectSettings(settings ProjectSettings) (bool, e
 		DefaultOnDelete:  settings.DefaultOnDelete,
 		DefaultOnUpdate:  settings.DefaultOnUpdate,
 		LintIgnoreRules:  settings.LintIgnoreRules,
+		AutoSaveDDL:      settings.AutoSaveDDL,
 	}); err != nil {
 		return false, err
 	}

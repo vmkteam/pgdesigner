@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, watch, onMounted } from 'vue'
+import { ref, computed, nextTick, watch, onMounted, useTemplateRef } from 'vue'
 import type { IColumnDetail } from '@/api/factory'
 import { useEditorStore } from '@/stores/editor'
 import TypeAutocomplete from './TypeAutocomplete.vue'
@@ -29,7 +29,16 @@ type NavCol = typeof NAV_COLS[number]
 const editCell = ref<{ row: number; col: string } | null>(null)
 const editValue = ref('')
 const focusCol = ref<NavCol>('name')
-const tableRef = ref<HTMLElement>()
+const tableRef = useTemplateRef<HTMLElement>('tableRef')
+
+// Columns that have at least one index
+const indexedCols = computed(() => {
+  const s = new Set<string>()
+  for (const ix of editor.draft?.indexes || []) {
+    for (const c of ix.columns || []) s.add(c.name)
+  }
+  return s
+})
 
 // Sync focused row with selected
 watch(() => props.selected, (v) => {
@@ -251,6 +260,7 @@ defineExpose({ editName })
         <col style="width: 28px" />
         <col style="width: 28px" />
         <col style="width: 28px" />
+        <col style="width: 28px" />
         <col style="width: 18%" />
       </colgroup>
       <thead>
@@ -261,12 +271,13 @@ defineExpose({ editName })
           <th class="text-center">NN</th>
           <th class="text-center">PK</th>
           <th class="text-center">FK</th>
+          <th class="text-center">Ix</th>
           <th>Default</th>
         </tr>
       </thead>
       <tbody>
         <tr
-          v-for="(col, i) in columns" :key="i"
+          v-for="(col, i) in columns" :key="col.name || i"
           :class="{ 'row-selected': selected === i }"
           @click="emit('select', i)"
         >
@@ -319,6 +330,8 @@ defineExpose({ editName })
 
           <td class="text-center"><span v-if="col.fk" class="fk-icon">↗</span></td>
 
+          <td class="text-center"><span v-if="indexedCols.has(col.name)" class="ix-icon">▤</span></td>
+
           <td
             class="cg-cell cg-muted"
             :class="{ 'cell-focused': isFocused(i, 'default') }"
@@ -356,6 +369,7 @@ defineExpose({ editName })
 .pk-icon { font-size: 0.846rem; }
 .pk-placeholder { color: var(--color-text-muted); font-size: 0.769rem; }
 .fk-icon { color: #3366aa; font-weight: 700; }
+.ix-icon { color: #668833; font-size: 0.769rem; }
 .cg-cell { cursor: text; }
 .cg-muted { color: var(--color-text-secondary); }
 .cg-type-cell { position: relative; }

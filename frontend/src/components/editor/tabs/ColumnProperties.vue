@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { IColumnDetail } from '@/api/factory'
+import type { IColumnDetail, IIndexDetail } from '@/api/factory'
 
 const props = defineProps<{
   column: IColumnDetail
   index: number
+  indexes: IIndexDetail[]
+  tableName: string
 }>()
 
 const emit = defineEmits<{
   update: [index: number, field: string, value: string | number | boolean | null | object]
   togglePK: [columnName: string]
+  goToIndex: [indexName: string]
+  createIndex: [columnName: string]
 }>()
 
 function set(field: string, value: string | number | boolean | null | object) {
@@ -48,6 +52,10 @@ function setSeqOpt(field: string, value: number | boolean) {
 
 const hasGenerated = computed(() => !!props.column.generated)
 const hasIdentity = computed(() => !!props.column.identity)
+
+const columnIndexes = computed(() =>
+  (props.indexes || []).filter(ix => ix.columns?.some(c => c.name === props.column.name))
+)
 </script>
 
 <template>
@@ -148,6 +156,14 @@ const hasIdentity = computed(() => !!props.column.identity)
       <label class="cp-label">Comment</label>
       <input class="cp-input" :value="column.comment || ''" @change="set('comment', ($event.target as HTMLInputElement).value)" placeholder="column comment" />
     </div>
+
+    <!-- Indexes -->
+    <div class="cp-section">Indexes</div>
+    <div v-for="ix in columnIndexes" :key="ix.name" class="cp-ix-link" @click="emit('goToIndex', ix.name)">
+      {{ ix.name }} <span class="cp-ix-hint">{{ ix.using || 'btree' }}{{ ix.unique ? ', unique' : '' }}</span>
+    </div>
+    <div v-if="!column.pk" class="cp-ix-link cp-ix-add" @click="emit('createIndex', column.name)">+ Create Index</div>
+    <div v-if="columnIndexes.length === 0 && column.pk" class="cp-ix-none">PK (implicit index)</div>
   </div>
 </template>
 
@@ -175,4 +191,17 @@ const hasIdentity = computed(() => !!props.column.identity)
   cursor: pointer; color: var(--color-text-primary);
 }
 select.cp-input { cursor: pointer; }
+.cp-section {
+  font-weight: 600; font-size: 0.846rem; color: var(--color-text-secondary);
+  margin-top: 0.769rem; margin-bottom: 0.385rem; padding-top: 0.462rem;
+  border-top: 1px solid var(--color-border);
+}
+.cp-ix-link {
+  font-size: 0.846rem; color: var(--color-accent); cursor: pointer;
+  padding: 0.077rem 0; line-height: 1.308rem;
+}
+.cp-ix-link:hover { text-decoration: underline; }
+.cp-ix-hint { color: var(--color-text-muted); font-size: 0.769rem; margin-left: 0.231rem; }
+.cp-ix-add { margin-top: 0.231rem; }
+.cp-ix-none { font-size: 0.769rem; color: var(--color-text-muted); font-style: italic; }
 </style>

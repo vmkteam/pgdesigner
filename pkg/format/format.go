@@ -12,6 +12,15 @@ const (
 	ExtSQL = ".sql"
 )
 
+// SupportedExtensions contains all file extensions that can be opened.
+var SupportedExtensions = map[string]bool{
+	ExtPGD: true,
+	ExtDBS: true,
+	ExtDM2: true,
+	ExtPDD: true,
+	ExtSQL: true,
+}
+
 // Converter converts external schema data into a pgd.Project.
 type Converter interface {
 	Convert(data []byte, name string) (*pgd.Project, error)

@@ -82,6 +82,23 @@ func NewWithStore(s *store.ProjectStore, opts ...AppOption) *App {
 					cfg.AddRecentFile(path)
 					return cfg.Save()
 				},
+				RemoveRecentFile: func(path string) error {
+					cfg.RemoveRecentFile(path)
+					return cfg.Save()
+				},
+				CheckUpdate: func(currentVersion string) rpc.UpdateInfo {
+					r := CheckForUpdate(cfg, currentVersion)
+					return rpc.UpdateInfo{
+						CurrentVersion:  r.CurrentVersion,
+						LatestVersion:   r.LatestVersion,
+						UpdateAvailable: r.UpdateAvailable,
+						ReleaseURL:      r.ReleaseURL,
+						ShouldNotify:    r.ShouldNotify,
+					}
+				},
+				DismissVersion: func(version string) error {
+					return DismissVersion(cfg, version)
+				},
 			},
 		}),
 		quitCh: quitCh,

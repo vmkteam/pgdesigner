@@ -19,6 +19,8 @@ export const useEditorStore = defineStore('editor', () => {
   const diffChanges = ref<IDiffChange[]>([])
   const diffLoading = ref(false)
 
+  function clearServerErrors() { serverErrors.value = [] }
+
   const isOpen = computed(() => tableName.value !== null)
   const isDirty = computed(() => {
     if (!draft.value || !original.value) return false
@@ -187,7 +189,7 @@ export const useEditorStore = defineStore('editor', () => {
 
   return {
     tableName, original, draft, isOpen, isDirty, saving, loading,
-    errors, hasErrors, tabErrors, fieldHasError, serverErrors,
+    errors, hasErrors, tabErrors, fieldHasError, serverErrors, clearServerErrors,
     lintIssues, lintLoading, loadLint,
     diffChanges, diffLoading, loadDiff,
     openTable, close, apply, save: saveAndClose, saveAndClose, revert,

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { computed, onMounted, nextTick, useTemplateRef } from 'vue'
+import { whenever } from '@vueuse/core'
 import type { IPKDetail, IUniqueDetail, ICheckDetail, IExcludeDetail } from '@/api/factory'
 import ConstraintProperties from './ConstraintProperties.vue'
 import { useListKeyboard } from '@/composables/useListKeyboard'
@@ -29,7 +30,7 @@ type ConstraintItem =
   | { kind: 'check'; data: ICheckDetail; index: number }
   | { kind: 'exclude'; data: IExcludeDetail; index: number }
 
-const listRef = ref<HTMLElement>()
+const listRef = useTemplateRef<HTMLElement>('listRef')
 
 const items = computed<ConstraintItem[]>(() => {
   const list: ConstraintItem[] = []
@@ -127,8 +128,7 @@ const { selectedIdx, onKeydown: onListKeydown } = useListKeyboard({
 onMounted(() => nextTick(() => listRef.value?.focus()))
 
 // Auto-select by name from GoTo
-watch(() => props.focusItem, (name) => {
-  if (!name) return
+whenever(() => props.focusItem, (name) => {
   const idx = items.value.findIndex(i => i.data.name === name)
   if (idx >= 0) selectedIdx.value = idx
 }, { immediate: true })
@@ -158,7 +158,7 @@ function onKeydown(e: KeyboardEvent) {
         </thead>
         <tbody>
           <tr
-            v-for="(item, i) in items" :key="i"
+            v-for="(item, i) in items" :key="item.data.name || i"
             :class="{ 'row-selected': selectedIdx === i }"
             @click="selectedIdx = i"
           >

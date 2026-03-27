@@ -1174,20 +1174,32 @@ func GenerateDDL(p *Project) string {
 }
 
 // GenerateTableDDL generates DDL for a single table: CREATE TABLE + indexes + FK.
+// tableName can be qualified ("schema.table") or unqualified ("table").
 func GenerateTableDDL(p *Project, tableName string) string {
+	var schemaFilter, shortName string
+	if dot := strings.IndexByte(tableName, '.'); dot >= 0 {
+		schemaFilter = tableName[:dot]
+		shortName = tableName[dot+1:]
+	} else {
+		shortName = tableName
+	}
+
 	var b strings.Builder
 	for i := range p.Schemas {
 		s := &p.Schemas[i]
+		if schemaFilter != "" && s.Name != schemaFilter {
+			continue
+		}
 		q := SchemaQualifier(s.Name)
 		for j := range s.Tables {
 			t := &s.Tables[j]
-			if t.Name != tableName {
+			if t.Name != shortName {
 				continue
 			}
 			d := &ddlWriter{w: &b}
 			d.writeTable(q, t)
 			for k := range s.Indexes {
-				if s.Indexes[k].Table == tableName {
+				if s.Indexes[k].Table == shortName {
 					d.writeIndex(q, &s.Indexes[k])
 				}
 			}

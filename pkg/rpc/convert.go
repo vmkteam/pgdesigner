@@ -16,29 +16,42 @@ func newERDSchema(src pgd.ERDSchema) ERDSchema {
 }
 
 func newObjectItems(p *pgd.Project) []ObjectItem {
+	defaultSchema := p.DefaultSchema
+	if defaultSchema == "" {
+		defaultSchema = "public"
+	}
+	// erdKey returns qualified name for non-default schemas, plain name otherwise.
+	erdKey := func(schemaName, tableName string) string {
+		if schemaName == defaultSchema {
+			return tableName
+		}
+		return schemaName + "." + tableName
+	}
+
 	var items []ObjectItem
 
 	for _, schema := range p.Schemas {
 		for _, t := range schema.Tables {
-			items = append(items, ObjectItem{Name: t.Name, Kind: "table", Table: t.Name})
+			key := erdKey(schema.Name, t.Name)
+			items = append(items, ObjectItem{Name: t.Name, Kind: "table", Table: key})
 			for _, c := range t.Columns {
-				items = append(items, ObjectItem{Name: t.Name + "." + c.Name, Kind: "column", Table: t.Name})
+				items = append(items, ObjectItem{Name: t.Name + "." + c.Name, Kind: "column", Table: key})
 			}
 			if t.PK != nil && t.PK.Name != "" {
-				items = append(items, ObjectItem{Name: t.PK.Name, Kind: "pk", Table: t.Name})
+				items = append(items, ObjectItem{Name: t.PK.Name, Kind: "pk", Table: key})
 			}
 			for _, u := range t.Uniques {
-				items = append(items, ObjectItem{Name: u.Name, Kind: "unique", Table: t.Name})
+				items = append(items, ObjectItem{Name: u.Name, Kind: "unique", Table: key})
 			}
 			for _, ch := range t.Checks {
-				items = append(items, ObjectItem{Name: ch.Name, Kind: "check", Table: t.Name})
+				items = append(items, ObjectItem{Name: ch.Name, Kind: "check", Table: key})
 			}
 			for _, fk := range t.FKs {
-				items = append(items, ObjectItem{Name: fk.Name, Kind: "fk", Table: t.Name})
+				items = append(items, ObjectItem{Name: fk.Name, Kind: "fk", Table: key})
 			}
 		}
 		for _, idx := range schema.Indexes {
-			items = append(items, ObjectItem{Name: idx.Name, Kind: "index", Table: idx.Table})
+			items = append(items, ObjectItem{Name: idx.Name, Kind: "index", Table: erdKey(schema.Name, idx.Table)})
 		}
 	}
 

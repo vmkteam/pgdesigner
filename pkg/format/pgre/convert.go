@@ -158,7 +158,7 @@ func convertColumn(c pgColumn) pgd.Column {
 		col.Comment = c.Comment
 	}
 
-	if c.AttStorage != "" {
+	if c.AttStorage != "" && c.AttStorage != c.TypeStorage {
 		switch c.AttStorage {
 		case "p":
 			col.Storage = "plain"

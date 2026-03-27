@@ -188,10 +188,22 @@ func (p *Project) ToJSSchema() string {
 }
 
 func assignERDPositions(p *Project, tables []ERDTable) {
+	defaultSchema := p.DefaultSchema
+	if defaultSchema == "" {
+		defaultSchema = "public"
+	}
+	// Build layout key matching erdKey: "table" for default schema, "schema.table" otherwise.
+	layoutKey := func(e LayoutEntity) string {
+		if e.Schema == "" || e.Schema == defaultSchema {
+			return e.Table
+		}
+		return e.Schema + "." + e.Table
+	}
+
 	layoutPos := map[string][2]int{}
 	if len(p.Layouts.Layouts) > 0 {
 		for _, e := range p.Layouts.Layouts[0].Entities {
-			layoutPos[e.Table] = [2]int{e.X, e.Y}
+			layoutPos[layoutKey(e)] = [2]int{e.X, e.Y}
 		}
 	}
 

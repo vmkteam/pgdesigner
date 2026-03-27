@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const (
@@ -15,8 +16,11 @@ const (
 
 // Config holds application-level settings stored in ~/.config/pgdesigner/config.json.
 type Config struct {
-	RegisteredEmail string   `json:"registeredEmail,omitempty"`
-	RecentFiles     []string `json:"recentFiles,omitempty"`
+	RegisteredEmail     string    `json:"registeredEmail,omitempty"`
+	RecentFiles         []string  `json:"recentFiles,omitempty"`
+	LastUpdateCheck     time.Time `json:"lastUpdateCheck,omitempty"`
+	CachedLatestVersion string    `json:"cachedLatestVersion,omitempty"`
+	DismissedVersion    string    `json:"dismissedVersion,omitempty"`
 }
 
 // configPath returns the full path to the config file.
@@ -88,6 +92,17 @@ func (c *Config) AddRecentFile(path string) {
 		files = append(files, f)
 		if len(files) == maxRecent {
 			break
+		}
+	}
+	c.RecentFiles = files
+}
+
+// RemoveRecentFile removes a path from the recent files list.
+func (c *Config) RemoveRecentFile(path string) {
+	files := make([]string, 0, len(c.RecentFiles))
+	for _, f := range c.RecentFiles {
+		if f != path {
+			files = append(files, f)
 		}
 	}
 	c.RecentFiles = files

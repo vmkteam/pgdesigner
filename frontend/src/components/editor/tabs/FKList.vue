@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, nextTick } from 'vue'
+import { onMounted, nextTick, useTemplateRef } from 'vue'
+import { whenever } from '@vueuse/core'
 import type { IFKDetail } from '@/api/factory'
 import FKProperties from './FKProperties.vue'
 import { useListKeyboard } from '@/composables/useListKeyboard'
@@ -39,7 +40,7 @@ function onUpdateFK(idx: number, data: IFKDetail) {
   emit('updateFKs', copy)
 }
 
-const tableRef = ref<HTMLElement>()
+const tableRef = useTemplateRef<HTMLElement>('tableRef')
 
 const { editingIdx, editName, editError, startEdit: startEditName, commit: commitEditName, onEditKeydown } = useInlineEdit({
   getName: (i) => (props.fks || [])[i]?.name || '',
@@ -56,8 +57,8 @@ const { selectedIdx, onKeydown: onListKeydown } = useListKeyboard({
 })
 
 // Auto-select FK by name when focusFK is set
-watch(() => props.focusFK, (name) => {
-  if (!name || !props.fks) return
+whenever(() => props.focusFK, (name) => {
+  if (!props.fks) return
   const idx = props.fks.findIndex(fk => fk.name === name)
   if (idx >= 0) selectedIdx.value = idx
 }, { immediate: true })
@@ -84,7 +85,7 @@ function onKeydown(e: KeyboardEvent) {
         </thead>
         <tbody>
           <tr
-            v-for="(fk, i) in (fks || [])" :key="i"
+            v-for="(fk, i) in (fks || [])" :key="fk.name || i"
             :class="{ 'row-selected': selectedIdx === i }"
             @click="selectedIdx = i"
           >

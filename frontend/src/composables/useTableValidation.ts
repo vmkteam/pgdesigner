@@ -60,8 +60,15 @@ function validateColumns(draft: ITableDetail): ValidationError[] {
     }
   }
 
-  if (identityCount > 1)
-    errs.push({ tab: 'columns', field: '', code: 'E031', message: 'Only one identity column allowed' })
+  if (identityCount > 1) {
+    let seen = 0
+    for (let i = 0; i < draft.columns.length; i++) {
+      if (draft.columns[i]!.identity) {
+        seen++
+        if (seen > 1) errs.push({ tab: 'columns', field: `col.${i}.name`, code: 'E031', message: 'Only one identity column allowed' })
+      }
+    }
+  }
 
   return errs
 }

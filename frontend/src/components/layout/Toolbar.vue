@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { useCanvasStore } from '@/stores/canvas'
 import { useProjectStore } from '@/stores/project'
 import { useUiStore } from '@/stores/ui'
@@ -34,33 +35,48 @@ function onKeydown(e: KeyboardEvent) {
     e.preventDefault()
     ui.goToOpen = true
   }
-  if ((e.metaKey || e.ctrlKey) && e.key === 'd') {
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 'd') {
     e.preventDefault()
     ui.openDiff()
   }
 }
 
-onMounted(() => document.addEventListener('keydown', onKeydown))
-onUnmounted(() => document.removeEventListener('keydown', onKeydown))
+useEventListener(document, 'keydown', onKeydown)
 </script>
 
 <template>
   <div class="toolbar">
     <!-- Standard tools -->
-    <button class="tb-btn" title="New (Ctrl+N)" @click="fileNew">📄</button>
-    <button class="tb-btn" title="Open (Ctrl+O)" @click="ui.openDialogOpen = true">📂</button>
-    <button class="tb-btn" title="Save (Ctrl+S)" :disabled="!store.info?.filePath" @click="store.saveProject()">💾</button>
+    <button class="tb-btn" title="New (Ctrl+N)" @click="fileNew">
+      <svg class="tb-icon" viewBox="0 0 16 16"><path d="M4 1h5l4 4v10H4z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M9 1v4h4" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+    </button>
+    <button class="tb-btn" title="Open (Ctrl+O)" @click="ui.openDialogOpen = true">
+      <svg class="tb-icon" viewBox="0 0 16 16"><path d="M1 5h3l1-2h6l1 2h3v8H1z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+    </button>
+    <button class="tb-btn" title="Save (Ctrl+S)" :disabled="!store.info?.filePath" @click="store.saveProject()">
+      <svg class="tb-icon" viewBox="0 0 16 16"><path d="M2 1h10l3 3v11H2z" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M5 1v4h6V1" fill="none" stroke="currentColor" stroke-width="0.8"/><rect x="4" y="9" width="8" height="4" rx="0.5" fill="none" stroke="currentColor" stroke-width="0.8"/></svg>
+    </button>
     <div class="tb-sep"></div>
 
     <!-- Undo/Redo -->
-    <button class="tb-btn" title="Undo (Ctrl+Z)">↩</button>
-    <button class="tb-btn" title="Redo (Ctrl+Shift+Z)">↪</button>
+    <button class="tb-btn" title="Undo (Ctrl+Z)">
+      <svg class="tb-icon" viewBox="0 0 16 16"><path d="M5 3L2 6l3 3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2 6h8a4 4 0 010 8H7" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+    </button>
+    <button class="tb-btn" title="Redo (Ctrl+Shift+Z)">
+      <svg class="tb-icon" viewBox="0 0 16 16"><path d="M11 3l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M14 6H6a4 4 0 000 8h3" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+    </button>
     <div class="tb-sep"></div>
 
     <!-- Zoom -->
-    <button class="tb-btn" title="Zoom In (F6)" @click="canvas.zoomIn()">🔍+</button>
-    <button class="tb-btn" title="Zoom Out (F7)" @click="canvas.zoomOut()">🔍-</button>
-    <button class="tb-btn" title="Fit to Screen" @click="canvas.fitToScreen()">⊞</button>
+    <button class="tb-btn" title="Zoom In (F6)" @click="canvas.zoomIn()">
+      <svg class="tb-icon" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.2"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.3"/><line x1="5" y1="7" x2="9" y2="7" stroke="currentColor" stroke-width="1"/><line x1="7" y1="5" x2="7" y2="9" stroke="currentColor" stroke-width="1"/></svg>
+    </button>
+    <button class="tb-btn" title="Zoom Out (F7)" @click="canvas.zoomOut()">
+      <svg class="tb-icon" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.2"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.3"/><line x1="5" y1="7" x2="9" y2="7" stroke="currentColor" stroke-width="1"/></svg>
+    </button>
+    <button class="tb-btn" title="Fit to Screen" @click="canvas.fitToScreen()">
+      <svg class="tb-icon" viewBox="0 0 16 16"><path d="M1 5V1h4M11 1h4v4M15 11v4h-4M5 15H1v-4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+    </button>
     <button class="tb-zoom" title="Reset to 100%" @click="canvas.resetZoom()">{{ canvas.zoom }}%</button>
     <div class="tb-sep"></div>
 
@@ -102,7 +118,9 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
     <div class="tb-sep"></div>
 
     <!-- Find / Go To -->
-    <button class="tb-btn" title="Go To (Ctrl+F)" @click="ui.goToOpen = true">🔎</button>
+    <button class="tb-btn" title="Go To (Ctrl+F)" @click="ui.goToOpen = true">
+      <svg class="tb-icon" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.2"/><line x1="10.5" y1="10.5" x2="14" y2="14" stroke="currentColor" stroke-width="1.3"/></svg>
+    </button>
   </div>
 
   <GoToDialog :open="ui.goToOpen" @close="ui.goToOpen = false" />
@@ -117,6 +135,9 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
   width: 1.846rem; height: 1.846rem; display: flex; align-items: center; justify-content: center; font-size: 0.923rem;
 }
 .tb-btn:hover { background: var(--color-bg-hover); }
+.tb-icon { width: 1.077rem; height: 1.077rem; color: var(--color-text-secondary); }
+.tb-btn:hover .tb-icon { color: var(--color-text-primary); }
+.tb-btn:disabled .tb-icon { opacity: 0.4; }
 .tb-zoom {
   font-size: 0.923rem; color: var(--color-text-secondary); margin: 0 0.308rem; width: 3.077rem; text-align: center; height: 1.846rem;
 }

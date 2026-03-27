@@ -15,59 +15,15 @@ import {
   MenubarSeparator,
 } from 'reka-ui'
 
-import api from '@/api/factory'
-import { appPrompt } from '@/composables/useAppDialog'
-import { confirmUnsaved } from '@/composables/useConfirmUnsaved'
-import { showToast } from '@/composables/useToast'
+import { useFileActions } from '@/composables/useFileActions'
 
 const store = useProjectStore()
 const ui = useUiStore()
 const canvas = useCanvasStore()
+const { fileNew, fileOpen, fileSaveAs, fileClose } = useFileActions()
 
 const isMac = navigator.platform.includes('Mac')
 const mod = isMac ? '⌘' : 'Ctrl+'
-
-async function fileNew() {
-  if (!await confirmUnsaved()) return
-  try {
-    await api.app.newProject()
-    await store.loadAll()
-    ui.isWelcome = false
-    ui.settingsOpen = true
-  } catch (e: unknown) {
-    showToast('New failed: ' + (e instanceof Error ? e.message : e))
-  }
-}
-
-async function fileOpen() {
-  if (!await confirmUnsaved()) return
-  ui.openDialogOpen = true
-}
-
-async function fileSaveAs() {
-  const name = store.info?.name || 'untitled'
-  const fp = store.info?.filePath || ''
-  const defaultPath = fp && !fp.startsWith('postgres') ? fp : `${name}.pgd`
-  const path = await appPrompt('Save as (.pgd):', 'Save As', defaultPath, true)
-  if (!path) return
-  try {
-    await api.project.saveProjectAs({ path })
-    await store.loadAll()
-  } catch (e: unknown) {
-    showToast('Save As failed: ' + (e instanceof Error ? e.message : e))
-  }
-}
-
-async function fileClose() {
-  if (!await confirmUnsaved()) return
-  try {
-    await api.app.closeProject()
-    await store.loadAll()
-    ui.isWelcome = true
-  } catch (e: unknown) {
-    showToast('Close failed: ' + (e instanceof Error ? e.message : e))
-  }
-}
 
 interface MenuItem {
   label: string
@@ -166,7 +122,7 @@ const menus = computed<Menu[]>(() => [
       { label: 'New', shortcut: mod + 'N', action: fileNew },
       { label: 'Open...', shortcut: mod + 'O', action: fileOpen },
       { label: 'Save', shortcut: mod + 'S', action: () => store.saveProject(), disabled: store.autoSave || !store.info?.filePath },
-      { label: 'Save As...', shortcut: mod + '⇧S', action: fileSaveAs },
+      { label: 'Save As...', shortcut: mod + '⇧S', action: fileSaveAs, disabled: ui.isWelcome },
       { label: '', separator: true },
       { label: 'Auto Save', checkbox: true, checked: store.autoSave, action: () => store.toggleAutoSave() },
       { label: '', separator: true },

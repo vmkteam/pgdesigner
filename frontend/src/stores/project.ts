@@ -1,31 +1,34 @@
-import { ref } from 'vue'
+import { ref, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
+import { useIntervalFn, useTitle } from '@vueuse/core'
 import equal from 'fast-deep-equal'
 import api from '@/api/factory'
 import type { IProjectInfo, IERDSchema, ILintIssue, IIgnoredRule, IProjectSettings } from '@/api/factory'
 import { showToast } from '@/composables/useToast'
 
 export const useProjectStore = defineStore('project', () => {
-  const info = ref<IProjectInfo | null>(null)
-  const schema = ref<IERDSchema | null>(null)
+  const info = shallowRef<IProjectInfo | null>(null)
+  const schema = shallowRef<IERDSchema | null>(null)
   const ddl = ref<string>('')
   const lintIssues = ref<ILintIssue[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   const autoSave = ref(false)
   const ignoredRules = ref<IIgnoredRule[]>([])
-  const settings = ref<IProjectSettings | null>(null)
+  const settings = shallowRef<IProjectSettings | null>(null)
   const dirty = ref(false)
   const lastSaved = ref<Date | null>(null)
   const saveStatus = ref<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
+  const docTitle = useTitle('PgDesigner')
+
   function updateTitle() {
-    if (!info.value) { document.title = 'PgDesigner'; return }
+    if (!info.value) { docTitle.value = 'PgDesigner'; return }
     const suffix = info.value.isRegistered ? 'PgDesigner' : 'PgDesigner [unregistered]'
-    if (info.value.isDemo && !info.value.filePath) { document.title = suffix; return }
+    if (info.value.isDemo && !info.value.filePath) { docTitle.value = suffix; return }
     const name = info.value.name || 'Untitled'
     const dirtyMark = dirty.value ? ' *' : ''
-    document.title = `${name}${dirtyMark} — ${suffix}`
+    docTitle.value = `${name}${dirtyMark} — ${suffix}`
   }
 
   async function rpc<T>(fn: () => Promise<T>): Promise<T | undefined> {
@@ -72,6 +75,8 @@ export const useProjectStore = defineStore('project', () => {
   const testData = ref<string>('')
   const testDataLoading = ref(false)
 
+  function clearTestData() { testData.value = '' }
+
   async function loadDDL() {
     const result = await rpc(() => api.project.getDDL())
     if (result !== undefined) ddl.value = result
@@ -91,6 +96,10 @@ export const useProjectStore = defineStore('project', () => {
   }
 
   async function saveProject() {
+    if (!info.value?.filePath) {
+      showToast('Use Save As (⌘⇧S) to save a new project', 'error')
+      return
+    }
     saveStatus.value = 'saving'
     try {
       await api.project.saveProject()
@@ -99,7 +108,7 @@ export const useProjectStore = defineStore('project', () => {
       dirty.value = false
     } catch (e) {
       saveStatus.value = 'error'
-      error.value = e instanceof Error ? e.message : String(e)
+      showToast(e instanceof Error ? e.message : String(e), 'error')
     }
   }
 
@@ -111,16 +120,7 @@ export const useProjectStore = defineStore('project', () => {
     } catch { /* ignore */ }
   }
 
-  let dirtyInterval: ReturnType<typeof setInterval> | null = null
-
-  function startDirtyPolling() {
-    stopDirtyPolling()
-    dirtyInterval = setInterval(pollDirty, 5000)
-  }
-
-  function stopDirtyPolling() {
-    if (dirtyInterval) { clearInterval(dirtyInterval); dirtyInterval = null }
-  }
+  const { resume: startDirtyPolling } = useIntervalFn(pollDirty, 5000, { immediate: false })
 
   async function loadLint() {
     const result = await rpc(() => api.project.lint())
@@ -157,7 +157,7 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
-  return { info, schema, ddl, testData, testDataLoading, lintIssues, ignoredRules, settings, loading, error, autoSave, dirty, lastSaved, saveStatus, loadAll, loadDDL, loadTestData, loadLint, toggleAutoSave, saveProject, pollDirty, fixLintIssues, ignoreLintRules, loadIgnoredRules, unignoreLintRule }
+  return { info, schema, ddl, testData, testDataLoading, lintIssues, ignoredRules, settings, loading, error, autoSave, dirty, lastSaved, saveStatus, loadAll, loadDDL, loadTestData, clearTestData, loadLint, toggleAutoSave, saveProject, pollDirty, fixLintIssues, ignoreLintRules, loadIgnoredRules, unignoreLintRule }
 })
 
 // Go JSON marshals nil slices as null — ensure arrays

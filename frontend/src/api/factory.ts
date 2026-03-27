@@ -43,4 +43,13 @@ export type {
   IProjectGenerateTestDataParams,
   IDemoSchema,
   IDiffExample,
+  IDirEntry,
+  IDirectoryListing,
+  IRecentFile,
+  IDSNPreview,
+  IDSNSchemaPreview,
+  IDSNTablePreview,
+  IDSNObjectPreview,
+  IDSNRolePreview,
+  IUpdateInfo,
 } from './factory.generated'

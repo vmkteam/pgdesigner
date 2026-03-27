@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { nextTick, watch, ref, computed } from 'vue'
+import { nextTick, watch, ref, computed, useTemplateRef } from 'vue'
 import { DialogRoot, DialogPortal, DialogOverlay, DialogContent, DialogTitle } from 'reka-ui'
 import { useAppDialogState } from '@/composables/useAppDialog'
 import { identifierError } from '@/composables/useIdentifierValidation'
 
 const { visible, state, inputValue, close } = useAppDialogState()
-const inputRef = ref<HTMLInputElement>()
+const inputRef = useTemplateRef<HTMLInputElement>('inputRef')
 const dirty = ref(false)
 
 watch(visible, (v) => {

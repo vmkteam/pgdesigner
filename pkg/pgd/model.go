@@ -60,9 +60,10 @@ type ProjectMeta struct {
 
 // Settings configures naming conventions and defaults. // pgdesigner-specific
 type Settings struct {
-	Naming   Naming   `xml:"naming"`
-	Defaults Defaults `xml:"defaults"`
-	Lint     *Lint    `xml:"lint,omitempty"`
+	Naming      Naming   `xml:"naming"`
+	Defaults    Defaults `xml:"defaults"`
+	Lint        *Lint    `xml:"lint,omitempty"`
+	AutoSaveDDL string   `xml:"auto-save-ddl,attr,omitempty"` // "true" (default) or "false"
 }
 
 // Lint configures validation rules. // pgdesigner-specific

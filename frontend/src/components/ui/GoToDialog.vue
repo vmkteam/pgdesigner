@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, useTemplateRef } from 'vue'
+import { whenever } from '@vueuse/core'
 import { useCanvasStore } from '@/stores/canvas'
 import { useUiStore } from '@/stores/ui'
 import api from '@/api/factory'
@@ -20,20 +21,16 @@ const kindTabMap: Record<string, string> = {
 
 const query = ref('')
 const selectedIndex = ref(0)
-const inputRef = ref<HTMLInputElement>()
+const inputRef = useTemplateRef<HTMLInputElement>('inputRef')
 const allItems = ref<IObjectItem[]>([])
 
-watch(
+whenever(
   () => props.open,
-  async (open) => {
-    if (open) {
-      query.value = ''
-      selectedIndex.value = 0
-      if (!allItems.value.length) {
-        allItems.value = (await api.project.listObjects()) || []
-      }
-      nextTick(() => inputRef.value?.focus())
-    }
+  async () => {
+    query.value = ''
+    selectedIndex.value = 0
+    allItems.value = (await api.project.listObjects()) || []
+    nextTick(() => inputRef.value?.focus())
   },
 )
 

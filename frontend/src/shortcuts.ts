@@ -18,6 +18,15 @@ export const shortcuts: Shortcut[] = [
   { key: 'Ctrl+,', action: 'Project Settings', context: 'global' },
   { key: 'Ctrl+Shift+D', action: 'Toggle Dark Theme', context: 'global' },
 
+  // Canvas tools
+  { key: 'T', action: 'Create Table tool (toggle)', context: 'canvas' },
+  { key: 'F', action: 'Create FK tool (toggle)', context: 'canvas' },
+  { key: 'M', action: 'Create M:N tool (toggle)', context: 'canvas' },
+  { key: 'Escape', action: 'Reset tool to pointer', context: 'canvas' },
+  { key: 'Ctrl+A', action: 'Select all tables', context: 'canvas' },
+  { key: 'Ctrl+C / Ctrl+V', action: 'Copy / paste tables', context: 'canvas' },
+  { key: 'Delete', action: 'Delete selected tables', context: 'canvas' },
+
   // Table Editor dialog
   { key: 'Ctrl+S', action: 'Save project', context: 'editor' },
   { key: 'Ctrl+Enter', action: 'Apply changes', context: 'editor' },
@@ -58,6 +67,7 @@ export function shortcutsByContext(): Record<string, Shortcut[]> {
 // Context display names
 export const contextNames: Record<string, string> = {
   global: 'Global',
+  canvas: 'Canvas',
   editor: 'Table Editor',
   grid: 'Column Grid',
   'grid-edit': 'Column Grid (editing)',

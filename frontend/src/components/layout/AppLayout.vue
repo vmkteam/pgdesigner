@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import { useEventListener, useIntervalFn, useActiveElement } from '@vueuse/core'
 import {
   SplitterGroup,
   SplitterPanel,
@@ -9,6 +10,7 @@ import { useProjectStore } from '@/stores/project'
 import { useCanvasStore } from '@/stores/canvas'
 import { useUiStore } from '@/stores/ui'
 import api from '@/api/factory'
+import { useFileActions } from '@/composables/useFileActions'
 import MenuBar from './MenuBar.vue'
 import Toolbar from './Toolbar.vue'
 import ObjectTree from '../tree/ObjectTree.vue'
@@ -23,12 +25,14 @@ import AboutDialog from '../ui/AboutDialog.vue'
 import ProjectSettingsDialog from '../ui/ProjectSettingsDialog.vue'
 import WelcomeScreen from '../ui/WelcomeScreen.vue'
 import OpenDialog from '../ui/OpenDialog.vue'
+import SaveDialog from '../ui/SaveDialog.vue'
 import AppDialog from '../ui/AppDialog.vue'
 import ToastContainer from '../ui/ToastContainer.vue'
 
 const store = useProjectStore()
 const canvasStore = useCanvasStore()
 const ui = useUiStore()
+const { fileNew, fileOpen, fileSaveAs, fileClose } = useFileActions()
 
 // isWelcome is now directly controlled by ui.isWelcome
 // Set by: initial load (auto), MenuBar (fileNew/fileClose), WelcomeScreen
@@ -38,10 +42,33 @@ watch(() => store.info, (info) => {
 }, { immediate: true })
 
 function onGlobalKeydown(e: KeyboardEvent) {
+  // Ctrl+Shift+S — Save As
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 's' || e.key === 'S') && !ui.tableEditorName) {
+    e.preventDefault()
+    fileSaveAs()
+    return
+  }
   // Ctrl+S — save project (when Table Editor is not open)
-  if ((e.metaKey || e.ctrlKey) && e.key === 's' && !ui.tableEditorName) {
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 's' && !ui.tableEditorName) {
     e.preventDefault()
     store.saveProject()
+  }
+  // Ctrl+N — New, Ctrl+O — Open
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 'n') {
+    e.preventDefault()
+    fileNew()
+    return
+  }
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 'o') {
+    e.preventDefault()
+    fileOpen()
+    return
+  }
+  // Ctrl+W — Close
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 'w' && !ui.tableEditorName) {
+    e.preventDefault()
+    fileClose()
+    return
   }
   // Zoom: Ctrl+= / Ctrl+- / Ctrl+0 (only when Table Editor is not open)
   if ((e.metaKey || e.ctrlKey) && !ui.tableEditorName) {
@@ -62,13 +89,20 @@ function onGlobalKeydown(e: KeyboardEvent) {
     e.preventDefault(); ui.settingsOpen = true; return
   }
   // Ctrl+Shift+D — Toggle Dark Theme
-  if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'D') {
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
     e.preventDefault(); ui.toggleTheme(); return
   }
   // Escape — reset canvas tool
   if (e.key === 'Escape' && canvasStore.activeTool !== 'pointer' && !ui.tableEditorName) {
     e.preventDefault(); canvasStore.resetTool(); return
   }
+  // Canvas tool hotkeys (T/F/M — toggle tools)
+  if (!e.metaKey && !e.ctrlKey && !ui.tableEditorName && !ui.isWelcome && !isInputFocused()) {
+    if (e.key === 't') { canvasStore.setTool(canvasStore.activeTool === 'createTable' ? 'pointer' : 'createTable'); return }
+    if (e.key === 'f') { canvasStore.setTool(canvasStore.activeTool === 'createFK' ? 'pointer' : 'createFK'); return }
+    if (e.key === 'm') { canvasStore.setTool(canvasStore.activeTool === 'createM2M' ? 'pointer' : 'createM2M'); return }
+  }
+
   // ? — open keyboard reference (only when not typing in an input)
   if (e.key === '?' && !isInputFocused()) {
     e.preventDefault()
@@ -87,10 +121,11 @@ function timeAgo(date: Date): string {
 
 // Refresh timeAgo display
 const _tick = ref(0)
-setInterval(() => { _tick.value++ }, 10000)
+useIntervalFn(() => { _tick.value++ }, 10000)
 
+const activeEl = useActiveElement()
 function isInputFocused(): boolean {
-  const el = document.activeElement
+  const el = activeEl.value
   if (!el) return false
   const tag = el.tagName
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (el as HTMLElement).isContentEditable
@@ -109,17 +144,14 @@ function onBeforeUnload(e: BeforeUnloadEvent) {
   }
 }
 
+useEventListener(window, 'beforeunload', onBeforeUnload)
+useEventListener(window, 'keydown', onGlobalKeydown)
+
 onMounted(() => {
   // Cancel any pending quit from a previous beforeunload (e.g. Ctrl+R reload).
   api.app.ping().catch(() => {})
   store.loadAll()
-  window.addEventListener('beforeunload', onBeforeUnload)
-  window.addEventListener('keydown', onGlobalKeydown)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('beforeunload', onBeforeUnload)
-  window.removeEventListener('keydown', onGlobalKeydown)
+  ui.checkForUpdate()
 })
 </script>
 
@@ -173,11 +205,18 @@ onUnmounted(() => {
           <span v-else-if="store.dirty" class="sb-modified">Modified *</span>
           <span v-else class="sb-saved">Saved ✓</span>
           <span v-if="store.lastSaved" class="sb-muted sb-time" :data-t="_tick" :title="store.lastSaved.toLocaleString()">{{ timeAgo(store.lastSaved) }}</span>
+          <template v-if="ui.updateInfo?.updateAvailable && !ui.updateDismissed">
+            <span class="sb-sep" />
+            <a :href="ui.updateInfo.releaseURL" target="_blank" rel="noopener noreferrer" class="sb-update" :title="`Update available: ${ui.updateInfo.latestVersion}`" @click="ui.dismissUpdate()">&#8593; {{ ui.updateInfo.latestVersion }}</a>
+          </template>
         </template>
       </div>
     </div>
     <div v-else class="statusbar">
       <span class="sb-muted">PgDesigner</span>
+      <span v-if="ui.updateInfo?.updateAvailable && !ui.updateDismissed" class="sb-update-welcome">
+        <a :href="ui.updateInfo.releaseURL" target="_blank" rel="noopener noreferrer" class="sb-update" :title="`Update available: ${ui.updateInfo.latestVersion}`" @click="ui.dismissUpdate()">&#8593; {{ ui.updateInfo.latestVersion }} available</a>
+      </span>
     </div>
 
     <GenerateDDLDialog />
@@ -190,6 +229,7 @@ onUnmounted(() => {
     <ProjectSettingsDialog :open="ui.settingsOpen" @close="ui.settingsOpen = false" />
 
     <OpenDialog />
+    <SaveDialog />
     <AppDialog />
     <ToastContainer />
 
@@ -225,6 +265,12 @@ onUnmounted(() => {
 .sb-saved { color: #4a4; }
 .sb-modified { color: #ca3; }
 .sb-time { font-size: 0.692rem; }
+.sb-update {
+  color: var(--color-accent); font-weight: 600; text-decoration: none; cursor: pointer;
+  border: 1px solid var(--color-accent); padding: 0 0.308rem; border-radius: 2px; font-size: 0.692rem;
+}
+.sb-update:hover { opacity: 0.8; }
+.sb-update-welcome { margin-left: auto; }
 .export-overlay {
   position: fixed; inset: 0; z-index: 100;
   background: rgba(0, 0, 0, 0.5);

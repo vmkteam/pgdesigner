@@ -55,6 +55,7 @@ type ProjectInfo struct {
 	IsReadOnly      bool     `json:"isReadOnly"`
 	IsRegistered    bool     `json:"isRegistered"`
 	FilePath        string   `json:"filePath"`
+	WorkDir         string   `json:"workDir"`
 }
 
 // DemoSchema describes an available embedded demo schema.
@@ -63,6 +64,52 @@ type DemoSchema struct {
 	Title  string `json:"title"`
 	Tables int    `json:"tables"`
 	FKs    int    `json:"fks"`
+}
+
+// DSNPreview holds a lightweight catalog of database objects.
+type DSNPreview struct {
+	Database          string             `json:"database"`
+	PgVersion         string             `json:"pgVersion"`
+	Schemas           []DSNSchemaPreview `json:"schemas"`
+	Views             []DSNObjectPreview `json:"views"`
+	MatViews          []DSNObjectPreview `json:"matViews"`
+	Functions         []DSNObjectPreview `json:"functions"`
+	Triggers          []DSNObjectPreview `json:"triggers"`
+	Enums             []DSNObjectPreview `json:"enums"`
+	Domains           []DSNObjectPreview `json:"domains"`
+	Sequences         []DSNObjectPreview `json:"sequences"`
+	Extensions        []DSNObjectPreview `json:"extensions"`
+	Roles             []DSNRolePreview   `json:"roles"`
+	Grants            int                `json:"grants"`
+	DefaultPrivileges int                `json:"defaultPrivileges"`
+}
+
+// DSNSchemaPreview holds schema name and table summaries.
+type DSNSchemaPreview struct {
+	Name   string            `json:"name"`
+	Tables []DSNTablePreview `json:"tables"`
+}
+
+// DSNTablePreview holds lightweight table metadata.
+type DSNTablePreview struct {
+	Name        string `json:"name"`
+	Columns     int    `json:"columns"`
+	Indexes     int    `json:"indexes"`
+	FKs         int    `json:"fks"`
+	Partitioned bool   `json:"partitioned"`
+}
+
+// DSNObjectPreview holds name and schema for a database object.
+type DSNObjectPreview struct {
+	Name   string `json:"name"`
+	Schema string `json:"schema"`
+}
+
+// DSNRolePreview holds lightweight role metadata.
+type DSNRolePreview struct {
+	Name    string `json:"name"`
+	Login   bool   `json:"login"`
+	Members int    `json:"members"`
 }
 
 // DiffExample describes an available pre-built diff example.
@@ -87,6 +134,8 @@ type ProjectSettings struct {
 	DefaultOnUpdate string `json:"defaultOnUpdate"`
 	// Lint
 	LintIgnoreRules string `json:"lintIgnoreRules"`
+	// Export
+	AutoSaveDDL string `json:"autoSaveDDL"`
 }
 
 // LayoutPosition holds a table position for layout save.
@@ -304,6 +353,39 @@ type IndexColDetail struct {
 	Order   string `json:"order,omitempty"` // asc|desc
 	Nulls   string `json:"nulls,omitempty"` // first|last
 	Opclass string `json:"opclass,omitempty"`
+}
+
+// DirEntry represents a file or directory in a directory listing.
+type DirEntry struct {
+	Name      string `json:"name"`
+	IsDir     bool   `json:"isDir"`
+	Size      int64  `json:"size"`
+	ModTime   string `json:"modTime"`
+	Supported bool   `json:"supported"`
+}
+
+// DirectoryListing holds the result of listing a directory.
+type DirectoryListing struct {
+	Path    string     `json:"path"`
+	Entries []DirEntry `json:"entries"`
+}
+
+// RecentFile holds metadata about a recently opened file.
+type RecentFile struct {
+	Path    string `json:"path"`
+	Name    string `json:"name"`
+	Size    int64  `json:"size"`
+	ModTime string `json:"modTime"`
+	Exists  bool   `json:"exists"`
+}
+
+// UpdateInfo holds the result of an update check.
+type UpdateInfo struct {
+	CurrentVersion  string `json:"currentVersion"`
+	LatestVersion   string `json:"latestVersion"`
+	UpdateAvailable bool   `json:"updateAvailable"`
+	ReleaseURL      string `json:"releaseURL"`
+	ShouldNotify    bool   `json:"shouldNotify"`
 }
 
 // TypeInfo describes a type available for column autocomplete.

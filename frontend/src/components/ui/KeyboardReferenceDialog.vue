@@ -35,7 +35,7 @@ const groups = shortcutsByContext()
 .kr-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.2); z-index: 60; }
 .kr-box {
   position: fixed; z-index: 70; top: 15%; left: 50%; transform: translateX(-50%);
-  width: 28rem; max-height: 70vh;
+  width: 48rem; max-height: 70vh;
   background: var(--color-bg-surface); border: 1px solid var(--color-menu-border);
   display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,.2);
 }
@@ -50,8 +50,8 @@ const groups = shortcutsByContext()
   color: var(--color-text-secondary); font-size: 1.077rem; cursor: default;
 }
 .kr-close:hover { background: var(--color-bg-hover); }
-.kr-body { padding: 0.615rem 0.923rem; overflow-y: auto; }
-.kr-group { margin-bottom: 0.923rem; }
+.kr-body { padding: 0.615rem 0.923rem; columns: 2; column-gap: 1.538rem; }
+.kr-group { margin-bottom: 0.923rem; break-inside: avoid; }
 .kr-group-title {
   font-size: 0.769rem; font-weight: 600; color: var(--color-text-muted);
   text-transform: uppercase; letter-spacing: 0.05em;

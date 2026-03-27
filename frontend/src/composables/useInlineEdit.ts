@@ -1,11 +1,11 @@
-import { ref, nextTick, type Ref } from 'vue'
+import { ref, nextTick, type Ref, type ShallowRef } from 'vue'
 import { identifierError } from './useIdentifierValidation'
 
 /** Inline name editing for list rows (dblclick / Enter / F2). */
 export function useInlineEdit(opts: {
   getName: (idx: number) => string
   onCommit: (idx: number, name: string) => void
-  listRef: Ref<HTMLElement | undefined>
+  listRef: Ref<HTMLElement | undefined> | Readonly<ShallowRef<HTMLElement | null>>
   inputClass: string
   validate?: boolean
 }) {

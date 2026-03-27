@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, watch, ref, nextTick } from 'vue'
+import { useDebounceFn, watchDebounced } from '@vueuse/core'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
 import type { Node, Edge } from '@vue-flow/core'
@@ -13,6 +14,7 @@ import TableNode from './TableNode.vue'
 import BatchEdge from './BatchEdge.vue'
 import { appPrompt, appConfirm } from '@/composables/useAppDialog'
 import { showToast } from '@/composables/useToast'
+import { createTableWithPK } from '@/composables/useCreateTable'
 import {
   computeEdgePath,
   buildAdjacency,
@@ -153,17 +155,17 @@ function onNodesInitialized() {
     buildEdges()
   } else if (!initialFitDone) {
     initialFitDone = true
-    nextTick(() => fitView({ padding: 0.1 }))
+    nextTick(() => fitView({ padding: 0.1, maxZoom: 1 }))
   }
 }
 
 // Rebuild edges when schema changes (table/FK added/removed)
-watch(() => store.schema, () => {
-  if (edgesBuilt) setTimeout(buildEdges, 200)
-})
-watch(() => canvasStore.activeSchema, () => {
-  if (edgesBuilt) setTimeout(buildEdges, 150)
-})
+watchDebounced(() => store.schema, () => {
+  if (edgesBuilt) buildEdges()
+}, { debounce: 200 })
+watchDebounced(() => canvasStore.activeSchema, () => {
+  if (edgesBuilt) buildEdges()
+}, { debounce: 150 })
 
 // Toolbar actions
 watch(() => canvasStore.pendingAction, (action) => {
@@ -172,7 +174,7 @@ watch(() => canvasStore.pendingAction, (action) => {
   switch (action) {
     case 'zoomIn': zoomIn(); break
     case 'zoomOut': zoomOut(); break
-    case 'fitToScreen': fitView({ padding: 0.1 }); break
+    case 'fitToScreen': fitView({ padding: 0.1, maxZoom: 1 }); break
     case 'resetZoom': zoomTo(1); break
     case 'fixOverlaps': runFixOverlaps(); break
     case 'autoLayout': runAutoLayout(); break
@@ -185,7 +187,7 @@ function onNodeDrag() {
   buildEdges()
 }
 
-let layoutTimer: ReturnType<typeof setTimeout> | null = null
+const debouncedSaveLayout = useDebounceFn(saveLayout, 500)
 
 function onNodeDragStop() {
   if (!store.schema) return
@@ -197,8 +199,7 @@ function onNodeDragStop() {
     }
   }
   buildEdges()
-  if (layoutTimer) clearTimeout(layoutTimer)
-  layoutTimer = setTimeout(() => saveLayout(), 500)
+  debouncedSaveLayout()
 }
 
 function saveLayout() {
@@ -353,6 +354,12 @@ let savedViewport: { x: number; y: number; zoom: number } | null = null
 async function reloadKeepViewport() {
   const vp = { x: viewport.value.x, y: viewport.value.y, zoom: viewport.value.zoom }
   savedViewport = vp
+  // Sync current canvas positions to server before reload to prevent node jumps
+  syncPositionsToSchema()
+  const positions = (store.schema?.tables || []).map(t => ({
+    name: t.name, schema: t.schema || '', x: t.x, y: t.y,
+  }))
+  await api.project.saveLayout({ positions }).catch(() => {})
   await store.loadAll()
   // Belt-and-suspenders: also restore via setTimeout in case onNodesInitialized doesn't fire
   setTimeout(() => { savedViewport = null; setViewport(vp, { duration: 0 }) }, 300)
@@ -367,39 +374,26 @@ async function executeCreateTable(event: MouseEvent) {
 
   try {
     const defaultSchema = store.info?.schemas?.[0] || 'public'
-    const fullName = schemaName !== defaultSchema ? `${schemaName}.${name}` : name
-
-    await api.project.createTable({ schemaName, tableName: name })
-
-    // Set default structure: {singular}Id integer NN PK GENERATED ALWAYS AS IDENTITY
-    const singular = await api.project.singularize({ word: name })
-    const pkColName = `${singular || name}Id`
-    await api.project.updateTable({
-      name: fullName,
-      columns: [{
-        name: pkColName, type: 'integer', length: 0, precision: 0, scale: 0,
-        nullable: false, default: '', pk: true, fk: false,
-        identity: 'by-default', generated: '', generatedStored: false,
-        comment: '', compression: '', storage: '', collation: '',
-      }],
-      pk: { name: `pk_${name}`, columns: [pkColName] },
-    } as any)
+    const fullName = await createTableWithPK(schemaName, name, defaultSchema)
 
     // Calculate click position in canvas coordinates
     let posX = 0, posY = 0
-    const vp = viewport.value
+    const curVp = viewport.value
     const container = document.querySelector('.vue-flow') as HTMLElement
     if (container) {
       const rect = container.getBoundingClientRect()
-      posX = Math.round((event.clientX - rect.left - vp.x) / vp.zoom / 20) * 20
-      posY = Math.round((event.clientY - rect.top - vp.y) / vp.zoom / 20) * 20
+      posX = Math.round((event.clientX - rect.left - curVp.x) / curVp.zoom / 20) * 20
+      posY = Math.round((event.clientY - rect.top - curVp.y) / curVp.zoom / 20) * 20
     }
 
-    // Save ALL positions (existing + new) to avoid overwriting layout
+    // Save ALL positions (current canvas + new table) to avoid overwriting layout
+    syncPositionsToSchema()
     const allPositions = (store.schema?.tables || []).map(t => ({ name: t.name, schema: t.schema || '', x: t.x, y: t.y }))
     allPositions.push({ name: fullName, schema: schemaName, x: posX, y: posY })
     await api.project.saveLayout({ positions: allPositions })
-    await reloadKeepViewport()
+    savedViewport = { x: curVp.x, y: curVp.y, zoom: curVp.zoom }
+    await store.loadAll()
+    setTimeout(() => { savedViewport = null; setViewport({ x: curVp.x, y: curVp.y, zoom: curVp.zoom }, { duration: 0 }) }, 300)
     canvasStore.resetTool()
     ui.openTableEditor(fullName)
   } catch (e: unknown) {
@@ -488,7 +482,6 @@ async function executeCreateFK(fromTable: string, toTable: string) {
       indexes: [...existingIndexes, ...newIndexes],
     } as any)
     await reloadKeepViewport()
-    setTimeout(buildEdges, 200)
   } catch (e: unknown) {
     showToast('Create FK failed: ' + (e instanceof Error ? e.message : e))
   }
@@ -582,7 +575,6 @@ async function executeCreateM2M(tableA: string, tableB: string) {
       indexes,
     } as any)
     await reloadKeepViewport()
-    setTimeout(buildEdges, 200)
   } catch (e: unknown) {
     showToast('Create M:N failed: ' + (e instanceof Error ? e.message : e))
   }
@@ -640,7 +632,7 @@ function runFixOverlaps() {
   for (const r of fixed) targets[r.id] = { x: r.x, y: r.y }
 
   applyPositions(targets)
-  setTimeout(() => { fitView({ padding: 0.1 }); buildEdges() }, 100)
+  setTimeout(() => { fitView({ padding: 0.1, maxZoom: 1 }); buildEdges() }, 100)
 }
 
 const HUB_TABLES = new Set(['statuses'])

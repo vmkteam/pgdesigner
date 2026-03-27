@@ -341,12 +341,27 @@ func (v *validator) checkIdent(path, name string) {
 	}
 }
 
-func (v *validator) resolveTable(ref, defaultSchema string) (*pgd.Table, string) {
+func (v *validator) resolveTable(ref, currentSchema string) (*pgd.Table, string) {
 	if strings.Contains(ref, ".") {
 		return v.tables[ref], ref
 	}
-	key := defaultSchema + "." + ref
-	return v.tables[key], key
+	// Try current schema first.
+	key := currentSchema + "." + ref
+	if t := v.tables[key]; t != nil {
+		return t, key
+	}
+	// Fallback to project default schema.
+	ds := v.p.DefaultSchema
+	if ds == "" {
+		ds = "public"
+	}
+	if ds != currentSchema {
+		key = ds + "." + ref
+		if t := v.tables[key]; t != nil {
+			return t, key
+		}
+	}
+	return nil, currentSchema + "." + ref
 }
 
 func (v *validator) isKnownType(typ string) bool {
