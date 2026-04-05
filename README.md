@@ -1,34 +1,76 @@
 # PgDesigner
 
-Visual PostgreSQL schema designer. Stores schemas in git-friendly `.pgd` XML format. Target: PostgreSQL 18 full DDL spec.
+[![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20NC-blue)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/v/release/vmkteam/pgdesigner)](https://github.com/vmkteam/pgdesigner/releases)
+[![Go](https://img.shields.io/badge/Go-1.24-00ADD8)](go.mod)
+[![macOS | Linux | Windows](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)]()
+
+Visual PostgreSQL schema designer with git-friendly `.pgd` XML format, diff/ALTER engine, and 66 lint rules.
+
+<p align="center">
+  <a href="https://pgdesigner.io">
+    <img src="https://pgdesigner.io/images/erd-dark.png" alt="PgDesigner ERD Canvas" width="800">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://pgdesigner.io">Website</a> &middot;
+  <a href="https://demo.pgdesigner.io">Live Demo</a> &middot;
+  <a href="https://pgdesigner.io/docs/quickstart">Docs</a> &middot;
+  <a href="https://pgdesigner.io/docs/changelog">Changelog</a>
+</p>
+
+## Why PgDesigner
+
+Most schema design tools are either database-agnostic (losing PG-specific features) or store schemas in binary formats that break git workflows. PgDesigner is built exclusively for PostgreSQL and solves both problems:
+
+- **PG-specialized** — full PostgreSQL 18 DDL: partitions, RLS, domains, triggers, GIN/GiST indexes, identity columns
+- **Git-friendly format** — `.pgd` XML that diffs cleanly in pull requests, no binary blobs
+- **Diff/ALTER engine** — compare two schema versions, generate migration SQL with hazard detection
+- **66 lint rules** — naming conventions, missing indexes, FK integrity, type checks — with autofix
+- **No cloud, no account** — runs locally, your schemas stay on your machine
 
 ## Features
 
-- **Visual ERD** — interactive schema diagram with auto-layout (Vue Flow)
-- **Table Editor** — columns, constraints, indexes, FK with inline editing
-- **DDL Generation** — complete CREATE/ALTER SQL from schema model
-- **Reverse Engineering** — import from live PostgreSQL via `pg_catalog`
-- **Diff Engine** — semantic ALTER SQL between two schema versions
-- **Lint** — 60 validation rules with autofix (naming, types, FK, indexes)
-- **Format Import** — MicroOLAP PDD, DbSchema DBS, Toad DM2, plain SQL
-- **Merge** — combine two schemas (overlay pattern)
-- **No CGO** — pure Go, cross-compiles everywhere
+| Feature | Description |
+|---------|-------------|
+| **ERD Canvas** | Interactive schema diagram for 120+ tables, auto-layout, dark/light theme |
+| **Table Editor** | Columns, constraints, indexes, FK with inline editing |
+| **DDL Generation** | Complete CREATE/ALTER SQL from schema model |
+| **Diff Engine** | Semantic ALTER between two schemas with hazard warnings |
+| **Lint & Autofix** | 66 rules: naming, types, FK, indexes, constraints |
+| **Sample Data** | Generate realistic INSERT statements from schema |
+| **Import** | MicroOLAP PDD, DbSchema DBS, Toad DM2, plain SQL, live PostgreSQL |
+| **Reverse Engineering** | Import from live PostgreSQL via `pg_catalog` |
+| **CLI** | `generate`, `lint`, `diff`, `convert`, `merge` for CI/CD pipelines |
+
+## Install
+
+### Homebrew (macOS / Linux)
+
+```bash
+brew tap vmkteam/tap
+brew install pgdesigner
+```
+
+### Docker
+
+```bash
+docker run --rm -p 9990:9990 -v "$PWD":/data ghcr.io/vmkteam/pgdesigner /data/schema.pgd
+```
+
+### Download
+
+Pre-built binaries for macOS (arm64, amd64), Linux, and Windows are available on the [Releases](https://github.com/vmkteam/pgdesigner/releases) page.
 
 ## Quick Start
 
 ```bash
-# Build
-make build
-
 # Open schema in browser
 pgdesigner schema.pgd
 
 # Reverse-engineer from PostgreSQL
 pgdesigner "postgres://user@localhost:5432/mydb?sslmode=disable"
-
-# Convert formats
-pgdesigner convert schema.pdd -o schema.pgd
-pgdesigner convert "postgres://..." -o schema.pgd
 
 # Generate DDL
 pgdesigner generate schema.pgd > schema.sql
@@ -39,27 +81,13 @@ pgdesigner lint schema.pgd
 # Diff two schemas
 pgdesigner diff old.pgd new.pgd
 
-# Merge
-pgdesigner merge base.pgd overlay.pgd -o merged.pgd
+# Convert from other formats
+pgdesigner convert schema.pdd -o schema.pgd
 ```
 
-## Architecture
+## Demo
 
-- **Backend:** Go — zenrpc JSON-RPC over HTTP
-- **Frontend:** Vue 3.5 + Reka UI + Tailwind CSS + Vue Flow
-- **Format:** `.pgd` XML — git-friendly, no binary blobs
-- **No CGO** — SQL parsing via WebAssembly (wasilibs/go-pgquery)
-
-## Development
-
-```bash
-make dev-backend     # Go server on :9990
-make dev-frontend    # Vite on :5173
-make test            # all tests
-make build-full      # pnpm build + go build
-make generate        # zenrpc codegen
-make ts-client       # rpcgen → TypeScript client
-```
+Try PgDesigner without installing — [demo.pgdesigner.io](https://demo.pgdesigner.io) runs a read-only instance with the Chinook sample database.
 
 ## PGD Format
 
@@ -82,59 +110,29 @@ Git-friendly XML for PostgreSQL schemas. Covers tables, columns, indexes, FK, co
 </pgd>
 ```
 
-Full spec: [docs/pgd-format/spec.md](docs/pgd-format/spec.md)
+Full spec: [docs/pgd-format/spec.md](docs/pgd-format/spec.md) | Coverage matrix: [docs/pgd-spec-coverage.md](docs/pgd-spec-coverage.md)
 
-## PGD Spec Coverage
+## Architecture
 
-How well each layer supports the [PGD format spec](docs/pgd-format/spec.md) (22 sections).
+- **Backend:** Go — zenrpc JSON-RPC over HTTP
+- **Frontend:** Vue 3.5 + Reka UI + Tailwind CSS + Vue Flow
+- **Format:** `.pgd` XML — git-friendly, no binary blobs
+- **No CGO** — SQL parsing via WebAssembly (wasilibs/go-pgquery)
 
-| Spec Section | Read | Write | DDL Gen | SQL Parse | RE | UI |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| 1. Project metadata | + | + | — | + | — | + |
-| 2. Database | + | + | — | — | — | — |
-| 3. Roles | + | + | + | — | — | — |
-| 4. Tablespaces | + | + | + | — | — | — |
-| 5. Extensions | + | + | + | + | + | + |
-| 6. Types (enum) | + | + | + | + | + | + |
-| 6. Types (domain) | + | + | + | + | + | + |
-| 6. Types (composite) | + | + | + | + | — | — |
-| 6. Types (range) | + | + | + | — | — | — |
-| 7. Sequences | + | + | + | + | + | + |
-| 8. Schemas | + | + | + | + | + | + |
-| 9. Tables | + | + | + | + | + | + |
-| 10. Columns | + | + | + | + | + | + |
-| 10. Identity | + | + | + | + | + | + |
-| 10. Generated (stored) | + | + | + | + | + | + |
-| 10. Collation | + | + | + | + | + | — |
-| 10. Compression | + | + | + | — | + | — |
-| 10. Storage | + | + | + | — | + | — |
-| 11. PK | + | + | + | + | + | + |
-| 11. FK | + | + | + | + | + | + |
-| 11. Unique | + | + | + | + | + | + |
-| 11. Check | + | + | + | + | + | + |
-| 11. Exclude | + | + | + | + | + | + |
-| 12. Storage params (WITH) | + | + | + | — | — | — |
-| 13. Partitioning | + | + | + | + | + | + |
-| 14. Indexes | + | + | + | + | + | + |
-| 14. Expression indexes | + | + | + | + | + | — |
-| 14. Partial indexes (WHERE) | + | + | + | + | + | — |
-| 14. INCLUDE | + | + | + | + | + | — |
-| 15. Views | + | + | + | + | + | + |
-| 15. Materialized views | + | + | + | + | + | + |
-| 16. Functions | + | + | + | + | + | + |
-| 16. Aggregates | + | + | + | + | — | — |
-| 17. Triggers | + | + | + | + | + | + |
-| 18. Policies (RLS) | + | + | + | — | — | — |
-| 19. Comments | + | + | + | + | + | + |
-| 20. Grants | + | + | + | — | — | — |
-| 21. Rules (deprecated) | + | + | — | — | — | — |
-| 22. Layouts | + | + | — | — | — | + |
+## Development
 
-**Legend:** Read = XML unmarshal, Write = XML marshal, DDL Gen = SQL output, SQL Parse = pg_dump/SQL import, RE = reverse engineering from live PG, UI = visual editor.
+```bash
+make dev-backend     # Go server on :9990
+make dev-frontend    # Vite on :5173
+make test            # all tests
+make build-full      # pnpm build + go build
+make generate        # zenrpc codegen
+make ts-client       # rpcgen -> TypeScript client
+```
 
 ## Test Databases
 
-Round-trip tested on 6 databases (SQL → PGD → DDL → PostgreSQL → pg_dump → PGD → diff = zero):
+Round-trip tested on 6 databases (SQL -> PGD -> DDL -> PostgreSQL -> pg_dump -> PGD -> diff = zero):
 
 | Database | Tables | FK | Source |
 |----------|-------:|---:|--------|
@@ -147,4 +145,6 @@ Round-trip tested on 6 databases (SQL → PGD → DDL → PostgreSQL → pg_dump
 
 ## License
 
-[PolyForm Noncommercial License 1.0.0](LICENSE) — free for non-commercial use. See [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md) for commercial licensing.
+[PolyForm Noncommercial License 1.0.0](LICENSE) — free for non-commercial use.
+
+For commercial use, see [pricing](https://pgdesigner.io/pricing) or [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md).
