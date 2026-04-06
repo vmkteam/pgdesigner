@@ -120,8 +120,8 @@ CREATE TABLE "humanresources"."employee" (
 	"loginid" varchar(256) NOT NULL,
 	"jobtitle" varchar(50) NOT NULL,
 	"birthdate" date NOT NULL,
-	"maritalstatus" bpchar NOT NULL,
-	"gender" bpchar NOT NULL,
+	"maritalstatus" char(1) NOT NULL,
+	"gender" char(1) NOT NULL,
 	"hiredate" date NOT NULL,
 	"salariedflag" "Flag" NOT NULL DEFAULT true,
 	"vacationhours" smallint NOT NULL DEFAULT 0,
@@ -129,7 +129,7 @@ CREATE TABLE "humanresources"."employee" (
 	"currentflag" "Flag" NOT NULL DEFAULT true,
 	"rowguid" uuid NOT NULL DEFAULT public.uuid_generate_v1(),
 	"modifieddate" timestamp NOT NULL DEFAULT now(),
-	"organizationnode" varchar DEFAULT '/'::varchar,
+	"organizationnode" varchar DEFAULT '/',
 	CONSTRAINT "PK_Employee_BusinessEntityID" PRIMARY KEY("businessentityid"),
 	CONSTRAINT "CK_Employee_BirthDate" CHECK(birthdate >= '1930-01-01'::date AND birthdate <= (now() - '18 years'::interval)),
 	CONSTRAINT "CK_Employee_Gender" CHECK(upper(gender::text) = ANY(ARRAY['M'::text, 'F'::text])),
@@ -258,7 +258,7 @@ CREATE TABLE "person"."password" (
 
 CREATE TABLE "person"."person" (
 	"businessentityid" integer NOT NULL,
-	"persontype" bpchar NOT NULL,
+	"persontype" char(2) NOT NULL,
 	"namestyle" "NameStyle" NOT NULL DEFAULT false,
 	"title" varchar(8),
 	"firstname" "Name" NOT NULL,
@@ -292,7 +292,7 @@ CREATE TABLE "person"."phonenumbertype" (
 
 CREATE TABLE "person"."stateprovince" (
 	"stateprovinceid" integer NOT NULL,
-	"stateprovincecode" bpchar NOT NULL,
+	"stateprovincecode" char(3) NOT NULL,
 	"countryregioncode" varchar(3) NOT NULL,
 	"isonlystateprovinceflag" "Flag" NOT NULL DEFAULT true,
 	"name" "Name" NOT NULL,
@@ -308,7 +308,7 @@ CREATE TABLE "production"."billofmaterials" (
 	"componentid" integer NOT NULL,
 	"startdate" timestamp NOT NULL DEFAULT now(),
 	"enddate" timestamp,
-	"unitmeasurecode" bpchar NOT NULL,
+	"unitmeasurecode" char(3) NOT NULL,
 	"bomlevel" smallint NOT NULL,
 	"perassemblyqty" numeric(8,2) NOT NULL DEFAULT 1.00,
 	"modifieddate" timestamp NOT NULL DEFAULT now(),
@@ -320,7 +320,7 @@ CREATE TABLE "production"."billofmaterials" (
 );
 
 CREATE TABLE "production"."culture" (
-	"cultureid" bpchar NOT NULL,
+	"cultureid" char(6) NOT NULL,
 	"name" "Name" NOT NULL,
 	"modifieddate" timestamp NOT NULL DEFAULT now(),
 	CONSTRAINT "PK_Culture_CultureID" PRIMARY KEY("cultureid")
@@ -332,14 +332,14 @@ CREATE TABLE "production"."document" (
 	"folderflag" "Flag" NOT NULL DEFAULT false,
 	"filename" varchar(400) NOT NULL,
 	"fileextension" varchar(8),
-	"revision" bpchar NOT NULL,
+	"revision" char(5) NOT NULL,
 	"changenumber" integer NOT NULL DEFAULT 0,
 	"status" smallint NOT NULL,
 	"documentsummary" text,
 	"document" bytea,
 	"rowguid" uuid NOT NULL DEFAULT public.uuid_generate_v1(),
 	"modifieddate" timestamp NOT NULL DEFAULT now(),
-	"documentnode" varchar NOT NULL DEFAULT '/'::varchar,
+	"documentnode" varchar NOT NULL DEFAULT '/',
 	CONSTRAINT "PK_Document_DocumentNode" PRIMARY KEY("documentnode"),
 	CONSTRAINT "document_rowguid_key" UNIQUE("rowguid"),
 	CONSTRAINT "CK_Document_Status" CHECK(status >= 1 AND status <= 3)
@@ -375,13 +375,13 @@ CREATE TABLE "production"."product" (
 	"standardcost" numeric NOT NULL,
 	"listprice" numeric NOT NULL,
 	"size" varchar(5),
-	"sizeunitmeasurecode" bpchar,
-	"weightunitmeasurecode" bpchar,
+	"sizeunitmeasurecode" char(3),
+	"weightunitmeasurecode" char(3),
 	"weight" numeric(8,2),
 	"daystomanufacture" integer NOT NULL,
-	"productline" bpchar,
-	"class" bpchar,
-	"style" bpchar,
+	"productline" char(2),
+	"class" char(2),
+	"style" char(2),
 	"productsubcategoryid" integer,
 	"productmodelid" integer,
 	"sellstartdate" timestamp NOT NULL,
@@ -432,7 +432,7 @@ CREATE TABLE "production"."productdescription" (
 CREATE TABLE "production"."productdocument" (
 	"productid" integer NOT NULL,
 	"modifieddate" timestamp NOT NULL DEFAULT now(),
-	"documentnode" varchar NOT NULL DEFAULT '/'::varchar,
+	"documentnode" varchar NOT NULL DEFAULT '/',
 	CONSTRAINT "PK_ProductDocument_ProductID_DocumentNode" PRIMARY KEY("productid", "documentnode")
 );
 
@@ -479,7 +479,7 @@ CREATE TABLE "production"."productmodelillustration" (
 CREATE TABLE "production"."productmodelproductdescriptionculture" (
 	"productmodelid" integer NOT NULL,
 	"productdescriptionid" integer NOT NULL,
-	"cultureid" bpchar NOT NULL,
+	"cultureid" char(6) NOT NULL,
 	"modifieddate" timestamp NOT NULL DEFAULT now(),
 	CONSTRAINT "PK_ProductModelProductDescriptionCulture_ProductModelID_Product" PRIMARY KEY("productmodelid", "productdescriptionid", "cultureid")
 );
@@ -537,7 +537,7 @@ CREATE TABLE "production"."transactionhistory" (
 	"referenceorderid" integer NOT NULL,
 	"referenceorderlineid" integer NOT NULL DEFAULT 0,
 	"transactiondate" timestamp NOT NULL DEFAULT now(),
-	"transactiontype" bpchar NOT NULL,
+	"transactiontype" char(1) NOT NULL,
 	"quantity" integer NOT NULL,
 	"actualcost" numeric NOT NULL,
 	"modifieddate" timestamp NOT NULL DEFAULT now(),
@@ -551,7 +551,7 @@ CREATE TABLE "production"."transactionhistoryarchive" (
 	"referenceorderid" integer NOT NULL,
 	"referenceorderlineid" integer NOT NULL DEFAULT 0,
 	"transactiondate" timestamp NOT NULL DEFAULT now(),
-	"transactiontype" bpchar NOT NULL,
+	"transactiontype" char(1) NOT NULL,
 	"quantity" integer NOT NULL,
 	"actualcost" numeric NOT NULL,
 	"modifieddate" timestamp NOT NULL DEFAULT now(),
@@ -560,7 +560,7 @@ CREATE TABLE "production"."transactionhistoryarchive" (
 );
 
 CREATE TABLE "production"."unitmeasure" (
-	"unitmeasurecode" bpchar NOT NULL,
+	"unitmeasurecode" char(3) NOT NULL,
 	"name" "Name" NOT NULL,
 	"modifieddate" timestamp NOT NULL DEFAULT now(),
 	CONSTRAINT "PK_UnitMeasure_UnitMeasureCode" PRIMARY KEY("unitmeasurecode")
@@ -613,7 +613,7 @@ CREATE TABLE "purchasing"."productvendor" (
 	"minorderqty" integer NOT NULL,
 	"maxorderqty" integer NOT NULL,
 	"onorderqty" integer,
-	"unitmeasurecode" bpchar NOT NULL,
+	"unitmeasurecode" char(3) NOT NULL,
 	"modifieddate" timestamp NOT NULL DEFAULT now(),
 	CONSTRAINT "PK_ProductVendor_ProductID_BusinessEntityID" PRIMARY KEY("productid", "businessentityid"),
 	CONSTRAINT "CK_ProductVendor_AverageLeadTime" CHECK(averageleadtime >= 1),
@@ -689,7 +689,7 @@ CREATE TABLE "purchasing"."vendor" (
 
 CREATE TABLE "sales"."countryregioncurrency" (
 	"countryregioncode" varchar(3) NOT NULL,
-	"currencycode" bpchar NOT NULL,
+	"currencycode" char(3) NOT NULL,
 	"modifieddate" timestamp NOT NULL DEFAULT now(),
 	CONSTRAINT "PK_CountryRegionCurrency_CountryRegionCode_CurrencyCode" PRIMARY KEY("countryregioncode", "currencycode")
 );
@@ -705,7 +705,7 @@ CREATE TABLE "sales"."creditcard" (
 );
 
 CREATE TABLE "sales"."currency" (
-	"currencycode" bpchar NOT NULL,
+	"currencycode" char(3) NOT NULL,
 	"name" "Name" NOT NULL,
 	"modifieddate" timestamp NOT NULL DEFAULT now(),
 	CONSTRAINT "PK_Currency_CurrencyCode" PRIMARY KEY("currencycode")
@@ -714,8 +714,8 @@ CREATE TABLE "sales"."currency" (
 CREATE TABLE "sales"."currencyrate" (
 	"currencyrateid" integer NOT NULL,
 	"currencyratedate" timestamp NOT NULL,
-	"fromcurrencycode" bpchar NOT NULL,
-	"tocurrencycode" bpchar NOT NULL,
+	"fromcurrencycode" char(3) NOT NULL,
+	"tocurrencycode" char(3) NOT NULL,
 	"averagerate" numeric NOT NULL,
 	"endofdayrate" numeric NOT NULL,
 	"modifieddate" timestamp NOT NULL DEFAULT now(),

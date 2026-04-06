@@ -164,38 +164,17 @@
         <column name="MediaTypeId" references="MediaTypeId"></column>
       </fk>
     </table>
-    <index name="PK_Album" table="Album" unique="true">
-      <column name="AlbumId"></column>
-    </index>
     <index name="IFK_AlbumArtistId" table="Album">
       <column name="ArtistId"></column>
-    </index>
-    <index name="PK_Artist" table="Artist" unique="true">
-      <column name="ArtistId"></column>
-    </index>
-    <index name="PK_Customer" table="Customer" unique="true">
-      <column name="CustomerId"></column>
     </index>
     <index name="IFK_CustomerSupportRepId" table="Customer">
       <column name="SupportRepId"></column>
     </index>
-    <index name="PK_Employee" table="Employee" unique="true">
-      <column name="EmployeeId"></column>
-    </index>
     <index name="IFK_EmployeeReportsTo" table="Employee">
       <column name="ReportsTo"></column>
     </index>
-    <index name="PK_Genre" table="Genre" unique="true">
-      <column name="GenreId"></column>
-    </index>
-    <index name="PK_Invoice" table="Invoice" unique="true">
-      <column name="InvoiceId"></column>
-    </index>
     <index name="IFK_InvoiceCustomerId" table="Invoice">
       <column name="CustomerId"></column>
-    </index>
-    <index name="PK_InvoiceLine" table="InvoiceLine" unique="true">
-      <column name="InvoiceLineId"></column>
     </index>
     <index name="IFK_InvoiceLineInvoiceId" table="InvoiceLine">
       <column name="InvoiceId"></column>
@@ -203,20 +182,7 @@
     <index name="IFK_InvoiceLineTrackId" table="InvoiceLine">
       <column name="TrackId"></column>
     </index>
-    <index name="PK_MediaType" table="MediaType" unique="true">
-      <column name="MediaTypeId"></column>
-    </index>
-    <index name="PK_Playlist" table="Playlist" unique="true">
-      <column name="PlaylistId"></column>
-    </index>
-    <index name="PK_PlaylistTrack" table="PlaylistTrack" unique="true">
-      <column name="PlaylistId"></column>
-      <column name="TrackId"></column>
-    </index>
     <index name="IFK_PlaylistTrackTrackId" table="PlaylistTrack">
-      <column name="TrackId"></column>
-    </index>
-    <index name="PK_Track" table="Track" unique="true">
       <column name="TrackId"></column>
     </index>
     <index name="IFK_TrackAlbumId" table="Track">

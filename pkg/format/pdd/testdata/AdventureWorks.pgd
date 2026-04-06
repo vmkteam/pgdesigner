@@ -8,7 +8,9 @@
   </project>
   <roles></roles>
   <tablespaces></tablespaces>
-  <extensions></extensions>
+  <extensions>
+    <extension name="uuid-ossp"></extension>
+  </extensions>
   <types>
     <domain name="AccountNumber" type="varchar" length="15"></domain>
     <domain name="Flag" type="boolean">
@@ -249,7 +251,7 @@
       <column name="currentflag" type="Flag" nullable="false" default="true" comment="0 = Inactive, 1 = Active"></column>
       <column name="rowguid" type="uuid" nullable="false" default="uuid_generate_v1()"></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
-      <column name="organizationnode" type="varchar" default="&#39;/&#39;::character varying" comment="Where the employee is located in corporate hierarchy."></column>
+      <column name="organizationnode" type="varchar" default="&#39;/&#39;" comment="Where the employee is located in corporate hierarchy."></column>
       <pk name="PK_Employee_BusinessEntityID">
         <column name="businessentityid"></column>
       </pk>
@@ -303,12 +305,12 @@
       <check name="CK_EmployeePayHistory_PayFrequency"><![CDATA[payfrequency = ANY (ARRAY[1, 2])]]></check>
       <check name="CK_EmployeePayHistory_Rate"><![CDATA[rate >= 6.50 AND rate <= 200.00]]></check>
     </table>
-    <table name="jobcandidate" comment="R\00E9sum\00E9s submitted to Human Resources by job applicants.">
+    <table name="jobcandidate" comment="Résumés submitted to Human Resources by job applicants.">
       <column name="jobcandidateid" type="integer" nullable="false" comment="Primary key for JobCandidate records.">
         <identity generated="by-default"></identity>
       </column>
       <column name="businessentityid" type="integer" comment="Employee identification number if applicant was hired. Foreign key to Employee.BusinessEntityID."></column>
-      <column name="resume" type="xml" comment="R\00E9sum\00E9 in XML format."></column>
+      <column name="resume" type="xml" comment="Résumé in XML format."></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
       <pk name="PK_JobCandidate_JobCandidateID">
         <column name="jobcandidateid"></column>
@@ -379,7 +381,7 @@
       <column name="document" type="bytea" comment="Complete document."></column>
       <column name="rowguid" type="uuid" nullable="false" default="uuid_generate_v1()" comment="ROWGUIDCOL number uniquely identifying the record. Required for FileStream."></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
-      <column name="documentnode" type="varchar" nullable="false" default="&#39;/&#39;::character varying" comment="Primary key for Document records."></column>
+      <column name="documentnode" type="varchar" nullable="false" default="&#39;/&#39;" comment="Primary key for Document records."></column>
       <pk name="PK_Document_DocumentNode">
         <column name="documentnode"></column>
       </pk>
@@ -510,7 +512,7 @@
     <table name="productdocument" comment="Cross-reference table mapping products to related product documents.">
       <column name="productid" type="integer" nullable="false" comment="Product identification number. Foreign key to Product.ProductID."></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
-      <column name="documentnode" type="varchar" nullable="false" default="&#39;/&#39;::character varying" comment="Document identification number. Foreign key to Document.DocumentNode."></column>
+      <column name="documentnode" type="varchar" nullable="false" default="&#39;/&#39;" comment="Document identification number. Foreign key to Document.DocumentNode."></column>
       <pk name="PK_ProductDocument_ProductID_DocumentNode">
         <column name="productid"></column>
         <column name="documentnode"></column>
@@ -1284,244 +1286,6 @@
         <column name="salespersonid" references="businessentityid"></column>
       </fk>
     </table>
-    <index name="PK_Address_AddressID" table="address" unique="true">
-      <column name="addressid"></column>
-    </index>
-    <index name="PK_AddressType_AddressTypeID" table="addresstype" unique="true">
-      <column name="addresstypeid"></column>
-    </index>
-    <index name="PK_BusinessEntity_BusinessEntityID" table="businessentity" unique="true">
-      <column name="businessentityid"></column>
-    </index>
-    <index name="PK_BusinessEntityAddress_BusinessEntityID_AddressID_AddressType" table="businessentityaddress" unique="true">
-      <column name="businessentityid"></column>
-      <column name="addressid"></column>
-      <column name="addresstypeid"></column>
-    </index>
-    <index name="PK_BusinessEntityContact_BusinessEntityID_PersonID_ContactTypeI" table="businessentitycontact" unique="true">
-      <column name="businessentityid"></column>
-      <column name="personid"></column>
-      <column name="contacttypeid"></column>
-    </index>
-    <index name="PK_ContactType_ContactTypeID" table="contacttype" unique="true">
-      <column name="contacttypeid"></column>
-    </index>
-    <index name="PK_CountryRegion_CountryRegionCode" table="countryregion" unique="true">
-      <column name="countryregioncode"></column>
-    </index>
-    <index name="PK_EmailAddress_BusinessEntityID_EmailAddressID" table="emailaddress" unique="true">
-      <column name="businessentityid"></column>
-      <column name="emailaddressid"></column>
-    </index>
-    <index name="PK_Password_BusinessEntityID" table="password" unique="true">
-      <column name="businessentityid"></column>
-    </index>
-    <index name="PK_Person_BusinessEntityID" table="person" unique="true">
-      <column name="businessentityid"></column>
-    </index>
-    <index name="PK_PersonPhone_BusinessEntityID_PhoneNumber_PhoneNumberTypeID" table="personphone" unique="true">
-      <column name="businessentityid"></column>
-      <column name="phonenumber"></column>
-      <column name="phonenumbertypeid"></column>
-    </index>
-    <index name="PK_PhoneNumberType_PhoneNumberTypeID" table="phonenumbertype" unique="true">
-      <column name="phonenumbertypeid"></column>
-    </index>
-    <index name="PK_StateProvince_StateProvinceID" table="stateprovince" unique="true">
-      <column name="stateprovinceid"></column>
-    </index>
-    <index name="PK_Department_DepartmentID" table="department" unique="true">
-      <column name="departmentid"></column>
-    </index>
-    <index name="PK_Employee_BusinessEntityID" table="employee" unique="true">
-      <column name="businessentityid"></column>
-    </index>
-    <index name="PK_EmployeeDepartmentHistory_BusinessEntityID_StartDate_Departm" table="employeedepartmenthistory" unique="true">
-      <column name="businessentityid"></column>
-      <column name="startdate"></column>
-      <column name="departmentid"></column>
-      <column name="shiftid"></column>
-    </index>
-    <index name="PK_EmployeePayHistory_BusinessEntityID_RateChangeDate" table="employeepayhistory" unique="true">
-      <column name="businessentityid"></column>
-      <column name="ratechangedate"></column>
-    </index>
-    <index name="PK_JobCandidate_JobCandidateID" table="jobcandidate" unique="true">
-      <column name="jobcandidateid"></column>
-    </index>
-    <index name="PK_Shift_ShiftID" table="shift" unique="true">
-      <column name="shiftid"></column>
-    </index>
-    <index name="PK_BillOfMaterials_BillOfMaterialsID" table="billofmaterials" unique="true">
-      <column name="billofmaterialsid"></column>
-    </index>
-    <index name="PK_Culture_CultureID" table="culture" unique="true">
-      <column name="cultureid"></column>
-    </index>
-    <index name="document_rowguid_key" table="document" unique="true">
-      <column name="rowguid"></column>
-    </index>
-    <index name="PK_Document_DocumentNode" table="document" unique="true">
-      <column name="documentnode"></column>
-    </index>
-    <index name="PK_Illustration_IllustrationID" table="illustration" unique="true">
-      <column name="illustrationid"></column>
-    </index>
-    <index name="PK_Location_LocationID" table="location" unique="true">
-      <column name="locationid"></column>
-    </index>
-    <index name="PK_Product_ProductID" table="product" unique="true">
-      <column name="productid"></column>
-    </index>
-    <index name="PK_ProductCategory_ProductCategoryID" table="productcategory" unique="true">
-      <column name="productcategoryid"></column>
-    </index>
-    <index name="PK_ProductCostHistory_ProductID_StartDate" table="productcosthistory" unique="true">
-      <column name="productid"></column>
-      <column name="startdate"></column>
-    </index>
-    <index name="PK_ProductDescription_ProductDescriptionID" table="productdescription" unique="true">
-      <column name="productdescriptionid"></column>
-    </index>
-    <index name="PK_ProductDocument_ProductID_DocumentNode" table="productdocument" unique="true">
-      <column name="productid"></column>
-      <column name="documentnode"></column>
-    </index>
-    <index name="PK_ProductInventory_ProductID_LocationID" table="productinventory" unique="true">
-      <column name="productid"></column>
-      <column name="locationid"></column>
-    </index>
-    <index name="PK_ProductListPriceHistory_ProductID_StartDate" table="productlistpricehistory" unique="true">
-      <column name="productid"></column>
-      <column name="startdate"></column>
-    </index>
-    <index name="PK_ProductModel_ProductModelID" table="productmodel" unique="true">
-      <column name="productmodelid"></column>
-    </index>
-    <index name="PK_ProductModelIllustration_ProductModelID_IllustrationID" table="productmodelillustration" unique="true">
-      <column name="productmodelid"></column>
-      <column name="illustrationid"></column>
-    </index>
-    <index name="PK_ProductModelProductDescriptionCulture_ProductModelID_Product" table="productmodelproductdescriptionculture" unique="true">
-      <column name="productmodelid"></column>
-      <column name="productdescriptionid"></column>
-      <column name="cultureid"></column>
-    </index>
-    <index name="PK_ProductPhoto_ProductPhotoID" table="productphoto" unique="true">
-      <column name="productphotoid"></column>
-    </index>
-    <index name="PK_ProductProductPhoto_ProductID_ProductPhotoID" table="productproductphoto" unique="true">
-      <column name="productid"></column>
-      <column name="productphotoid"></column>
-    </index>
-    <index name="PK_ProductReview_ProductReviewID" table="productreview" unique="true">
-      <column name="productreviewid"></column>
-    </index>
-    <index name="PK_ProductSubcategory_ProductSubcategoryID" table="productsubcategory" unique="true">
-      <column name="productsubcategoryid"></column>
-    </index>
-    <index name="PK_ScrapReason_ScrapReasonID" table="scrapreason" unique="true">
-      <column name="scrapreasonid"></column>
-    </index>
-    <index name="PK_TransactionHistory_TransactionID" table="transactionhistory" unique="true">
-      <column name="transactionid"></column>
-    </index>
-    <index name="PK_TransactionHistoryArchive_TransactionID" table="transactionhistoryarchive" unique="true">
-      <column name="transactionid"></column>
-    </index>
-    <index name="PK_UnitMeasure_UnitMeasureCode" table="unitmeasure" unique="true">
-      <column name="unitmeasurecode"></column>
-    </index>
-    <index name="PK_WorkOrder_WorkOrderID" table="workorder" unique="true">
-      <column name="workorderid"></column>
-    </index>
-    <index name="PK_WorkOrderRouting_WorkOrderID_ProductID_OperationSequence" table="workorderrouting" unique="true">
-      <column name="workorderid"></column>
-      <column name="productid"></column>
-      <column name="operationsequence"></column>
-    </index>
-    <index name="PK_ProductVendor_ProductID_BusinessEntityID" table="productvendor" unique="true">
-      <column name="productid"></column>
-      <column name="businessentityid"></column>
-    </index>
-    <index name="PK_PurchaseOrderDetail_PurchaseOrderID_PurchaseOrderDetailID" table="purchaseorderdetail" unique="true">
-      <column name="purchaseorderid"></column>
-      <column name="purchaseorderdetailid"></column>
-    </index>
-    <index name="PK_PurchaseOrderHeader_PurchaseOrderID" table="purchaseorderheader" unique="true">
-      <column name="purchaseorderid"></column>
-    </index>
-    <index name="PK_ShipMethod_ShipMethodID" table="shipmethod" unique="true">
-      <column name="shipmethodid"></column>
-    </index>
-    <index name="PK_Vendor_BusinessEntityID" table="vendor" unique="true">
-      <column name="businessentityid"></column>
-    </index>
-    <index name="PK_CountryRegionCurrency_CountryRegionCode_CurrencyCode" table="countryregioncurrency" unique="true">
-      <column name="countryregioncode"></column>
-      <column name="currencycode"></column>
-    </index>
-    <index name="PK_CreditCard_CreditCardID" table="creditcard" unique="true">
-      <column name="creditcardid"></column>
-    </index>
-    <index name="PK_Currency_CurrencyCode" table="currency" unique="true">
-      <column name="currencycode"></column>
-    </index>
-    <index name="PK_CurrencyRate_CurrencyRateID" table="currencyrate" unique="true">
-      <column name="currencyrateid"></column>
-    </index>
-    <index name="PK_Customer_CustomerID" table="customer" unique="true">
-      <column name="customerid"></column>
-    </index>
-    <index name="PK_PersonCreditCard_BusinessEntityID_CreditCardID" table="personcreditcard" unique="true">
-      <column name="businessentityid"></column>
-      <column name="creditcardid"></column>
-    </index>
-    <index name="PK_SalesOrderDetail_SalesOrderID_SalesOrderDetailID" table="salesorderdetail" unique="true">
-      <column name="salesorderid"></column>
-      <column name="salesorderdetailid"></column>
-    </index>
-    <index name="PK_SalesOrderHeader_SalesOrderID" table="salesorderheader" unique="true">
-      <column name="salesorderid"></column>
-    </index>
-    <index name="PK_SalesOrderHeaderSalesReason_SalesOrderID_SalesReasonID" table="salesorderheadersalesreason" unique="true">
-      <column name="salesorderid"></column>
-      <column name="salesreasonid"></column>
-    </index>
-    <index name="PK_SalesPerson_BusinessEntityID" table="salesperson" unique="true">
-      <column name="businessentityid"></column>
-    </index>
-    <index name="PK_SalesPersonQuotaHistory_BusinessEntityID_QuotaDate" table="salespersonquotahistory" unique="true">
-      <column name="businessentityid"></column>
-      <column name="quotadate"></column>
-    </index>
-    <index name="PK_SalesReason_SalesReasonID" table="salesreason" unique="true">
-      <column name="salesreasonid"></column>
-    </index>
-    <index name="PK_SalesTaxRate_SalesTaxRateID" table="salestaxrate" unique="true">
-      <column name="salestaxrateid"></column>
-    </index>
-    <index name="PK_SalesTerritory_TerritoryID" table="salesterritory" unique="true">
-      <column name="territoryid"></column>
-    </index>
-    <index name="PK_SalesTerritoryHistory_BusinessEntityID_StartDate_TerritoryID" table="salesterritoryhistory" unique="true">
-      <column name="businessentityid"></column>
-      <column name="startdate"></column>
-      <column name="territoryid"></column>
-    </index>
-    <index name="PK_ShoppingCartItem_ShoppingCartItemID" table="shoppingcartitem" unique="true">
-      <column name="shoppingcartitemid"></column>
-    </index>
-    <index name="PK_SpecialOffer_SpecialOfferID" table="specialoffer" unique="true">
-      <column name="specialofferid"></column>
-    </index>
-    <index name="PK_SpecialOfferProduct_SpecialOfferID_ProductID" table="specialofferproduct" unique="true">
-      <column name="specialofferid"></column>
-      <column name="productid"></column>
-    </index>
-    <index name="PK_Store_BusinessEntityID" table="store" unique="true">
-      <column name="businessentityid"></column>
-    </index>
   </schema>
   <functions></functions>
   <triggers></triggers>

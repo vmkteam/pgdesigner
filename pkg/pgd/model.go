@@ -324,12 +324,14 @@ type Exclude struct {
 	Name     string           `xml:"name,attr"`
 	Using    string           `xml:"using,attr,omitempty"`
 	Elements []ExcludeElement `xml:"element"`
+	Where    *WhereClause     `xml:"where,omitempty"`
 }
 
 // ExcludeElement is one element of an EXCLUDE constraint.
 type ExcludeElement struct {
-	Column string `xml:"column,attr"`
-	With   string `xml:"with,attr"`
+	Column     string `xml:"column,attr,omitempty"`
+	Expression string `xml:"expression,attr,omitempty"`
+	With       string `xml:"with,attr"`
 }
 
 // With holds storage parameters (fillfactor, autovacuum_enabled, etc.).
@@ -384,6 +386,7 @@ type Index struct {
 	Columns       []ColRef     `xml:"column,omitempty"`
 	Expressions   []Expression `xml:"expression,omitempty"`
 	Include       *Include     `xml:"include,omitempty"`
+	With          *With        `xml:"with,omitempty"`
 	Where         *WhereClause `xml:"where,omitempty"`
 }
 

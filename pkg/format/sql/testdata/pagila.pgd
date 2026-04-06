@@ -184,7 +184,7 @@
     </table>
     <table name="language">
       <column name="language_id" type="integer" nullable="false" default="nextval(&#39;public.language_language_id_seq&#39;::regclass)"></column>
-      <column name="name" type="bpchar" nullable="false"></column>
+      <column name="name" type="char" length="20" nullable="false"></column>
       <column name="last_update" type="timestamptz" nullable="false" default="now()"></column>
       <pk name="language_pkey">
         <column name="language_id"></column>

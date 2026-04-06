@@ -31,7 +31,16 @@ type PDD struct {
 	ModelSettings PDDSettings `xml:"MODELSETTINGS"`
 	Schemas       []PDDSchema `xml:"SCHEMAS>SCHEMA"`
 	Domains       []PDDDomain `xml:"DOMAINS>DOMAIN"`
+	Enums         []PDDEnum   `xml:"ENUMS>ENUM"`
 	Metadata      PDDMetadata `xml:"METADATA"`
+}
+
+type PDDEnum struct {
+	ID         int    `xml:"ID,attr"`
+	Name       string `xml:"Name,attr"`
+	SchemaName string `xml:"SchemaName,attr"`
+	Values     string `xml:"Values,attr"`
+	Comments   string `xml:"Comments,attr"`
 }
 
 type PDDSettings struct {
@@ -101,14 +110,15 @@ type PDDCText struct {
 }
 
 type PDDIndex struct {
-	ID        int      `xml:"ID,attr"`
-	Name      string   `xml:"Name,attr"`
-	Unique    int      `xml:"Unique,attr"`
-	Method    int      `xml:"Method,attr"`
-	Predicate string   `xml:"Predicate,attr"`
-	RawCols   PDDCText `xml:"INDEXCOLUMNS"`
-	RawSorts  PDDCText `xml:"INDEXSORTS"`
-	RawNulls  PDDCText `xml:"INDEXNULLS"`
+	ID                  int      `xml:"ID,attr"`
+	Name                string   `xml:"Name,attr"`
+	Unique              int      `xml:"Unique,attr"`
+	Method              int      `xml:"Method,attr"`
+	Predicate           string   `xml:"Predicate,attr"`
+	ReferenceConstraint int      `xml:"ReferenceConstraint,attr"`
+	RawCols             PDDCText `xml:"INDEXCOLUMNS"`
+	RawSorts            PDDCText `xml:"INDEXSORTS"`
+	RawNulls            PDDCText `xml:"INDEXNULLS"`
 }
 
 type PDDReference struct {
@@ -136,11 +146,11 @@ func convert(pdd *PDD) *pgd.Project {
 		}
 	}
 
-	// Build domain lookup: quoted name → domain name, and convert to pgd domains.
-	domainNames := make(map[string]string) // quoted name (e.g. `"Name"`) → domain name
+	// Build custom type lookup: quoted PDD name → unquoted pgd name (domains + enums).
+	typeNames := make(map[string]string)
 	var pgdDomains []pgd.Domain
 	for _, d := range pdd.Domains {
-		domainNames[`"`+d.Name+`"`] = d.Name
+		typeNames[`"`+d.Name+`"`] = d.Name
 		baseType := pgd.NormalizeType(d.Type)
 		dom := pgd.Domain{Name: d.Name, Type: baseType}
 		if d.Width > 0 && pgd.NeedsLength(baseType) {
@@ -150,6 +160,27 @@ func convert(pdd *PDD) *pgd.Project {
 			dom.NotNull = &struct{}{}
 		}
 		pgdDomains = append(pgdDomains, dom)
+	}
+
+	var pgdEnums []pgd.Enum
+	var enumComments []pgd.Comment
+	for _, e := range pdd.Enums {
+		typeNames[`"`+e.Name+`"`] = e.Name
+		vals := strings.Split(e.Values, ",")
+		en := pgd.Enum{Name: e.Name, Schema: e.SchemaName}
+		for _, v := range vals {
+			v = strings.TrimSpace(v)
+			if v != "" {
+				en.Labels = append(en.Labels, v)
+			}
+		}
+		pgdEnums = append(pgdEnums, en)
+		if e.Comments != "" {
+			enumComments = append(enumComments, pgd.Comment{
+				On: "type", Schema: e.SchemaName, Name: e.Name,
+				Value: decodeEscape(e.Comments),
+			})
+		}
 	}
 
 	refsByDest := make(map[int][]PDDReference)
@@ -172,7 +203,7 @@ func convert(pdd *PDD) *pgd.Project {
 
 	for i := range pdd.Metadata.Entities {
 		e := &pdd.Metadata.Entities[i]
-		schema.Tables = append(schema.Tables, convertTable(e, refsByDest[e.ID], entityByID, colByID, domainNames))
+		schema.Tables = append(schema.Tables, convertTable(e, refsByDest[e.ID], entityByID, colByID, typeNames))
 		for j := range e.Indexes {
 			if idx := convertIndex(e.Name, &e.Indexes[j]); idx != nil {
 				schema.Indexes = append(schema.Indexes, *idx)
@@ -196,13 +227,17 @@ func convert(pdd *PDD) *pgd.Project {
 	}
 
 	var types *pgd.Types
-	if len(pgdDomains) > 0 {
-		types = &pgd.Types{Domains: pgdDomains}
+	if len(pgdDomains) > 0 || len(pgdEnums) > 0 {
+		types = &pgd.Types{Domains: pgdDomains, Enums: pgdEnums}
 	}
+
+	extensions := detectExtensions(&schema)
 
 	return &pgd.Project{
 		Version: 1, PgVersion: "18", DefaultSchema: schemaName,
-		Types: types,
+		Extensions: extensions,
+		Types:      types,
+		Comments:   enumComments,
 		ProjectMeta: pgd.ProjectMeta{
 			Name: name,
 			Settings: pgd.Settings{
@@ -217,7 +252,7 @@ func convert(pdd *PDD) *pgd.Project {
 	}
 }
 
-func convertTable(e *PDDEntity, refs []PDDReference, entityByID map[int]*PDDEntity, colByID map[int]*PDDColumn, domainNames map[string]string) pgd.Table {
+func convertTable(e *PDDEntity, refs []PDDReference, entityByID map[int]*PDDEntity, colByID map[int]*PDDColumn, typeNames map[string]string) pgd.Table {
 	t := pgd.Table{Name: e.Name}
 	if e.Generate == 0 {
 		t.Generate = "false"
@@ -232,14 +267,14 @@ func convertTable(e *PDDEntity, refs []PDDReference, entityByID map[int]*PDDEnti
 	// columns sorted by position
 	cols := sortedColumns(e.Columns)
 	for i := range cols {
-		t.Columns = append(t.Columns, convertColumn(&cols[i], domainNames))
+		t.Columns = append(t.Columns, convertColumn(&cols[i], typeNames))
 	}
 
 	// PK
 	if names := constraintCols(e, 2, colByID); len(names) > 0 {
 		pkName := constraintName(e, 2)
 		if pkName == "" {
-			pkName = "pk_" + e.Name
+			pkName = e.Name + "_pkey"
 		}
 		t.PK = &pgd.PrimaryKey{Name: pkName, Columns: pgd.ColRefsFromNames(names)}
 	}
@@ -283,16 +318,15 @@ func convertTable(e *PDDEntity, refs []PDDReference, entityByID map[int]*PDDEnti
 	return t
 }
 
-func convertColumn(col *PDDColumn, domainNames map[string]string) pgd.Column {
+func convertColumn(col *PDDColumn, typeNames map[string]string) pgd.Column {
 	decoded := decodeEscape(col.Type)
-	// Check if type is a domain reference (quoted name like "Name" after decode)
-	if dn, ok := domainNames[decoded]; ok {
-		decoded = dn
+	if resolved, ok := typeNames[decoded]; ok {
+		decoded = resolved
 	}
 	typeName := pgd.NormalizeType(decoded)
 	c := pgd.Column{Name: col.Name, Type: typeName}
 
-	if col.Width > 0 && pgd.NeedsLength(typeName) {
+	if col.Width > 0 && pgd.NeedsLength(strings.TrimSuffix(typeName, "[]")) {
 		c.Length = col.Width
 	}
 	if col.Width > 0 && isNumeric(typeName) {
@@ -313,6 +347,16 @@ func convertColumn(col *PDDColumn, domainNames map[string]string) pgd.Column {
 		if col.QuoteDefault == 1 {
 			def = "'" + def + "'"
 		}
+		switch strings.ToLower(def) {
+		case "true", "false":
+			def = strings.ToLower(def)
+		case "null":
+			def = ""
+		}
+		// strip redundant type cast: 'value'::type → 'value'
+		if idx := strings.LastIndex(def, "::"); idx > 0 {
+			def = def[:idx]
+		}
 		c.Default = def
 	}
 
@@ -320,7 +364,8 @@ func convertColumn(col *PDDColumn, domainNames map[string]string) pgd.Column {
 		c.Comment = decodeEscape(col.Comments)
 	}
 
-	if col.AutoInc > 0 {
+	// IDENTITY only valid for integer types (smallint, integer, bigint)
+	if col.AutoInc > 0 && isIdentityType(typeName) {
 		gen := "by-default"
 		if col.AutoInc == 2 {
 			gen = "always"
@@ -385,7 +430,7 @@ func findColInEntity(e *PDDEntity, id int) *PDDColumn {
 }
 
 func convertIndex(tableName string, idx *PDDIndex) *pgd.Index {
-	if idx.Name == "" {
+	if idx.Name == "" || idx.ReferenceConstraint != 0 {
 		return nil
 	}
 	cols := parseCommaText(decodeEscape(idx.RawCols.Text))
@@ -490,7 +535,7 @@ func resolveColNames(con *PDDConstraint, colByID map[int]*PDDColumn) []string {
 	return names
 }
 
-// decodeEscape converts PDD proprietary escaping: \a=' \A=" \g=> \k=< \n=newline
+// decodeEscape converts PDD proprietary escaping: \a=' \A=" \g=> \k=< \n=newline \NNNN=Unicode
 func decodeEscape(s string) string {
 	if s == "" {
 		return ""
@@ -502,19 +547,35 @@ func decodeEscape(s string) string {
 			switch s[i+1] {
 			case 'a':
 				b.WriteByte('\'')
+				i++
+				continue
 			case 'A':
 				b.WriteByte('"')
+				i++
+				continue
 			case 'g':
 				b.WriteByte('>')
+				i++
+				continue
 			case 'k':
 				b.WriteByte('<')
+				i++
+				continue
 			case 'n':
 				b.WriteByte('\n')
-			default:
-				b.WriteByte(s[i])
+				i++
 				continue
+			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+				// \NNNN — 4-digit hex Unicode codepoint
+				if i+5 <= len(s) {
+					if cp, err := strconv.ParseInt(s[i+1:i+5], 16, 32); err == nil {
+						b.WriteRune(rune(cp))
+						i += 4
+						continue
+					}
+				}
 			}
-			i++
+			b.WriteByte(s[i])
 			continue
 		}
 		b.WriteByte(s[i])
@@ -522,9 +583,34 @@ func decodeEscape(s string) string {
 	return b.String()
 }
 
+// detectExtensions scans schema for functions/types that require PG extensions.
+func detectExtensions(schema *pgd.Schema) []pgd.Extension {
+	seen := make(map[string]bool)
+	for _, t := range schema.Tables {
+		for _, c := range t.Columns {
+			if strings.Contains(c.Default, "uuid_generate_v") || strings.Contains(c.Default, "gen_random_uuid") {
+				seen["uuid-ossp"] = true
+			}
+		}
+	}
+	var exts []pgd.Extension
+	for name := range seen {
+		exts = append(exts, pgd.Extension{Name: name})
+	}
+	return exts
+}
+
 func isNumeric(t string) bool {
 	t = strings.ToLower(t)
 	return t == "numeric" || t == "decimal"
+}
+
+func isIdentityType(t string) bool {
+	switch strings.ToLower(t) {
+	case "smallint", "integer", "bigint":
+		return true
+	}
+	return false
 }
 
 func indexMethod(m int) string {

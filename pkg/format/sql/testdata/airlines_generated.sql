@@ -3,7 +3,7 @@ CREATE SCHEMA IF NOT EXISTS "bookings";
 CREATE SEQUENCE "bookings"."flights_flight_id_seq" INCREMENT BY 1 START WITH 1 CACHE 1;
 
 CREATE TABLE "bookings"."aircrafts_data" (
-	"aircraft_code" bpchar NOT NULL,
+	"aircraft_code" char(3) NOT NULL,
 	"model" jsonb NOT NULL,
 	"range" integer NOT NULL,
 	CONSTRAINT "aircrafts_pkey" PRIMARY KEY("aircraft_code"),
@@ -11,7 +11,7 @@ CREATE TABLE "bookings"."aircrafts_data" (
 );
 
 CREATE TABLE "bookings"."airports_data" (
-	"airport_code" bpchar NOT NULL,
+	"airport_code" char(3) NOT NULL,
 	"airport_name" jsonb NOT NULL,
 	"city" jsonb NOT NULL,
 	"coordinates" point NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE "bookings"."airports_data" (
 );
 
 CREATE TABLE "bookings"."boarding_passes" (
-	"ticket_no" bpchar NOT NULL,
+	"ticket_no" char(13) NOT NULL,
 	"flight_id" integer NOT NULL,
 	"boarding_no" integer NOT NULL,
 	"seat_no" varchar(4) NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE "bookings"."boarding_passes" (
 );
 
 CREATE TABLE "bookings"."bookings" (
-	"book_ref" bpchar NOT NULL,
+	"book_ref" char(6) NOT NULL,
 	"book_date" timestamptz NOT NULL,
 	"total_amount" numeric(10,2) NOT NULL,
 	CONSTRAINT "bookings_pkey" PRIMARY KEY("book_ref")
@@ -38,13 +38,13 @@ CREATE TABLE "bookings"."bookings" (
 
 CREATE TABLE "bookings"."flights" (
 	"flight_id" integer NOT NULL,
-	"flight_no" bpchar NOT NULL,
+	"flight_no" char(6) NOT NULL,
 	"scheduled_departure" timestamptz NOT NULL,
 	"scheduled_arrival" timestamptz NOT NULL,
-	"departure_airport" bpchar NOT NULL,
-	"arrival_airport" bpchar NOT NULL,
+	"departure_airport" char(3) NOT NULL,
+	"arrival_airport" char(3) NOT NULL,
 	"status" varchar(20) NOT NULL,
-	"aircraft_code" bpchar NOT NULL,
+	"aircraft_code" char(3) NOT NULL,
 	"actual_departure" timestamptz,
 	"actual_arrival" timestamptz,
 	CONSTRAINT "flights_pkey" PRIMARY KEY("flight_id"),
@@ -55,7 +55,7 @@ CREATE TABLE "bookings"."flights" (
 );
 
 CREATE TABLE "bookings"."seats" (
-	"aircraft_code" bpchar NOT NULL,
+	"aircraft_code" char(3) NOT NULL,
 	"seat_no" varchar(4) NOT NULL,
 	"fare_conditions" varchar(10) NOT NULL,
 	CONSTRAINT "seats_pkey" PRIMARY KEY("aircraft_code", "seat_no"),
@@ -63,7 +63,7 @@ CREATE TABLE "bookings"."seats" (
 );
 
 CREATE TABLE "bookings"."ticket_flights" (
-	"ticket_no" bpchar NOT NULL,
+	"ticket_no" char(13) NOT NULL,
 	"flight_id" integer NOT NULL,
 	"fare_conditions" varchar(10) NOT NULL,
 	"amount" numeric(10,2) NOT NULL,
@@ -73,8 +73,8 @@ CREATE TABLE "bookings"."ticket_flights" (
 );
 
 CREATE TABLE "bookings"."tickets" (
-	"ticket_no" bpchar NOT NULL,
-	"book_ref" bpchar NOT NULL,
+	"ticket_no" char(13) NOT NULL,
+	"book_ref" char(6) NOT NULL,
 	"passenger_id" varchar(20) NOT NULL,
 	"passenger_name" text NOT NULL,
 	"contact_data" jsonb,

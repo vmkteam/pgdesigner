@@ -14,7 +14,7 @@
   </sequences>
   <schema name="bookings">
     <table name="aircrafts_data">
-      <column name="aircraft_code" type="bpchar" nullable="false"></column>
+      <column name="aircraft_code" type="char" length="3" nullable="false"></column>
       <column name="model" type="jsonb" nullable="false"></column>
       <column name="range" type="integer" nullable="false"></column>
       <pk name="aircrafts_pkey">
@@ -23,7 +23,7 @@
       <check name="aircrafts_range_check"><![CDATA[range > 0]]></check>
     </table>
     <table name="airports_data">
-      <column name="airport_code" type="bpchar" nullable="false"></column>
+      <column name="airport_code" type="char" length="3" nullable="false"></column>
       <column name="airport_name" type="jsonb" nullable="false"></column>
       <column name="city" type="jsonb" nullable="false"></column>
       <column name="coordinates" type="point" nullable="false"></column>
@@ -33,7 +33,7 @@
       </pk>
     </table>
     <table name="boarding_passes">
-      <column name="ticket_no" type="bpchar" nullable="false"></column>
+      <column name="ticket_no" type="char" length="13" nullable="false"></column>
       <column name="flight_id" type="integer" nullable="false"></column>
       <column name="boarding_no" type="integer" nullable="false"></column>
       <column name="seat_no" type="varchar" length="4" nullable="false"></column>
@@ -55,7 +55,7 @@
       </unique>
     </table>
     <table name="bookings">
-      <column name="book_ref" type="bpchar" nullable="false"></column>
+      <column name="book_ref" type="char" length="6" nullable="false"></column>
       <column name="book_date" type="timestamptz" nullable="false"></column>
       <column name="total_amount" type="numeric" precision="10" scale="2" nullable="false"></column>
       <pk name="bookings_pkey">
@@ -64,13 +64,13 @@
     </table>
     <table name="flights">
       <column name="flight_id" type="integer" nullable="false"></column>
-      <column name="flight_no" type="bpchar" nullable="false"></column>
+      <column name="flight_no" type="char" length="6" nullable="false"></column>
       <column name="scheduled_departure" type="timestamptz" nullable="false"></column>
       <column name="scheduled_arrival" type="timestamptz" nullable="false"></column>
-      <column name="departure_airport" type="bpchar" nullable="false"></column>
-      <column name="arrival_airport" type="bpchar" nullable="false"></column>
+      <column name="departure_airport" type="char" length="3" nullable="false"></column>
+      <column name="arrival_airport" type="char" length="3" nullable="false"></column>
       <column name="status" type="varchar" length="20" nullable="false"></column>
-      <column name="aircraft_code" type="bpchar" nullable="false"></column>
+      <column name="aircraft_code" type="char" length="3" nullable="false"></column>
       <column name="actual_departure" type="timestamptz"></column>
       <column name="actual_arrival" type="timestamptz"></column>
       <pk name="flights_pkey">
@@ -94,7 +94,7 @@
       <check name="flights_status_check"><![CDATA[status::text = ANY(ARRAY['On Time'::varchar::text, 'Delayed'::varchar::text, 'Departed'::varchar::text, 'Arrived'::varchar::text, 'Scheduled'::varchar::text, 'Cancelled'::varchar::text])]]></check>
     </table>
     <table name="seats">
-      <column name="aircraft_code" type="bpchar" nullable="false"></column>
+      <column name="aircraft_code" type="char" length="3" nullable="false"></column>
       <column name="seat_no" type="varchar" length="4" nullable="false"></column>
       <column name="fare_conditions" type="varchar" length="10" nullable="false"></column>
       <pk name="seats_pkey">
@@ -107,7 +107,7 @@
       <check name="seats_fare_conditions_check"><![CDATA[fare_conditions::text = ANY(ARRAY['Economy'::varchar::text, 'Comfort'::varchar::text, 'Business'::varchar::text])]]></check>
     </table>
     <table name="ticket_flights">
-      <column name="ticket_no" type="bpchar" nullable="false"></column>
+      <column name="ticket_no" type="char" length="13" nullable="false"></column>
       <column name="flight_id" type="integer" nullable="false"></column>
       <column name="fare_conditions" type="varchar" length="10" nullable="false"></column>
       <column name="amount" type="numeric" precision="10" scale="2" nullable="false"></column>
@@ -125,8 +125,8 @@
       <check name="ticket_flights_fare_conditions_check"><![CDATA[fare_conditions::text = ANY(ARRAY['Economy'::varchar::text, 'Comfort'::varchar::text, 'Business'::varchar::text])]]></check>
     </table>
     <table name="tickets">
-      <column name="ticket_no" type="bpchar" nullable="false"></column>
-      <column name="book_ref" type="bpchar" nullable="false"></column>
+      <column name="ticket_no" type="char" length="13" nullable="false"></column>
+      <column name="book_ref" type="char" length="6" nullable="false"></column>
       <column name="passenger_id" type="varchar" length="20" nullable="false"></column>
       <column name="passenger_name" type="text" nullable="false"></column>
       <column name="contact_data" type="jsonb"></column>

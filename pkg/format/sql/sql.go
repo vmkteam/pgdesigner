@@ -409,10 +409,14 @@ func extractColumnConstraints(tbl *pgd.Table, col *pg.ColumnDef) {
 				Columns: []pgd.ColRef{{Name: col.Colname}},
 			}
 		case pg.ConstrType_CONSTR_UNIQUE:
-			tbl.Uniques = append(tbl.Uniques, pgd.Unique{
+			u := pgd.Unique{
 				Name:    con.Constraint.Conname,
 				Columns: []pgd.ColRef{{Name: col.Colname}},
-			})
+			}
+			if con.Constraint.NullsNotDistinct {
+				u.NullsDistinct = "false"
+			}
+			tbl.Uniques = append(tbl.Uniques, u)
 		case pg.ConstrType_CONSTR_FOREIGN:
 			fk := convertFKConstraint(con.Constraint)
 			if len(fk.Columns) == 0 {
@@ -461,7 +465,7 @@ func convertColumnDef(col *pg.ColumnDef) pgd.Column {
 			c.Nullable = "false"
 		case pg.ConstrType_CONSTR_DEFAULT:
 			if con.Constraint.RawExpr != nil {
-				c.Default = nodeToSQL(con.Constraint.RawExpr)
+				c.Default = stripDefaultTypeCast(nodeToSQL(con.Constraint.RawExpr), c.Type)
 			}
 		case pg.ConstrType_CONSTR_IDENTITY:
 			gen := "by-default"
@@ -509,7 +513,7 @@ func applyTypeMods(c *pgd.Column, tn *pg.TypeName) {
 		return
 	}
 
-	typeLower := strings.ToLower(c.Type)
+	typeLower := strings.TrimSuffix(strings.ToLower(c.Type), "[]")
 
 	switch {
 	case pgd.NeedsLength(typeLower):
@@ -543,6 +547,9 @@ func convertTableConstraint(tbl *pgd.Table, con *pg.Constraint) {
 
 	case pg.ConstrType_CONSTR_UNIQUE:
 		u := pgd.Unique{Name: con.Conname}
+		if con.NullsNotDistinct {
+			u.NullsDistinct = "false"
+		}
 		for _, k := range con.Keys {
 			if s, ok := k.Node.(*pg.Node_String_); ok {
 				u.Columns = append(u.Columns, pgd.ColRef{Name: s.String_.Sval})
@@ -560,7 +567,66 @@ func convertTableConstraint(tbl *pgd.Table, con *pg.Constraint) {
 	case pg.ConstrType_CONSTR_FOREIGN:
 		fk := convertFKConstraint(con)
 		tbl.FKs = append(tbl.FKs, fk)
+
+	case pg.ConstrType_CONSTR_EXCLUSION:
+		tbl.Excludes = append(tbl.Excludes, convertExcludeConstraint(con))
 	}
+}
+
+// convertExcludeConstraint converts a pg EXCLUDE constraint to pgd.Exclude.
+func convertExcludeConstraint(con *pg.Constraint) pgd.Exclude {
+	ex := pgd.Exclude{
+		Name:  con.Conname,
+		Using: con.AccessMethod,
+	}
+	for _, node := range con.Exclusions {
+		list := node.GetList()
+		if list == nil || len(list.Items) < 2 {
+			continue
+		}
+		var elem pgd.ExcludeElement
+		// first item: IndexElem (column or expression)
+		if ie := list.Items[0].GetIndexElem(); ie != nil {
+			if ie.Name != "" {
+				elem.Column = ie.Name
+			} else if ie.Expr != nil {
+				elem.Expression = nodeToSQL(ie.Expr)
+			}
+		}
+		// second item: operator name list
+		if opList := list.Items[1].GetList(); opList != nil {
+			for _, op := range opList.Items {
+				if s := op.GetString_(); s != nil {
+					elem.With = s.Sval
+				}
+			}
+		}
+		ex.Elements = append(ex.Elements, elem)
+	}
+	if con.WhereClause != nil {
+		ex.Where = &pgd.WhereClause{Value: stripLiteralTypeCasts(nodeToSQL(con.WhereClause))}
+	}
+	return ex
+}
+
+func parseWithParams(options []*pg.Node) []pgd.WithParam {
+	var params []pgd.WithParam
+	for _, opt := range options {
+		de := opt.GetDefElem()
+		if de == nil || de.Arg == nil {
+			continue
+		}
+		var val string
+		if s := de.Arg.GetString_(); s != nil {
+			val = s.Sval
+		} else if iv := de.Arg.GetInteger(); iv != nil {
+			val = strconv.FormatInt(int64(iv.Ival), 10)
+		}
+		if val != "" {
+			params = append(params, pgd.WithParam{Name: de.Defname, Value: val})
+		}
+	}
+	return params
 }
 
 // CREATE INDEX
@@ -609,8 +675,12 @@ func (c *sqlConverter) convertCreateIndex(stmt *pg.IndexStmt) { //nolint:gocogni
 		}
 	}
 
+	if params := parseWithParams(stmt.Options); len(params) > 0 {
+		idx.With = &pgd.With{Params: params}
+	}
+
 	if stmt.WhereClause != nil {
-		idx.Where = &pgd.WhereClause{Value: nodeToSQL(stmt.WhereClause)}
+		idx.Where = &pgd.WhereClause{Value: stripLiteralTypeCasts(nodeToSQL(stmt.WhereClause))}
 	}
 
 	schema.Indexes = append(schema.Indexes, idx)
@@ -690,6 +760,9 @@ func (c *sqlConverter) convertAlterTable(stmt *pg.AlterTableStmt) { //nolint:goc
 			schema.Tables[tableIdx].PK = &pk
 		case pg.ConstrType_CONSTR_UNIQUE:
 			u := pgd.Unique{Name: con.Constraint.Conname}
+			if con.Constraint.NullsNotDistinct {
+				u.NullsDistinct = "false"
+			}
 			for _, k := range con.Constraint.Keys {
 				if s, ok := k.Node.(*pg.Node_String_); ok {
 					u.Columns = append(u.Columns, pgd.ColRef{Name: s.String_.Sval})
@@ -702,6 +775,8 @@ func (c *sqlConverter) convertAlterTable(stmt *pg.AlterTableStmt) { //nolint:goc
 				ch.Expression = nodeToSQL(con.Constraint.RawExpr)
 			}
 			schema.Tables[tableIdx].Checks = append(schema.Tables[tableIdx].Checks, ch)
+		case pg.ConstrType_CONSTR_EXCLUSION:
+			schema.Tables[tableIdx].Excludes = append(schema.Tables[tableIdx].Excludes, convertExcludeConstraint(con.Constraint))
 		}
 	}
 }
@@ -1035,6 +1110,15 @@ func (c *sqlConverter) convertComment(stmt *pg.CommentStmt) {
 			}
 		case *pg.Node_String_:
 			cm.Name = obj.String_.Sval
+		case *pg.Node_TypeName:
+			names := extractStrings(obj.TypeName.Names)
+			switch len(names) {
+			case 1:
+				cm.Name = names[0]
+			case 2:
+				cm.Schema = names[0]
+				cm.Name = names[1]
+			}
 		case *pg.Node_ObjectWithArgs:
 			names := extractStrings(obj.ObjectWithArgs.Objname)
 			switch len(names) {
@@ -1208,6 +1292,120 @@ func nodeToSQL(n *pg.Node) string {
 	}
 	result = strings.TrimPrefix(result, "SELECT ")
 	return cleanOperators(result)
+}
+
+// stripDefaultTypeCast removes redundant type casts from default values.
+// pg_dump normalizes `DEFAULT ”` to `DEFAULT ”::text` — strip the cast when it matches the column type.
+func stripDefaultTypeCast(def, colType string) string {
+	idx := strings.LastIndex(def, "::")
+	if idx <= 0 {
+		return def
+	}
+	valuePart := def[:idx]
+	if len(valuePart) == 0 {
+		return def
+	}
+	if normalizeTypeName(colType) == normalizeTypeName(def[idx+2:]) {
+		return valuePart
+	}
+	return def
+}
+
+// normalizeTypeName maps PG type aliases to canonical forms for comparison.
+func normalizeTypeName(t string) string {
+	t = strings.TrimSpace(strings.ToLower(t))
+	// handle array suffix
+	arraySuffix := ""
+	if strings.HasSuffix(t, "[]") {
+		arraySuffix = "[]"
+		t = strings.TrimSuffix(t, "[]")
+	}
+	switch t {
+	case "int", "int4", "integer":
+		t = "integer"
+	case "int8", "bigint":
+		t = "bigint"
+	case "int2", "smallint":
+		t = "smallint"
+	case "float4", "real":
+		t = "real"
+	case "float8", "double precision":
+		t = "double precision"
+	case "bool", "boolean":
+		t = "boolean"
+	case "varchar", "character varying":
+		t = "varchar"
+	case "char", "character":
+		t = "char"
+	case "timestamptz", "timestamp with time zone":
+		t = "timestamptz"
+	case "timestamp", "timestamp without time zone":
+		t = "timestamp"
+	case "timetz", "time with time zone":
+		t = "timetz"
+	case "time", "time without time zone":
+		t = "time"
+	}
+	return t + arraySuffix
+}
+
+// stripLiteralTypeCasts removes type casts from string literals in SQL expressions.
+// pg_dump adds explicit casts like ”::text or '{}'::jsonb — strip them for stable round-trip.
+func stripLiteralTypeCasts(expr string) string {
+	var b strings.Builder
+	b.Grow(len(expr))
+	i := 0
+	for i < len(expr) {
+		// find next single-quoted literal
+		q := strings.Index(expr[i:], "'")
+		if q < 0 {
+			b.WriteString(expr[i:])
+			break
+		}
+		// write everything before the quote
+		b.WriteString(expr[i : i+q])
+		// find closing quote (handle '' escapes)
+		start := i + q
+		j := start + 1
+		for j < len(expr) {
+			if expr[j] == '\'' {
+				if j+1 < len(expr) && expr[j+1] == '\'' {
+					j += 2 // escaped quote
+					continue
+				}
+				break // closing quote
+			}
+			j++
+		}
+		if j >= len(expr) {
+			b.WriteString(expr[start:])
+			break
+		}
+		literal := expr[start : j+1] // 'value' including quotes
+		rest := expr[j+1:]
+		// check for ::type immediately after closing quote
+		if strings.HasPrefix(rest, "::") {
+			// find end of type name (letters, digits, _, [], spaces for "character varying" etc.)
+			k := 2
+			for k < len(rest) {
+				ch := rest[k]
+				if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' || ch == '[' || ch == ']' || ch == ' ' {
+					k++
+				} else {
+					break
+				}
+			}
+			typeName := strings.TrimRight(rest[2:k], " ")
+			if typeName != "" {
+				b.WriteString(literal)
+				i = j + 1 + k
+				continue
+			}
+		}
+		b.WriteString(literal)
+		i = j + 1
+	}
+	return b.String()
 }
 
 // cleanOperators removes schema-qualified operator syntax that pg_query deparse produces.

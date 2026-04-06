@@ -10,6 +10,13 @@
   <tablespaces></tablespaces>
   <extensions></extensions>
   <types>
+    <enum name="mpaa_rating" schema="public">
+      <label>G</label>
+      <label>PG</label>
+      <label>PG-13</label>
+      <label>R</label>
+      <label>NC-17</label>
+    </enum>
     <domain name="year" type="integer"></domain>
   </types>
   <sequences></sequences>
@@ -75,7 +82,7 @@
       <column name="email" type="varchar" length="50"></column>
       <column name="address_id" type="smallint" nullable="false"></column>
       <column name="activebool" type="boolean" nullable="false" default="true"></column>
-      <column name="create_date" type="date" nullable="false" default="(&#39;now&#39;::text)::date"></column>
+      <column name="create_date" type="date" nullable="false" default="(&#39;now&#39;::text)"></column>
       <column name="last_update" type="timestamp" default="now()"></column>
       <column name="active" type="integer"></column>
       <pk name="customer_pkey">
@@ -99,7 +106,7 @@
       <column name="rental_rate" type="numeric" precision="4" scale="2" nullable="false" default="4.99"></column>
       <column name="length" type="smallint"></column>
       <column name="replacement_cost" type="numeric" precision="5" scale="2" nullable="false" default="19.99"></column>
-      <column name="rating" type="mpaa_rating" default="&#39;G&#39;::mpaa_rating"></column>
+      <column name="rating" type="mpaa_rating" default="&#39;G&#39;"></column>
       <column name="last_update" type="timestamp" nullable="false" default="now()"></column>
       <column name="special_features" type="text[]"></column>
       <column name="fulltext" type="tsvector" nullable="false"></column>
@@ -247,25 +254,10 @@
     <index name="idx_actor_last_name" table="actor">
       <column name="last_name"></column>
     </index>
-    <index name="actor_pkey_idx_pk" table="actor" unique="true">
-      <column name="actor_id"></column>
-    </index>
     <index name="idx_fk_city_id" table="address">
       <column name="city_id"></column>
     </index>
-    <index name="address_pkey_idx_pk" table="address" unique="true">
-      <column name="address_id"></column>
-    </index>
-    <index name="category_pkey_idx_pk" table="category" unique="true">
-      <column name="category_id"></column>
-    </index>
     <index name="idx_fk_country_id" table="city">
-      <column name="country_id"></column>
-    </index>
-    <index name="city_pkey_idx_pk" table="city" unique="true">
-      <column name="city_id"></column>
-    </index>
-    <index name="country_pkey_idx_pk" table="country" unique="true">
       <column name="country_id"></column>
     </index>
     <index name="idx_fk_address_id" table="customer">
@@ -276,9 +268,6 @@
     </index>
     <index name="idx_last_name" table="customer">
       <column name="last_name"></column>
-    </index>
-    <index name="customer_pkey_idx_pk" table="customer" unique="true">
-      <column name="customer_id"></column>
     </index>
     <index name="film_fulltext_idx" table="film" using="gist">
       <column name="fulltext"></column>
@@ -292,38 +281,18 @@
     <index name="idx_title" table="film">
       <column name="title"></column>
     </index>
-    <index name="film_pkey_idx_pk" table="film" unique="true">
-      <column name="film_id"></column>
-    </index>
     <index name="idx_fk_film_id" table="film_actor">
       <column name="film_id"></column>
-    </index>
-    <index name="film_actor_pkey_idx_pk" table="film_actor" unique="true">
-      <column name="actor_id"></column>
-      <column name="film_id"></column>
-    </index>
-    <index name="film_category_pkey_idx_pk" table="film_category" unique="true">
-      <column name="film_id"></column>
-      <column name="category_id"></column>
     </index>
     <index name="idx_store_id_film_id" table="inventory">
       <column name="store_id"></column>
       <column name="film_id"></column>
-    </index>
-    <index name="inventory_pkey_idx_pk" table="inventory" unique="true">
-      <column name="inventory_id"></column>
-    </index>
-    <index name="language_pkey_idx_pk" table="language" unique="true">
-      <column name="language_id"></column>
     </index>
     <index name="idx_fk_customer_id" table="payment">
       <column name="customer_id"></column>
     </index>
     <index name="idx_fk_staff_id" table="payment">
       <column name="staff_id"></column>
-    </index>
-    <index name="payment_pkey_idx_pk" table="payment" unique="true">
-      <column name="payment_id"></column>
     </index>
     <index name="idx_fk_inventory_id" table="rental">
       <column name="inventory_id"></column>
@@ -333,17 +302,8 @@
       <column name="inventory_id"></column>
       <column name="customer_id"></column>
     </index>
-    <index name="rental_pkey_idx_pk" table="rental" unique="true">
-      <column name="rental_id"></column>
-    </index>
-    <index name="staff_pkey_idx_pk" table="staff" unique="true">
-      <column name="staff_id"></column>
-    </index>
     <index name="idx_unq_manager_staff_id" table="store" unique="true">
       <column name="manager_staff_id"></column>
-    </index>
-    <index name="store_pkey_idx_pk" table="store" unique="true">
-      <column name="store_id"></column>
     </index>
   </schema>
   <functions></functions>

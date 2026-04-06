@@ -839,10 +839,14 @@ func pkDef(pk *PrimaryKey) string {
 }
 
 func uniqueDef(u *Unique) string {
-	if u.Name != "" {
-		return fmt.Sprintf("CONSTRAINT %s UNIQUE(%s)", QuoteIdent(u.Name), QuotedColList(u.Columns))
+	nullsDistinct := ""
+	if u.NullsDistinct == "false" {
+		nullsDistinct = " NULLS NOT DISTINCT"
 	}
-	return fmt.Sprintf("UNIQUE(%s)", QuotedColList(u.Columns))
+	if u.Name != "" {
+		return fmt.Sprintf("CONSTRAINT %s UNIQUE%s(%s)", QuoteIdent(u.Name), nullsDistinct, QuotedColList(u.Columns))
+	}
+	return fmt.Sprintf("UNIQUE%s(%s)", nullsDistinct, QuotedColList(u.Columns))
 }
 
 func checkDef(c *Check) string {
@@ -855,16 +859,24 @@ func checkDef(c *Check) string {
 func excludeDef(e *Exclude) string {
 	var elems []string
 	for _, el := range e.Elements {
-		elems = append(elems, fmt.Sprintf("%s WITH %s", QuoteIdent(el.Column), el.With))
+		target := QuoteIdent(el.Column)
+		if el.Expression != "" {
+			target = el.Expression
+		}
+		elems = append(elems, fmt.Sprintf("%s WITH %s", target, el.With))
 	}
 	using := ""
 	if e.Using != "" {
 		using = fmt.Sprintf(" USING %s", e.Using)
 	}
-	if e.Name != "" {
-		return fmt.Sprintf("CONSTRAINT %s EXCLUDE%s (%s)", QuoteIdent(e.Name), using, strings.Join(elems, ", "))
+	where := ""
+	if e.Where != nil && strings.TrimSpace(e.Where.Value) != "" {
+		where = fmt.Sprintf(" WHERE (%s)", strings.TrimSpace(e.Where.Value))
 	}
-	return fmt.Sprintf("EXCLUDE%s (%s)", using, strings.Join(elems, ", "))
+	if e.Name != "" {
+		return fmt.Sprintf("CONSTRAINT %s EXCLUDE%s (%s)%s", QuoteIdent(e.Name), using, strings.Join(elems, ", "), where)
+	}
+	return fmt.Sprintf("EXCLUDE%s (%s)%s", using, strings.Join(elems, ", "), where)
 }
 
 // sortFunctionsByDeps orders functions so that if A's body references B's name, B comes first.
@@ -1091,6 +1103,13 @@ func (d *ddlWriter) writeIndex(q string, idx *Index) {
 	d.P("%s ON %s%s", QuoteIdent(idx.Name), q, QuoteIdent(idx.Table))
 	d.If(idx.Using != "" && idx.Using != "btree", " USING %s", strings.ToUpper(idx.Using))
 	d.P(" (\n%s\n)", indexElements(idx))
+	if idx.With != nil && len(idx.With.Params) > 0 {
+		var params []string
+		for _, p := range idx.With.Params {
+			params = append(params, fmt.Sprintf("%s='%s'", p.Name, p.Value))
+		}
+		d.P("\n\tWITH (%s)", strings.Join(params, ", "))
+	}
 	if idx.Where != nil && idx.Where.Value != "" {
 		d.P("\n\tWHERE %s", idx.Where.Value)
 	}

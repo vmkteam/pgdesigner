@@ -15,9 +15,9 @@ func TestConvert(t *testing.T) {
 		fks     int
 		indexes int
 	}{
-		{"Chinook", "testdata/Chinook.pdd", "testdata/Chinook.pgd", 11, 11, 21},
-		{"AdventureWorks", "testdata/AdventureWorks.pdd", "testdata/AdventureWorks.pgd", 68, 90, 69},
-		{"pagila-light", "testdata/pagila-light.pdd", "testdata/pagila-light.pgd", 15, 22, 32},
+		{"Chinook", "testdata/Chinook.pdd", "testdata/Chinook.pgd", 11, 11, 10},
+		{"AdventureWorks", "testdata/AdventureWorks.pdd", "testdata/AdventureWorks.pgd", 68, 90, 0},
+		{"pagila-light", "testdata/pagila-light.pdd", "testdata/pagila-light.pgd", 15, 22, 17},
 	}
 
 	for _, tt := range tests {

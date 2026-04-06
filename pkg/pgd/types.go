@@ -19,7 +19,7 @@ func NormalizeType(t string) string {
 		return "boolean"
 	case "character varying":
 		return "varchar"
-	case "character":
+	case "character", "bpchar":
 		return "char"
 	case "bit varying":
 		return "varbit"

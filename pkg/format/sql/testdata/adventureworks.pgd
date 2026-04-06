@@ -79,8 +79,8 @@
       <column name="loginid" type="varchar" length="256" nullable="false"></column>
       <column name="jobtitle" type="varchar" length="50" nullable="false"></column>
       <column name="birthdate" type="date" nullable="false"></column>
-      <column name="maritalstatus" type="bpchar" nullable="false"></column>
-      <column name="gender" type="bpchar" nullable="false"></column>
+      <column name="maritalstatus" type="char" length="1" nullable="false"></column>
+      <column name="gender" type="char" length="1" nullable="false"></column>
       <column name="hiredate" type="date" nullable="false"></column>
       <column name="salariedflag" type="Flag" nullable="false" default="true"></column>
       <column name="vacationhours" type="smallint" nullable="false" default="0"></column>
@@ -88,7 +88,7 @@
       <column name="currentflag" type="Flag" nullable="false" default="true"></column>
       <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
-      <column name="organizationnode" type="varchar" default="&#39;/&#39;::varchar"></column>
+      <column name="organizationnode" type="varchar" default="&#39;/&#39;"></column>
       <pk name="PK_Employee_BusinessEntityID">
         <column name="businessentityid"></column>
       </pk>
@@ -288,7 +288,7 @@
     </table>
     <table name="person">
       <column name="businessentityid" type="integer" nullable="false"></column>
-      <column name="persontype" type="bpchar" nullable="false"></column>
+      <column name="persontype" type="char" length="2" nullable="false"></column>
       <column name="namestyle" type="NameStyle" nullable="false" default="false"></column>
       <column name="title" type="varchar" length="8"></column>
       <column name="firstname" type="Name" nullable="false"></column>
@@ -336,7 +336,7 @@
     </table>
     <table name="stateprovince">
       <column name="stateprovinceid" type="integer" nullable="false"></column>
-      <column name="stateprovincecode" type="bpchar" nullable="false"></column>
+      <column name="stateprovincecode" type="char" length="3" nullable="false"></column>
       <column name="countryregioncode" type="varchar" length="3" nullable="false"></column>
       <column name="isonlystateprovinceflag" type="Flag" nullable="false" default="true"></column>
       <column name="name" type="Name" nullable="false"></column>
@@ -366,7 +366,7 @@
       <column name="componentid" type="integer" nullable="false"></column>
       <column name="startdate" type="timestamp" nullable="false" default="now()"></column>
       <column name="enddate" type="timestamp"></column>
-      <column name="unitmeasurecode" type="bpchar" nullable="false"></column>
+      <column name="unitmeasurecode" type="char" length="3" nullable="false"></column>
       <column name="bomlevel" type="smallint" nullable="false"></column>
       <column name="perassemblyqty" type="numeric" precision="8" scale="2" nullable="false" default="1.00"></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
@@ -388,7 +388,7 @@
       <check name="CK_BillOfMaterials_ProductAssemblyID"><![CDATA[productassemblyid <> componentid]]></check>
     </table>
     <table name="culture">
-      <column name="cultureid" type="bpchar" nullable="false"></column>
+      <column name="cultureid" type="char" length="6" nullable="false"></column>
       <column name="name" type="Name" nullable="false"></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
       <pk name="PK_Culture_CultureID">
@@ -401,14 +401,14 @@
       <column name="folderflag" type="Flag" nullable="false" default="false"></column>
       <column name="filename" type="varchar" length="400" nullable="false"></column>
       <column name="fileextension" type="varchar" length="8"></column>
-      <column name="revision" type="bpchar" nullable="false"></column>
+      <column name="revision" type="char" length="5" nullable="false"></column>
       <column name="changenumber" type="integer" nullable="false" default="0"></column>
       <column name="status" type="smallint" nullable="false"></column>
       <column name="documentsummary" type="text"></column>
       <column name="document" type="bytea"></column>
       <column name="rowguid" type="uuid" nullable="false" default="public.uuid_generate_v1()"></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
-      <column name="documentnode" type="varchar" nullable="false" default="&#39;/&#39;::varchar"></column>
+      <column name="documentnode" type="varchar" nullable="false" default="&#39;/&#39;"></column>
       <pk name="PK_Document_DocumentNode">
         <column name="documentnode"></column>
       </pk>
@@ -452,13 +452,13 @@
       <column name="standardcost" type="numeric" nullable="false"></column>
       <column name="listprice" type="numeric" nullable="false"></column>
       <column name="size" type="varchar" length="5"></column>
-      <column name="sizeunitmeasurecode" type="bpchar"></column>
-      <column name="weightunitmeasurecode" type="bpchar"></column>
+      <column name="sizeunitmeasurecode" type="char" length="3"></column>
+      <column name="weightunitmeasurecode" type="char" length="3"></column>
       <column name="weight" type="numeric" precision="8" scale="2"></column>
       <column name="daystomanufacture" type="integer" nullable="false"></column>
-      <column name="productline" type="bpchar"></column>
-      <column name="class" type="bpchar"></column>
-      <column name="style" type="bpchar"></column>
+      <column name="productline" type="char" length="2"></column>
+      <column name="class" type="char" length="2"></column>
+      <column name="style" type="char" length="2"></column>
       <column name="productsubcategoryid" type="integer"></column>
       <column name="productmodelid" type="integer"></column>
       <column name="sellstartdate" type="timestamp" nullable="false"></column>
@@ -529,7 +529,7 @@
     <table name="productdocument">
       <column name="productid" type="integer" nullable="false"></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
-      <column name="documentnode" type="varchar" nullable="false" default="&#39;/&#39;::varchar"></column>
+      <column name="documentnode" type="varchar" nullable="false" default="&#39;/&#39;"></column>
       <pk name="PK_ProductDocument_ProductID_DocumentNode">
         <column name="productid"></column>
         <column name="documentnode"></column>
@@ -606,7 +606,7 @@
     <table name="productmodelproductdescriptionculture">
       <column name="productmodelid" type="integer" nullable="false"></column>
       <column name="productdescriptionid" type="integer" nullable="false"></column>
-      <column name="cultureid" type="bpchar" nullable="false"></column>
+      <column name="cultureid" type="char" length="6" nullable="false"></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
       <pk name="PK_ProductModelProductDescriptionCulture_ProductModelID_Product">
         <column name="productmodelid"></column>
@@ -691,7 +691,7 @@
       <column name="referenceorderid" type="integer" nullable="false"></column>
       <column name="referenceorderlineid" type="integer" nullable="false" default="0"></column>
       <column name="transactiondate" type="timestamp" nullable="false" default="now()"></column>
-      <column name="transactiontype" type="bpchar" nullable="false"></column>
+      <column name="transactiontype" type="char" length="1" nullable="false"></column>
       <column name="quantity" type="integer" nullable="false"></column>
       <column name="actualcost" type="numeric" nullable="false"></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
@@ -709,7 +709,7 @@
       <column name="referenceorderid" type="integer" nullable="false"></column>
       <column name="referenceorderlineid" type="integer" nullable="false" default="0"></column>
       <column name="transactiondate" type="timestamp" nullable="false" default="now()"></column>
-      <column name="transactiontype" type="bpchar" nullable="false"></column>
+      <column name="transactiontype" type="char" length="1" nullable="false"></column>
       <column name="quantity" type="integer" nullable="false"></column>
       <column name="actualcost" type="numeric" nullable="false"></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
@@ -719,7 +719,7 @@
       <check name="CK_TransactionHistoryArchive_TransactionType"><![CDATA[upper(transactiontype::text) = ANY(ARRAY['W'::text, 'S'::text, 'P'::text])]]></check>
     </table>
     <table name="unitmeasure">
-      <column name="unitmeasurecode" type="bpchar" nullable="false"></column>
+      <column name="unitmeasurecode" type="char" length="3" nullable="false"></column>
       <column name="name" type="Name" nullable="false"></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
       <pk name="PK_UnitMeasure_UnitMeasureCode">
@@ -796,7 +796,7 @@
       <column name="minorderqty" type="integer" nullable="false"></column>
       <column name="maxorderqty" type="integer" nullable="false"></column>
       <column name="onorderqty" type="integer"></column>
-      <column name="unitmeasurecode" type="bpchar" nullable="false"></column>
+      <column name="unitmeasurecode" type="char" length="3" nullable="false"></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
       <pk name="PK_ProductVendor_ProductID_BusinessEntityID">
         <column name="productid"></column>
@@ -909,7 +909,7 @@
   <schema name="sales">
     <table name="countryregioncurrency">
       <column name="countryregioncode" type="varchar" length="3" nullable="false"></column>
-      <column name="currencycode" type="bpchar" nullable="false"></column>
+      <column name="currencycode" type="char" length="3" nullable="false"></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
       <pk name="PK_CountryRegionCurrency_CountryRegionCode_CurrencyCode">
         <column name="countryregioncode"></column>
@@ -934,7 +934,7 @@
       </pk>
     </table>
     <table name="currency">
-      <column name="currencycode" type="bpchar" nullable="false"></column>
+      <column name="currencycode" type="char" length="3" nullable="false"></column>
       <column name="name" type="Name" nullable="false"></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>
       <pk name="PK_Currency_CurrencyCode">
@@ -944,8 +944,8 @@
     <table name="currencyrate">
       <column name="currencyrateid" type="integer" nullable="false"></column>
       <column name="currencyratedate" type="timestamp" nullable="false"></column>
-      <column name="fromcurrencycode" type="bpchar" nullable="false"></column>
-      <column name="tocurrencycode" type="bpchar" nullable="false"></column>
+      <column name="fromcurrencycode" type="char" length="3" nullable="false"></column>
+      <column name="tocurrencycode" type="char" length="3" nullable="false"></column>
       <column name="averagerate" type="numeric" nullable="false"></column>
       <column name="endofdayrate" type="numeric" nullable="false"></column>
       <column name="modifieddate" type="timestamp" nullable="false" default="now()"></column>

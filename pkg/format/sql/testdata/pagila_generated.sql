@@ -128,7 +128,7 @@ CREATE TABLE "inventory" (
 
 CREATE TABLE "language" (
 	"language_id" integer NOT NULL DEFAULT nextval('public.language_language_id_seq'::regclass),
-	"name" bpchar NOT NULL,
+	"name" char(20) NOT NULL,
 	"last_update" timestamptz NOT NULL DEFAULT now(),
 	CONSTRAINT "language_pkey" PRIMARY KEY("language_id")
 );
