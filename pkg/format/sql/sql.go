@@ -404,8 +404,12 @@ func extractColumnConstraints(tbl *pgd.Table, col *pg.ColumnDef) {
 		}
 		switch con.Constraint.Contype {
 		case pg.ConstrType_CONSTR_PRIMARY:
+			pkName := con.Constraint.Conname
+			if pkName == "" {
+				pkName = tbl.Name + "_pkey"
+			}
 			tbl.PK = &pgd.PrimaryKey{
-				Name:    con.Constraint.Conname,
+				Name:    pkName,
 				Columns: []pgd.ColRef{{Name: col.Colname}},
 			}
 		case pg.ConstrType_CONSTR_UNIQUE:
@@ -537,7 +541,11 @@ func applyTypeMods(c *pgd.Column, tn *pg.TypeName) {
 func convertTableConstraint(tbl *pgd.Table, con *pg.Constraint) {
 	switch con.Contype {
 	case pg.ConstrType_CONSTR_PRIMARY:
-		pk := pgd.PrimaryKey{Name: con.Conname}
+		pkName := con.Conname
+		if pkName == "" {
+			pkName = tbl.Name + "_pkey"
+		}
+		pk := pgd.PrimaryKey{Name: pkName}
 		for _, k := range con.Keys {
 			if s, ok := k.Node.(*pg.Node_String_); ok {
 				pk.Columns = append(pk.Columns, pgd.ColRef{Name: s.String_.Sval})
@@ -751,7 +759,11 @@ func (c *sqlConverter) convertAlterTable(stmt *pg.AlterTableStmt) { //nolint:goc
 			fk := convertFKConstraint(con.Constraint)
 			schema.Tables[tableIdx].FKs = append(schema.Tables[tableIdx].FKs, fk)
 		case pg.ConstrType_CONSTR_PRIMARY:
-			pk := pgd.PrimaryKey{Name: con.Constraint.Conname}
+			pkName := con.Constraint.Conname
+			if pkName == "" {
+				pkName = schema.Tables[tableIdx].Name + "_pkey"
+			}
+			pk := pgd.PrimaryKey{Name: pkName}
 			for _, k := range con.Constraint.Keys {
 				if s, ok := k.Node.(*pg.Node_String_); ok {
 					pk.Columns = append(pk.Columns, pgd.ColRef{Name: s.String_.Sval})
