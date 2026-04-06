@@ -57,7 +57,7 @@ function itemDetail(item: ConstraintItem): string {
     case 'pk': return item.data.columns.join(', ')
     case 'unique': return item.data.columns.join(', ')
     case 'check': return item.data.expression
-    case 'exclude': return item.data.elements.map(el => `${el.column} WITH ${el.with}`).join(', ')
+    case 'exclude': return item.data.elements.map(el => `${el.expression || el.column} WITH ${el.with}`).join(', ')
   }
 }
 

@@ -119,8 +119,14 @@ function setCheck(field: string, value: string) {
       </div>
       <div class="cp-group-label">Elements</div>
       <div v-for="(el, i) in item.data.elements" :key="i" class="cp-row">
-        <span class="cp-mono">{{ el.column }} WITH {{ el.with }}</span>
+        <span class="cp-mono">{{ el.expression || el.column }} WITH {{ el.with }}</span>
       </div>
+      <template v-if="item.data.where">
+        <div class="cp-group-label">Where</div>
+        <div class="cp-row">
+          <span class="cp-mono cp-where">{{ item.data.where }}</span>
+        </div>
+      </template>
     </template>
   </div>
 </template>
@@ -147,4 +153,5 @@ function setCheck(field: string, value: string) {
 .cp-check-row { margin-bottom: 0.154rem; }
 .cp-check { font-size: 0.923rem; display: flex; align-items: center; gap: 0.308rem; cursor: pointer; }
 .cp-mono { font-family: monospace; font-size: 0.846rem; color: var(--color-text-secondary); }
+.cp-where { word-break: break-all; }
 </style>
