@@ -86,7 +86,7 @@ function updateCol(i: number, field: string, value: string) {
 
     <template v-if="index.with?.length">
       <div class="ip-section-label">Storage Params</div>
-      <div v-for="(p, i) in index.with" :key="i" class="ip-row">
+      <div v-for="p in index.with" :key="p.name" class="ip-row">
         <span class="ip-mono">{{ p.name }} = {{ p.value }}</span>
       </div>
     </template>

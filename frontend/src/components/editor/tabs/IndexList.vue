@@ -21,7 +21,7 @@ const emit = defineEmits<{
 function addIndex() {
   const idxs = props.indexes || []
   const name = `ix_${props.tableName}_${idxs.length + 1}`
-  emit('updateIndexes', [...idxs, { name, unique: false, nullsDistinct: false, using: 'btree', columns: [], expressions: [], where: '', include: [] }])
+  emit('updateIndexes', [...idxs, { name, unique: false, nullsDistinct: false, using: 'btree', columns: [], expressions: [], with: [], where: '', include: [] }])
   selectedIdx.value = idxs.length
 }
 
