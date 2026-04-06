@@ -111,7 +111,7 @@ type pgSequence struct {
 type pgEnum struct {
 	Name   string
 	Schema string
-	Labels []string
+	Labels []string `pg:",array"`
 }
 
 type pgDomain struct {
@@ -191,8 +191,8 @@ func (i *introspector) introspect() (*pgd.Project, error) {
 
 	// Full mode: views, functions, triggers, extensions, domains, enums
 	if i.opts.Full {
-		if intErr := i.introspectFull(project); intErr != nil { //nolint:govet
-			return nil, err
+		if fullErr := i.introspectFull(project); fullErr != nil {
+			return nil, fullErr
 		}
 	}
 
@@ -547,6 +547,7 @@ func (i *introspector) queryFunctions() ([]pgFunction, error) {
 		JOIN pg_namespace n ON n.oid = p.pronamespace
 		JOIN pg_language l ON l.oid = p.prolang
 		WHERE p.prokind IN ('f', 'p')
+		  AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.objid = p.oid AND d.deptype = 'e')
 		  %s
 		ORDER BY n.nspname, p.proname
 	`, i.schemaFilter()))
