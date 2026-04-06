@@ -90,7 +90,7 @@ func newObjectItems(p *pgd.Project) []ObjectItem {
 	return items
 }
 
-func newTableDetail(p *pgd.Project, t *pgd.Table, schema *pgd.Schema) *TableDetail {
+func newTableDetail(p *pgd.Project, t *pgd.Table, schema *pgd.Schema) *TableDetail { //nolint:gocognit,gocyclo,cyclop
 	// Build PK and FK column sets
 	pkCols := map[string]bool{}
 	if t.PK != nil {
@@ -173,8 +173,11 @@ func newTableDetail(p *pgd.Project, t *pgd.Table, schema *pgd.Schema) *TableDeta
 	// Excludes
 	for _, ex := range t.Excludes {
 		ed := ExcludeDetail{Name: ex.Name, Using: ex.Using}
+		if ex.Where != nil {
+			ed.Where = ex.Where.Value
+		}
 		for _, el := range ex.Elements {
-			ed.Elements = append(ed.Elements, ExcludeElementDetail{Column: el.Column, With: el.With})
+			ed.Elements = append(ed.Elements, ExcludeElementDetail{Column: el.Column, Expression: el.Expression, With: el.With})
 		}
 		td.Excludes = append(td.Excludes, ed)
 	}
@@ -211,6 +214,11 @@ func newTableDetail(p *pgd.Project, t *pgd.Table, schema *pgd.Schema) *TableDeta
 		}
 		for _, e := range idx.Expressions {
 			id.Expressions = append(id.Expressions, e.Value)
+		}
+		if idx.With != nil {
+			for _, p := range idx.With.Params {
+				id.With = append(id.With, WithParamDetail{Name: p.Name, Value: p.Value})
+			}
 		}
 		if idx.Where != nil {
 			id.Where = idx.Where.Value

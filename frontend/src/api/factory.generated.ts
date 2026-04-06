@@ -228,23 +228,27 @@ export interface IERDTable {
 export interface IExcludeDetail {
   name: string,
   using: string,
-  elements: Array<IExcludeElementDetail>
+  elements: Array<IExcludeElementDetail>,
+  where: string
 }
 
 export interface IExcludeElementDetail {
   column: string,
+  expression: string,
   with: string
 }
 
 export interface IExcludeElementInput {
   column: string,
+  expression: string,
   with: string
 }
 
 export interface IExcludeInput {
   name: string,
   using: string,
-  elements: Array<IExcludeElementInput>
+  elements: Array<IExcludeElementInput>,
+  where: string
 }
 
 export interface IFKColDetail {
@@ -325,6 +329,7 @@ export interface IIndexDetail {
   using: string,
   columns: Array<IIndexColDetail>,
   expressions: Array<string>,
+  with: Array<IWithParamDetail>,
   where: string,
   include: Array<string>
 }
@@ -337,6 +342,7 @@ export interface IIndexInput {
   using: string,
   columns: Array<IIndexColInput>,
   expressions: Array<string>,
+  with: Array<IWithParamInput>,
   where: string,
   include: Array<string>
 }
@@ -572,6 +578,16 @@ export interface IUpdateInfo {
   updateAvailable: boolean,
   releaseURL: string,
   shouldNotify: boolean
+}
+
+export interface IWithParamDetail {
+  name: string,
+  value: string
+}
+
+export interface IWithParamInput {
+  name: string,
+  value: string
 }
 
 export const factory = (send: any) => ({

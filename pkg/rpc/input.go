@@ -154,33 +154,45 @@ type ExcludeInput struct {
 	Name     string                `json:"name"`
 	Using    string                `json:"using,omitempty"`
 	Elements []ExcludeElementInput `json:"elements"`
+	Where    string                `json:"where,omitempty"`
 }
 
 // ExcludeElementInput is one element of an exclude constraint.
 type ExcludeElementInput struct {
-	Column string `json:"column"`
-	With   string `json:"with"`
+	Column     string `json:"column,omitempty"`
+	Expression string `json:"expression,omitempty"`
+	With       string `json:"with"`
 }
 
 func (e ExcludeInput) toPGD() pgd.Exclude {
 	ex := pgd.Exclude{Name: e.Name, Using: e.Using}
 	for _, el := range e.Elements {
-		ex.Elements = append(ex.Elements, pgd.ExcludeElement{Column: el.Column, With: el.With})
+		ex.Elements = append(ex.Elements, pgd.ExcludeElement{Column: el.Column, Expression: el.Expression, With: el.With})
+	}
+	if e.Where != "" {
+		ex.Where = &pgd.WhereClause{Value: e.Where}
 	}
 	return ex
 }
 
 // IndexInput is an index from the editor.
 type IndexInput struct {
-	Name          string          `json:"name"`
-	Table         string          `json:"table"`
-	Unique        bool            `json:"unique,omitempty"`
-	NullsDistinct bool            `json:"nullsDistinct,omitempty"`
-	Using         string          `json:"using,omitempty"`
-	Columns       []IndexColInput `json:"columns"`
-	Expressions   []string        `json:"expressions,omitempty"`
-	Where         string          `json:"where,omitempty"`
-	Include       []string        `json:"include,omitempty"`
+	Name          string           `json:"name"`
+	Table         string           `json:"table"`
+	Unique        bool             `json:"unique,omitempty"`
+	NullsDistinct bool             `json:"nullsDistinct,omitempty"`
+	Using         string           `json:"using,omitempty"`
+	Columns       []IndexColInput  `json:"columns"`
+	Expressions   []string         `json:"expressions,omitempty"`
+	With          []WithParamInput `json:"with,omitempty"`
+	Where         string           `json:"where,omitempty"`
+	Include       []string         `json:"include,omitempty"`
+}
+
+// WithParamInput is a key-value storage parameter.
+type WithParamInput struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 // IndexColInput is an index column with ordering.
@@ -208,6 +220,13 @@ func (idx IndexInput) toPGD() pgd.Index {
 	}
 	for _, e := range idx.Expressions {
 		ix.Expressions = append(ix.Expressions, pgd.Expression{Value: e})
+	}
+	if len(idx.With) > 0 {
+		w := &pgd.With{}
+		for _, p := range idx.With {
+			w.Params = append(w.Params, pgd.WithParam{Name: p.Name, Value: p.Value})
+		}
+		ix.With = w
 	}
 	if idx.Where != "" {
 		ix.Where = &pgd.WhereClause{Value: idx.Where}

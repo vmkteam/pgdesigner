@@ -1568,6 +1568,10 @@ func (ProjectService) SMD() smd.ServiceInfo {
 										"$ref": "#/definitions/ExcludeElementDetail",
 									},
 								},
+								{
+									Name: "where",
+									Type: smd.String,
+								},
 							},
 						},
 						"ExcludeElementDetail": {
@@ -1575,6 +1579,10 @@ func (ProjectService) SMD() smd.ServiceInfo {
 							Properties: smd.PropertyList{
 								{
 									Name: "column",
+									Type: smd.String,
+								},
+								{
+									Name: "expression",
 									Type: smd.String,
 								},
 								{
@@ -1666,6 +1674,13 @@ func (ProjectService) SMD() smd.ServiceInfo {
 									},
 								},
 								{
+									Name: "with",
+									Type: smd.Array,
+									Items: map[string]string{
+										"$ref": "#/definitions/WithParamDetail",
+									},
+								},
+								{
 									Name: "where",
 									Type: smd.String,
 								},
@@ -1697,6 +1712,19 @@ func (ProjectService) SMD() smd.ServiceInfo {
 								},
 								{
 									Name: "opclass",
+									Type: smd.String,
+								},
+							},
+						},
+						"WithParamDetail": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name: "value",
 									Type: smd.String,
 								},
 							},
@@ -2189,6 +2217,10 @@ Used for saving DDL, diff patches, and other generated text.`,
 											"$ref": "#/definitions/ExcludeElementInput",
 										},
 									},
+									{
+										Name: "where",
+										Type: smd.String,
+									},
 								},
 							},
 							"ExcludeElementInput": {
@@ -2196,6 +2228,10 @@ Used for saving DDL, diff patches, and other generated text.`,
 								Properties: smd.PropertyList{
 									{
 										Name: "column",
+										Type: smd.String,
+									},
+									{
+										Name: "expression",
 										Type: smd.String,
 									},
 									{
@@ -2253,6 +2289,13 @@ Used for saving DDL, diff patches, and other generated text.`,
 										},
 									},
 									{
+										Name: "with",
+										Type: smd.Array,
+										Items: map[string]string{
+											"$ref": "#/definitions/WithParamInput",
+										},
+									},
+									{
 										Name: "where",
 										Type: smd.String,
 									},
@@ -2282,6 +2325,19 @@ Used for saving DDL, diff patches, and other generated text.`,
 									},
 									{
 										Name: "opclass",
+										Type: smd.String,
+									},
+								},
+							},
+							"WithParamInput": {
+								Type: "object",
+								Properties: smd.PropertyList{
+									{
+										Name: "name",
+										Type: smd.String,
+									},
+									{
+										Name: "value",
 										Type: smd.String,
 									},
 								},
@@ -2596,6 +2652,10 @@ Used for saving DDL, diff patches, and other generated text.`,
 										"$ref": "#/definitions/ExcludeElementDetail",
 									},
 								},
+								{
+									Name: "where",
+									Type: smd.String,
+								},
 							},
 						},
 						"ExcludeElementDetail": {
@@ -2603,6 +2663,10 @@ Used for saving DDL, diff patches, and other generated text.`,
 							Properties: smd.PropertyList{
 								{
 									Name: "column",
+									Type: smd.String,
+								},
+								{
+									Name: "expression",
 									Type: smd.String,
 								},
 								{
@@ -2694,6 +2758,13 @@ Used for saving DDL, diff patches, and other generated text.`,
 									},
 								},
 								{
+									Name: "with",
+									Type: smd.Array,
+									Items: map[string]string{
+										"$ref": "#/definitions/WithParamDetail",
+									},
+								},
+								{
 									Name: "where",
 									Type: smd.String,
 								},
@@ -2725,6 +2796,19 @@ Used for saving DDL, diff patches, and other generated text.`,
 								},
 								{
 									Name: "opclass",
+									Type: smd.String,
+								},
+							},
+						},
+						"WithParamDetail": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name: "value",
 									Type: smd.String,
 								},
 							},
@@ -3069,6 +3153,10 @@ It does NOT modify the project — only computes the diff.`,
 											"$ref": "#/definitions/ExcludeElementInput",
 										},
 									},
+									{
+										Name: "where",
+										Type: smd.String,
+									},
 								},
 							},
 							"ExcludeElementInput": {
@@ -3076,6 +3164,10 @@ It does NOT modify the project — only computes the diff.`,
 								Properties: smd.PropertyList{
 									{
 										Name: "column",
+										Type: smd.String,
+									},
+									{
+										Name: "expression",
 										Type: smd.String,
 									},
 									{
@@ -3133,6 +3225,13 @@ It does NOT modify the project — only computes the diff.`,
 										},
 									},
 									{
+										Name: "with",
+										Type: smd.Array,
+										Items: map[string]string{
+											"$ref": "#/definitions/WithParamInput",
+										},
+									},
+									{
 										Name: "where",
 										Type: smd.String,
 									},
@@ -3162,6 +3261,19 @@ It does NOT modify the project — only computes the diff.`,
 									},
 									{
 										Name: "opclass",
+										Type: smd.String,
+									},
+								},
+							},
+							"WithParamInput": {
+								Type: "object",
+								Properties: smd.PropertyList{
+									{
+										Name: "name",
+										Type: smd.String,
+									},
+									{
+										Name: "value",
 										Type: smd.String,
 									},
 								},
