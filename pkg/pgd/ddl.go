@@ -863,6 +863,9 @@ func excludeDef(e *Exclude) string {
 		if el.Expression != "" {
 			target = el.Expression
 		}
+		if el.Opclass != "" {
+			target += " " + el.Opclass
+		}
 		elems = append(elems, fmt.Sprintf("%s WITH %s", target, el.With))
 	}
 	using := ""

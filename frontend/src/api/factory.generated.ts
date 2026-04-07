@@ -235,12 +235,14 @@ export interface IExcludeDetail {
 export interface IExcludeElementDetail {
   column: string,
   expression: string,
+  opclass: string,
   with: string
 }
 
 export interface IExcludeElementInput {
   column: string,
   expression: string,
+  opclass: string,
   with: string
 }
 

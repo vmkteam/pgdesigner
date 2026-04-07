@@ -177,7 +177,7 @@ func newTableDetail(p *pgd.Project, t *pgd.Table, schema *pgd.Schema) *TableDeta
 			ed.Where = ex.Where.Value
 		}
 		for _, el := range ex.Elements {
-			ed.Elements = append(ed.Elements, ExcludeElementDetail{Column: el.Column, Expression: el.Expression, With: el.With})
+			ed.Elements = append(ed.Elements, ExcludeElementDetail{Column: el.Column, Expression: el.Expression, Opclass: el.Opclass, With: el.With})
 		}
 		td.Excludes = append(td.Excludes, ed)
 	}

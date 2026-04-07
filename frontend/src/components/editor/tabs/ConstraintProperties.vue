@@ -66,7 +66,7 @@ function updateExclElement(i: number, field: string, value: string) {
 
 function addExclElement() {
   if (props.item.kind !== 'exclude') return
-  const elements = [...props.item.data.elements, { column: '', expression: '', with: '=' }]
+  const elements = [...props.item.data.elements, { column: '', expression: '', opclass: '', with: '=' }]
   emit('updateExclude', props.item.index, { ...props.item.data, elements })
 }
 
@@ -81,9 +81,9 @@ function toggleExclElementMode(i: number) {
   const elements = [...props.item.data.elements]
   const el = elements[i]!
   if (el.expression) {
-    elements[i] = { column: el.column, expression: '', with: el.with }
+    elements[i] = { column: el.column, expression: '', opclass: el.opclass, with: el.with }
   } else {
-    elements[i] = { column: '', expression: el.column || ' ', with: el.with }
+    elements[i] = { column: '', expression: el.column || ' ', opclass: el.opclass, with: el.with }
   }
   emit('updateExclude', props.item.index, { ...props.item.data, elements })
 }
@@ -154,11 +154,9 @@ function toggleExclElementMode(i: number) {
         <label class="cp-label">Using</label>
         <select class="cp-input" :value="item.data.using || 'gist'" @change="setExclude('using', ($event.target as HTMLSelectElement).value)">
           <option value="gist">gist</option>
+          <option value="spgist">spgist</option>
           <option value="btree">btree</option>
           <option value="hash">hash</option>
-          <option value="gin">gin</option>
-          <option value="spgist">spgist</option>
-          <option value="brin">brin</option>
         </select>
       </div>
 
@@ -181,6 +179,10 @@ function toggleExclElementMode(i: number) {
         </div>
         <div v-else class="cp-row">
           <input class="cp-input cp-mono" :value="el.expression" placeholder="SQL expression" @change="updateExclElement(i, 'expression', ($event.target as HTMLInputElement).value)" />
+        </div>
+        <div class="cp-row">
+          <label class="cp-label-sm">Opclass</label>
+          <input class="cp-input" :value="el.opclass" placeholder="opclass" @change="updateExclElement(i, 'opclass', ($event.target as HTMLInputElement).value)" />
         </div>
         <div class="cp-row">
           <label class="cp-label-sm">WITH</label>

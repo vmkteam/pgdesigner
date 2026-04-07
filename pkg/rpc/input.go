@@ -161,13 +161,14 @@ type ExcludeInput struct {
 type ExcludeElementInput struct {
 	Column     string `json:"column,omitempty"`
 	Expression string `json:"expression,omitempty"`
+	Opclass    string `json:"opclass,omitempty"`
 	With       string `json:"with"`
 }
 
 func (e ExcludeInput) toPGD() pgd.Exclude {
 	ex := pgd.Exclude{Name: e.Name, Using: e.Using}
 	for _, el := range e.Elements {
-		ex.Elements = append(ex.Elements, pgd.ExcludeElement{Column: el.Column, Expression: el.Expression, With: el.With})
+		ex.Elements = append(ex.Elements, pgd.ExcludeElement{Column: el.Column, Expression: el.Expression, Opclass: el.Opclass, With: el.With})
 	}
 	if e.Where != "" {
 		ex.Where = &pgd.WhereClause{Value: e.Where}

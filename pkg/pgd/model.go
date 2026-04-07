@@ -331,6 +331,7 @@ type Exclude struct {
 type ExcludeElement struct {
 	Column     string `xml:"column,attr,omitempty"`
 	Expression string `xml:"expression,attr,omitempty"`
+	Opclass    string `xml:"opclass,attr,omitempty"`
 	With       string `xml:"with,attr"`
 }
 

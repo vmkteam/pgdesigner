@@ -83,7 +83,7 @@ function addExclude() {
   const c = props.checks || []
   const e = props.excludes || []
   const name = `excl_${props.tableName}_${e.length + 1}`
-  emit('updateExcludes', [...e, { name, using: 'gist', elements: [{ column: '', expression: '', with: '=' }], where: '' }])
+  emit('updateExcludes', [...e, { name, using: 'gist', elements: [{ column: '', expression: '', opclass: '', with: '=' }], where: '' }])
   const newIdx = (props.pk ? 1 : 0) + u.length + c.length + e.length
   selectedIdx.value = newIdx
 }

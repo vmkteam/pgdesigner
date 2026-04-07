@@ -268,6 +268,7 @@ type ExcludeDetail struct {
 type ExcludeElementDetail struct {
 	Column     string `json:"column,omitempty"`
 	Expression string `json:"expression,omitempty"`
+	Opclass    string `json:"opclass,omitempty"`
 	With       string `json:"with"`
 }
 
