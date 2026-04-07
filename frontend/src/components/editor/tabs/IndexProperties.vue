@@ -84,6 +84,13 @@ function updateCol(i: number, field: string, value: string) {
 
     <DynamicColumnList label="Include" :model-value="index.include || []" :columns="columns" @update:model-value="set('include', $event)" />
 
+    <template v-if="index.with?.length">
+      <div class="ip-section-label">Storage Params</div>
+      <div v-for="p in index.with" :key="p.name" class="ip-row">
+        <span class="ip-mono">{{ p.name }} = {{ p.value }}</span>
+      </div>
+    </template>
+
     <div class="ip-row">
       <label class="ip-label">WHERE</label>
       <input class="ip-input ip-mono" :value="index.where || ''" placeholder="partial index predicate" @change="set('where', ($event.target as HTMLInputElement).value)" />

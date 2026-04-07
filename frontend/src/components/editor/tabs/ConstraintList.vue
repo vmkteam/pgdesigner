@@ -57,7 +57,7 @@ function itemDetail(item: ConstraintItem): string {
     case 'pk': return item.data.columns.join(', ')
     case 'unique': return item.data.columns.join(', ')
     case 'check': return item.data.expression
-    case 'exclude': return item.data.elements.map(el => `${el.column} WITH ${el.with}`).join(', ')
+    case 'exclude': return item.data.elements.map(el => `${el.expression || el.column} WITH ${el.with}`).join(', ')
   }
 }
 
@@ -75,6 +75,16 @@ function addCheck() {
   const name = `chk_${props.tableName}_${c.length + 1}`
   emit('updateChecks', [...c, { name, expression: '' }])
   const newIdx = (props.pk ? 1 : 0) + u.length + c.length
+  selectedIdx.value = newIdx
+}
+
+function addExclude() {
+  const u = props.uniques || []
+  const c = props.checks || []
+  const e = props.excludes || []
+  const name = `excl_${props.tableName}_${e.length + 1}`
+  emit('updateExcludes', [...e, { name, using: 'gist', elements: [{ column: '', expression: '', opclass: '', with: '=' }], where: '' }])
+  const newIdx = (props.pk ? 1 : 0) + u.length + c.length + e.length
   selectedIdx.value = newIdx
 }
 
@@ -104,6 +114,11 @@ function onUpdateCheck(index: number, data: ICheckDetail) {
   const copy = [...props.checks]
   copy[index] = data
   emit('updateChecks', copy)
+}
+function onUpdateExclude(index: number, data: IExcludeDetail) {
+  const copy = [...props.excludes]
+  copy[index] = data
+  emit('updateExcludes', copy)
 }
 
 const { editingIdx, editName, editError, startEdit: startEditName, commit: commitEditName, onEditKeydown } = useInlineEdit({
@@ -177,6 +192,7 @@ function onKeydown(e: KeyboardEvent) {
       <div class="cl-toolbar">
         <button class="cl-btn" title="Add UNIQUE (+)" @click="addUnique">+ Unique</button>
         <button class="cl-btn" title="Add CHECK" @click="addCheck">+ Check</button>
+        <button class="cl-btn" title="Add EXCLUDE" @click="addExclude">+ Exclude</button>
         <button class="cl-btn" title="Delete (−)" :disabled="selected == null || selected.kind === 'pk'" @click="deleteSelected">− Delete</button>
       </div>
     </div>
@@ -188,6 +204,7 @@ function onKeydown(e: KeyboardEvent) {
         @update-p-k="onUpdatePK"
         @update-unique="onUpdateUnique"
         @update-check="onUpdateCheck"
+        @update-exclude="onUpdateExclude"
       />
     </div>
   </div>

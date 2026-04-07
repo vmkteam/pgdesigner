@@ -261,12 +261,15 @@ type ExcludeDetail struct {
 	Name     string                 `json:"name"`
 	Using    string                 `json:"using,omitempty"`
 	Elements []ExcludeElementDetail `json:"elements"`
+	Where    string                 `json:"where,omitempty"`
 }
 
 // ExcludeElementDetail holds one element of an exclude constraint.
 type ExcludeElementDetail struct {
-	Column string `json:"column"`
-	With   string `json:"with"`
+	Column     string `json:"column,omitempty"`
+	Expression string `json:"expression,omitempty"`
+	Opclass    string `json:"opclass,omitempty"`
+	With       string `json:"with"`
 }
 
 // FKDetail holds foreign key data.
@@ -337,14 +340,21 @@ type ObjectItem struct {
 
 // IndexDetail holds index data.
 type IndexDetail struct {
-	Name          string           `json:"name"`
-	Unique        bool             `json:"unique,omitempty"`
-	NullsDistinct bool             `json:"nullsDistinct,omitempty"`
-	Using         string           `json:"using,omitempty"`
-	Columns       []IndexColDetail `json:"columns"`
-	Expressions   []string         `json:"expressions,omitempty"`
-	Where         string           `json:"where,omitempty"`
-	Include       []string         `json:"include,omitempty"`
+	Name          string            `json:"name"`
+	Unique        bool              `json:"unique,omitempty"`
+	NullsDistinct bool              `json:"nullsDistinct,omitempty"`
+	Using         string            `json:"using,omitempty"`
+	Columns       []IndexColDetail  `json:"columns"`
+	Expressions   []string          `json:"expressions,omitempty"`
+	With          []WithParamDetail `json:"with,omitempty"`
+	Where         string            `json:"where,omitempty"`
+	Include       []string          `json:"include,omitempty"`
+}
+
+// WithParamDetail holds a key-value storage parameter.
+type WithParamDetail struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 // IndexColDetail holds index column with ordering metadata.

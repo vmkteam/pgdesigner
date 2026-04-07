@@ -197,7 +197,7 @@
       <column name="rental_id" type="integer" nullable="false"></column>
       <column name="amount" type="numeric" precision="5" scale="2" nullable="false"></column>
       <column name="payment_date" type="timestamptz" nullable="false"></column>
-      <pk name="">
+      <pk name="payment_pkey">
         <column name="payment_date"></column>
         <column name="payment_id"></column>
       </pk>

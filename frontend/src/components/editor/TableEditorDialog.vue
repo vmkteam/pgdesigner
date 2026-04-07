@@ -231,7 +231,7 @@ function onCreateIndex(columnName: string) {
   }
   const newIndex = {
     name, unique: false, nullsDistinct: false, using: 'btree',
-    columns: [{ name: columnName, order: '', nulls: '', opclass: '' }], expressions: [], where: '', include: [],
+    columns: [{ name: columnName, order: '', nulls: '', opclass: '' }], expressions: [], with: [], where: '', include: [],
   }
   editor.draft.indexes = [...(editor.draft.indexes || []), newIndex]
   activeTab.value = 'indexes'

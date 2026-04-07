@@ -718,6 +718,32 @@ func TestGenerateDDL_Exclude(t *testing.T) {
 	assert.Contains(t, ddl, `"during" WITH &&`)
 }
 
+func TestGenerateDDL_ExcludeOpclass(t *testing.T) {
+	p := &Project{
+		Schemas: []Schema{{
+			Name: "public",
+			Tables: []Table{{
+				Name: "reservations",
+				Columns: []Column{
+					{Name: "room_id", Type: "integer"},
+					{Name: "during", Type: "tstzrange"},
+				},
+				Excludes: []Exclude{{
+					Name:  "no_overlap",
+					Using: "gist",
+					Elements: []ExcludeElement{
+						{Column: "room_id", Opclass: "gist_int4_ops", With: "="},
+						{Column: "during", With: "&&"},
+					},
+				}},
+			}},
+		}},
+	}
+	ddl := GenerateDDL(p)
+	assert.Contains(t, ddl, `"room_id" gist_int4_ops WITH =`)
+	assert.Contains(t, ddl, `"during" WITH &&`)
+}
+
 // --- Role / RLS / Policy / Grant ---
 
 func TestGenerateDDL_Role(t *testing.T) {

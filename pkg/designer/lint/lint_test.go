@@ -555,6 +555,16 @@ func TestValidate_W007_Naming(t *testing.T) {
 	assert.True(t, hasCode(issues, RuleNamingViolation), "expected W007 for snake_case violation")
 }
 
+func TestValidate_W007_NamingCamelCase(t *testing.T) {
+	p := minProject()
+	p.ProjectMeta.Settings.Naming.Convention = "camelCase"
+	p.Schemas[0].Tables[0].Name = "user_orders"
+	p.Schemas[0].Tables[0].Columns = append(p.Schemas[0].Tables[0].Columns,
+		pgd.Column{Name: "first_name", Type: "text"})
+	issues := Validate(p)
+	assert.True(t, hasCode(issues, RuleNamingViolation), "expected W007 for camelCase violation on snake_case names")
+}
+
 // --- ignore rules ---
 
 func TestValidate_IgnoreRules(t *testing.T) {

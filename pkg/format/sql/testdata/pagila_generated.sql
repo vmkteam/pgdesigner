@@ -140,7 +140,7 @@ CREATE TABLE "payment" (
 	"rental_id" integer NOT NULL,
 	"amount" numeric(5,2) NOT NULL,
 	"payment_date" timestamptz NOT NULL,
-	PRIMARY KEY("payment_date", "payment_id")
+	CONSTRAINT "payment_pkey" PRIMARY KEY("payment_date", "payment_id")
 )
 PARTITION BY RANGE ("payment_date");
 

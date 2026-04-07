@@ -979,8 +979,15 @@ func checkTableNaming(v *validator, schema string, t *pgd.Table) {
 
 func (v *validator) checkNaming(path, name string) {
 	// W007: naming convention
-	if v.naming == "snake_case" && !isSnakeCase(name) {
-		v.warnf(RuleNamingViolation, path, "%q violates snake_case convention", name)
+	switch v.naming {
+	case "snake_case":
+		if !isSnakeCase(name) {
+			v.warnf(RuleNamingViolation, path, "%q violates snake_case convention", name)
+		}
+	case "camelCase":
+		if !isCamelCase(name) {
+			v.warnf(RuleNamingViolation, path, "%q violates camelCase convention", name)
+		}
 	}
 }
 
@@ -990,6 +997,23 @@ func isSnakeCase(name string) bool {
 	}
 	for _, r := range name {
 		if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '_' {
+			return false
+		}
+	}
+	return true
+}
+
+func isCamelCase(name string) bool {
+	if name == "" {
+		return false
+	}
+	// must start with lowercase letter
+	if name[0] < 'a' || name[0] > 'z' {
+		return false
+	}
+	// no underscores allowed
+	for _, r := range name {
+		if r == '_' {
 			return false
 		}
 	}
