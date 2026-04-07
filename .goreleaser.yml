@@ -15,6 +15,17 @@ builds:
     goarch: [amd64, arm64]
     ldflags:
       - -s -w -X main.version={{.Version}}
+    hooks:
+      post:
+        - cmd: >-
+            {{- if eq .Os "darwin" }}
+            quill sign-and-notarize "{{ .Path }}" --dry-run={{ .IsSnapshot }} --ad-hoc={{ .IsSnapshot }} -vv
+            {{- else }}
+            true
+            {{- end }}
+          env:
+            - QUILL_LOG_FILE=/tmp/quill-{{ .Target }}.log
+          output: true
 
 archives:
   - formats: [tar.gz]
