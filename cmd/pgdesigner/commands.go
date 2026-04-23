@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -177,8 +178,9 @@ func printIssues(issues []lint.Issue, errors int, outputFmt string) {
 func runDiff(args []string) {
 	fs := flag.NewFlagSet("diff", flag.ExitOnError)
 	outputFmt := fs.String("f", "sql", "output format: sql, json")
+	outputFile := fs.String("o", "", "a pathname of an output file. Creates a file if it doesn't exist, overwrites otherwise. Output format is determined by the -f flag")
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: pgdesigner diff [-f sql|json] <old.pgd> <new.pgd>\n\nFlags:\n")
+		fmt.Fprintf(os.Stderr, "Usage: pgdesigner diff [-f sql|json] [-o file] <old.pgd> <new.pgd>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
 	_ = fs.Parse(args)
@@ -204,13 +206,28 @@ func runDiff(args []string) {
 		return
 	}
 
+	var w io.Writer = os.Stdout
+
+	if outputFile != nil && *outputFile != "" {
+		f, err := os.Create(*outputFile)
+		if err != nil {
+			log.Fatalf("failed to open %s: %v", *outputFile, err)
+		}
+		defer f.Close()
+		w = io.MultiWriter(os.Stdout, f)
+	}
+
 	switch *outputFmt {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
+		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
-		_ = enc.Encode(result.Changes)
+		if err := enc.Encode(result.Changes); err != nil {
+			log.Fatalf("failed to encode JSON: %v", err)
+		}
 	default:
-		fmt.Print(result.SQL())
+		if _, err := fmt.Fprint(w, result.SQL()); err != nil {
+			log.Fatalf("failed to write output: %v", err)
+		}
 	}
 
 	if result.HasHazards() {
