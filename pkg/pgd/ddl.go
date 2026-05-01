@@ -1113,6 +1113,13 @@ func (d *ddlWriter) writeIndex(q string, idx *Index) {
 		}
 		d.P("\n\tWITH (%s)", strings.Join(params, ", "))
 	}
+	if idx.Include != nil && len(idx.Include.Columns) > 0 {
+		var cols []string
+		for _, c := range idx.Include.Columns {
+			cols = append(cols, c.Name)
+		}
+		d.P("\n\tINCLUDE (%s)", strings.Join(cols, ", "))
+	}
 	if idx.Where != nil && idx.Where.Value != "" {
 		d.P("\n\tWHERE %s", idx.Where.Value)
 	}
