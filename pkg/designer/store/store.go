@@ -308,6 +308,7 @@ func (s *ProjectStore) UpdateTableExcludes(name string, excludes []pgd.Exclude) 
 }
 
 // UpdateTableIndexes replaces all indexes for a table in its schema.
+// Inserts the new group at the position of the first existing index of this table to keep .pgd diffs minimal.
 func (s *ProjectStore) UpdateTableIndexes(name string, indexes []pgd.Index) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -315,15 +316,22 @@ func (s *ProjectStore) UpdateTableIndexes(name string, indexes []pgd.Index) erro
 	if t == nil {
 		return fmt.Errorf("table %q not found", name)
 	}
-	// Remove old indexes for this table, add new ones.
-	var kept []pgd.Index
+	out := make([]pgd.Index, 0, len(schema.Indexes)+len(indexes))
+	inserted := false
 	for _, idx := range schema.Indexes {
-		if idx.Table != t.Name {
-			kept = append(kept, idx)
+		if idx.Table == t.Name {
+			if !inserted {
+				out = append(out, indexes...)
+				inserted = true
+			}
+			continue
 		}
+		out = append(out, idx)
 	}
-	kept = append(kept, indexes...)
-	schema.Indexes = kept
+	if !inserted {
+		out = append(out, indexes...)
+	}
+	schema.Indexes = out
 	return s.markDirtyLocked()
 }
 
