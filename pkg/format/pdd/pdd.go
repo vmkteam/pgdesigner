@@ -630,14 +630,18 @@ func indexMethod(m int) string {
 	}
 }
 
+// refAction maps MicroOLAP PDD's numeric OnDelete/OnUpdate codes to PostgreSQL
+// referential actions. The mapping matches what MicroOLAP's own SQL generator emits.
 func refAction(code int) string {
 	switch code {
+	case 0:
+		return "restrict"
 	case 1:
 		return "cascade"
 	case 2:
 		return "set-null"
 	case 3:
-		return "restrict"
+		return "no action"
 	case 4:
 		return "set-default"
 	default:
