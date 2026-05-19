@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict QfDoZvGqKOH64T0p10yhntUs6V3xql0fH2YM7e7M98Q4LjOkbsWrmOYkGFjgOVB
+\restrict p5jp7RJHGzBdfpvvBTT4JhCiYyjGq3lqVWbdMiMPwQrSavCzi7aUe7vzobT2uf0
 
 -- Dumped from database version 17.7 (Homebrew)
 -- Dumped by pg_dump version 17.7 (Homebrew)
@@ -31,13 +31,6 @@ SET row_security = off;
 --
 
 CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public;
-
-
---
--- Name: EXTENSION btree_gist; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION btree_gist IS 'support for indexing common datatypes in GiST';
 
 
 --
@@ -165,27 +158,6 @@ CREATE TABLE public.audit_log (
 
 
 --
--- Name: TABLE audit_log; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.audit_log IS 'Immutable audit trail for all data changes';
-
-
---
--- Name: COLUMN audit_log.old_data; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.audit_log.old_data IS 'Previous row state as JSON (NULL for INSERT)';
-
-
---
--- Name: COLUMN audit_log.new_data; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.audit_log.new_data IS 'New row state as JSON (NULL for DELETE)';
-
-
---
 -- Name: audit_log_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -209,20 +181,6 @@ CREATE TABLE public.booking_slots (
     booked_during tstzrange NOT NULL,
     booked_by bigint NOT NULL
 );
-
-
---
--- Name: TABLE booking_slots; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.booking_slots IS 'Room booking with non-overlapping time range constraint';
-
-
---
--- Name: COLUMN booking_slots.booked_during; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.booking_slots.booked_during IS 'Time range for the booking (tstzrange with EXCLUDE constraint)';
 
 
 --
@@ -255,13 +213,6 @@ CREATE TABLE public.categories (
 
 
 --
--- Name: TABLE categories; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.categories IS 'Hierarchical document categories (self-referencing tree)';
-
-
---
 -- Name: categories_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -291,13 +242,6 @@ CREATE TABLE public.document_permissions (
 
 
 --
--- Name: TABLE document_permissions; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.document_permissions IS 'Per-document user permissions with optional expiration';
-
-
---
 -- Name: document_permissions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -319,13 +263,6 @@ CREATE TABLE public.document_tags (
     document_id bigint NOT NULL,
     tag_id integer NOT NULL
 );
-
-
---
--- Name: TABLE document_tags; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.document_tags IS 'Many-to-many relationship between documents and tags';
 
 
 --
@@ -351,34 +288,6 @@ CREATE TABLE public.documents (
 
 
 --
--- Name: TABLE documents; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.documents IS 'Core document storage with full-text search and versioning';
-
-
---
--- Name: COLUMN documents.metadata; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.documents.metadata IS 'Arbitrary document metadata as JSON (custom fields, etc.)';
-
-
---
--- Name: COLUMN documents.version; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.documents.version IS 'Monotonically increasing version number';
-
-
---
--- Name: COLUMN documents.search_vector; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.documents.search_vector IS 'Full-text search index over title and body';
-
-
---
 -- Name: documents_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -399,16 +308,9 @@ ALTER TABLE public.documents ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
 CREATE TABLE public.tags (
     id integer NOT NULL,
     name character varying(60) NOT NULL,
-    color bpchar DEFAULT '#cccccc'::bpchar,
+    color character(7) DEFAULT '#cccccc'::bpchar,
     CONSTRAINT chk_tags_color CHECK ((color ~ '^#[0-9a-fA-F]{6}$'::text))
 );
-
-
---
--- Name: TABLE tags; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.tags IS 'Flat tag taxonomy for document classification';
 
 
 --
@@ -441,34 +343,6 @@ CREATE TABLE public.users (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
-
-
---
--- Name: TABLE users; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON TABLE public.users IS 'System users with role-based access control';
-
-
---
--- Name: COLUMN users.settings; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.users.settings IS 'User preferences as JSON (theme, notifications, etc.)';
-
-
---
--- Name: COLUMN users.tags; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.users.tags IS 'Free-form text tags for user categorization';
-
-
---
--- Name: COLUMN users.search_vector; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON COLUMN public.users.search_vector IS 'Full-text search index over display_name and email';
 
 
 --
@@ -518,19 +392,27 @@ ALTER TABLE ONLY public.document_permissions
 
 
 --
--- Name: document_tags document_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.document_tags
-    ADD CONSTRAINT document_tags_pkey PRIMARY KEY (document_id, tag_id);
-
-
---
 -- Name: documents documents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.documents
     ADD CONSTRAINT documents_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: booking_slots excl_booking_no_overlap; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.booking_slots
+    ADD CONSTRAINT excl_booking_no_overlap EXCLUDE USING gist (room_name WITH =, booked_during WITH &&);
+
+
+--
+-- Name: document_tags pk_document_tags; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_tags
+    ADD CONSTRAINT pk_document_tags PRIMARY KEY (document_id, tag_id);
 
 
 --
@@ -623,6 +505,13 @@ CREATE INDEX idx_categories_slug_lower ON public.categories USING btree (lower((
 
 
 --
+-- Name: idx_categories_slug_nnd; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_categories_slug_nnd ON public.categories USING btree (slug) NULLS NOT DISTINCT;
+
+
+--
 -- Name: idx_documents_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -630,17 +519,17 @@ CREATE INDEX idx_documents_active ON public.documents USING btree (created_at DE
 
 
 --
--- Name: INDEX idx_documents_active; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON INDEX public.idx_documents_active IS 'Partial index: only published documents';
-
-
---
 -- Name: idx_documents_author; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_documents_author ON public.documents USING btree (author_id);
+
+
+--
+-- Name: idx_documents_author_include; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_documents_author_include ON public.documents USING btree (author_id, title) INCLUDE (status, version);
 
 
 --
@@ -665,24 +554,10 @@ CREATE INDEX idx_documents_metadata_gin ON public.documents USING gin (metadata)
 
 
 --
--- Name: INDEX idx_documents_metadata_gin; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON INDEX public.idx_documents_metadata_gin IS 'GIN index for JSONB containment queries on document metadata';
-
-
---
 -- Name: idx_documents_search_gist; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_documents_search_gist ON public.documents USING gist (search_vector);
-
-
---
--- Name: INDEX idx_documents_search_gist; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON INDEX public.idx_documents_search_gist IS 'GiST index for full-text search on documents';
 
 
 --
@@ -735,13 +610,6 @@ CREATE INDEX idx_users_settings_gin ON public.users USING gin (settings);
 
 
 --
--- Name: INDEX idx_users_settings_gin; Type: COMMENT; Schema: public; Owner: -
---
-
-COMMENT ON INDEX public.idx_users_settings_gin IS 'GIN index for JSONB containment queries on user settings';
-
-
---
 -- Name: idx_users_tags_gin; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -777,80 +645,80 @@ CREATE TRIGGER trg_users_search_vector BEFORE INSERT OR UPDATE ON public.users F
 
 
 --
--- Name: audit_log audit_log_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: audit_log fk_audit_user; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.audit_log
-    ADD CONSTRAINT audit_log_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+    ADD CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
 
 
 --
--- Name: booking_slots booking_slots_booked_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: booking_slots fk_booking_user; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.booking_slots
-    ADD CONSTRAINT booking_slots_booked_by_fkey FOREIGN KEY (booked_by) REFERENCES public.users(id) ON DELETE CASCADE;
+    ADD CONSTRAINT fk_booking_user FOREIGN KEY (booked_by) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
 --
--- Name: categories categories_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: categories fk_categories_parent; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.categories
-    ADD CONSTRAINT categories_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.categories(id) ON DELETE SET NULL;
+    ADD CONSTRAINT fk_categories_parent FOREIGN KEY (parent_id) REFERENCES public.categories(id) ON DELETE SET NULL;
 
 
 --
--- Name: document_permissions document_permissions_document_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.document_permissions
-    ADD CONSTRAINT document_permissions_document_id_fkey FOREIGN KEY (document_id) REFERENCES public.documents(id) ON DELETE CASCADE;
-
-
---
--- Name: document_permissions document_permissions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: document_permissions fk_docperm_document; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.document_permissions
-    ADD CONSTRAINT document_permissions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+    ADD CONSTRAINT fk_docperm_document FOREIGN KEY (document_id) REFERENCES public.documents(id) ON DELETE CASCADE;
 
 
 --
--- Name: document_tags document_tags_document_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: document_permissions fk_docperm_user; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.document_permissions
+    ADD CONSTRAINT fk_docperm_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: document_tags fk_doctags_document; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.document_tags
-    ADD CONSTRAINT document_tags_document_id_fkey FOREIGN KEY (document_id) REFERENCES public.documents(id) ON DELETE CASCADE;
+    ADD CONSTRAINT fk_doctags_document FOREIGN KEY (document_id) REFERENCES public.documents(id) ON DELETE CASCADE;
 
 
 --
--- Name: document_tags document_tags_tag_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: document_tags fk_doctags_tag; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.document_tags
-    ADD CONSTRAINT document_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(id) ON DELETE CASCADE;
+    ADD CONSTRAINT fk_doctags_tag FOREIGN KEY (tag_id) REFERENCES public.tags(id) ON DELETE CASCADE;
 
 
 --
--- Name: documents documents_author_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.documents
-    ADD CONSTRAINT documents_author_id_fkey FOREIGN KEY (author_id) REFERENCES public.users(id) ON DELETE RESTRICT;
-
-
---
--- Name: documents documents_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: documents fk_documents_author; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.documents
-    ADD CONSTRAINT documents_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id) ON DELETE SET NULL;
+    ADD CONSTRAINT fk_documents_author FOREIGN KEY (author_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: documents fk_documents_category; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.documents
+    ADD CONSTRAINT fk_documents_category FOREIGN KEY (category_id) REFERENCES public.categories(id) ON DELETE SET NULL;
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict QfDoZvGqKOH64T0p10yhntUs6V3xql0fH2YM7e7M98Q4LjOkbsWrmOYkGFjgOVB
+\unrestrict p5jp7RJHGzBdfpvvBTT4JhCiYyjGq3lqVWbdMiMPwQrSavCzi7aUe7vzobT2uf0
 

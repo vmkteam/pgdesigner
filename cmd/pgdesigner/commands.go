@@ -177,8 +177,9 @@ func printIssues(issues []lint.Issue, errors int, outputFmt string) {
 func runDiff(args []string) {
 	fs := flag.NewFlagSet("diff", flag.ExitOnError)
 	outputFmt := fs.String("f", "sql", "output format: sql, json")
+	outFile := fs.String("o", "", "output file (default: stdout); skipped when there are no changes")
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: pgdesigner diff [-f sql|json] <old.pgd> <new.pgd>\n\nFlags:\n")
+		fmt.Fprintf(os.Stderr, "Usage: pgdesigner diff [-f sql|json] [-o output] <old.pgd> <new.pgd>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
 	_ = fs.Parse(args)
@@ -204,13 +205,12 @@ func runDiff(args []string) {
 		return
 	}
 
-	switch *outputFmt {
-	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		_ = enc.Encode(result.Changes)
-	default:
-		fmt.Print(result.SQL())
+	payload, err := renderDiff(result, *outputFmt)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := writeOutput(*outFile, payload); err != nil {
+		log.Fatal(err)
 	}
 
 	if result.HasHazards() {
@@ -220,6 +220,15 @@ func runDiff(args []string) {
 				fmt.Fprintf(os.Stderr, "[%s] %s: %s — %s\n", h.Level, h.Code, c.Name, h.Message)
 			}
 		}
+	}
+}
+
+func renderDiff(result *diff.DiffResult, format string) ([]byte, error) {
+	switch format {
+	case "json":
+		return json.MarshalIndent(result.Changes, "", "  ")
+	default:
+		return []byte(result.SQL()), nil
 	}
 }
 
@@ -243,13 +252,11 @@ func runGenerate(args []string) {
 	}
 
 	ddl := pgd.GenerateDDL(project)
+	if err := writeOutput(*outFile, []byte(ddl)); err != nil {
+		log.Fatal(err)
+	}
 	if *outFile != "" {
-		if err := os.WriteFile(*outFile, []byte(ddl), 0644); err != nil {
-			log.Fatal(err)
-		}
 		fmt.Fprintf(os.Stderr, "Generated %s (%d lines)\n", *outFile, strings.Count(ddl, "\n"))
-	} else {
-		fmt.Print(ddl)
 	}
 }
 
@@ -353,12 +360,10 @@ func runTestData(args []string) {
 	}
 
 	sql := buf.String()
+	if err := writeOutput(*outFile, []byte(sql)); err != nil {
+		log.Fatal(err)
+	}
 	if *outFile != "" {
-		if err := os.WriteFile(*outFile, []byte(sql), 0644); err != nil {
-			log.Fatal(err)
-		}
 		fmt.Fprintf(os.Stderr, "Generated %s (%d lines)\n", *outFile, strings.Count(sql, "\n"))
-	} else {
-		fmt.Print(sql)
 	}
 }

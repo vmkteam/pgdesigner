@@ -40,7 +40,7 @@
       <pk name="PK_Address_AddressID">
         <column name="addressid"></column>
       </pk>
-      <fk name="FK_Address_StateProvince_StateProvinceID" to-table="stateprovince" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Address_StateProvince_StateProvinceID" to-table="stateprovince" on-delete="no action" on-update="no action">
         <column name="stateprovinceid" references="stateprovinceid"></column>
       </fk>
     </table>
@@ -76,13 +76,13 @@
         <column name="addressid"></column>
         <column name="addresstypeid"></column>
       </pk>
-      <fk name="FK_BusinessEntityAddress_Address_AddressID" to-table="address" on-delete="restrict" on-update="restrict">
+      <fk name="FK_BusinessEntityAddress_Address_AddressID" to-table="address" on-delete="no action" on-update="no action">
         <column name="addressid" references="addressid"></column>
       </fk>
-      <fk name="FK_BusinessEntityAddress_AddressType_AddressTypeID" to-table="addresstype" on-delete="restrict" on-update="restrict">
+      <fk name="FK_BusinessEntityAddress_AddressType_AddressTypeID" to-table="addresstype" on-delete="no action" on-update="no action">
         <column name="addresstypeid" references="addresstypeid"></column>
       </fk>
-      <fk name="FK_BusinessEntityAddress_BusinessEntity_BusinessEntityID" to-table="businessentity" on-delete="restrict" on-update="restrict">
+      <fk name="FK_BusinessEntityAddress_BusinessEntity_BusinessEntityID" to-table="businessentity" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
     </table>
@@ -97,13 +97,13 @@
         <column name="personid"></column>
         <column name="contacttypeid"></column>
       </pk>
-      <fk name="FK_BusinessEntityContact_Person_PersonID" to-table="person" on-delete="restrict" on-update="restrict">
+      <fk name="FK_BusinessEntityContact_Person_PersonID" to-table="person" on-delete="no action" on-update="no action">
         <column name="personid" references="businessentityid"></column>
       </fk>
-      <fk name="FK_BusinessEntityContact_ContactType_ContactTypeID" to-table="contacttype" on-delete="restrict" on-update="restrict">
+      <fk name="FK_BusinessEntityContact_ContactType_ContactTypeID" to-table="contacttype" on-delete="no action" on-update="no action">
         <column name="contacttypeid" references="contacttypeid"></column>
       </fk>
-      <fk name="FK_BusinessEntityContact_BusinessEntity_BusinessEntityID" to-table="businessentity" on-delete="restrict" on-update="restrict">
+      <fk name="FK_BusinessEntityContact_BusinessEntity_BusinessEntityID" to-table="businessentity" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
     </table>
@@ -137,7 +137,7 @@
         <column name="businessentityid"></column>
         <column name="emailaddressid"></column>
       </pk>
-      <fk name="FK_EmailAddress_Person_BusinessEntityID" to-table="person" on-delete="restrict" on-update="restrict">
+      <fk name="FK_EmailAddress_Person_BusinessEntityID" to-table="person" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
     </table>
@@ -150,7 +150,7 @@
       <pk name="PK_Password_BusinessEntityID">
         <column name="businessentityid"></column>
       </pk>
-      <fk name="FK_Password_Person_BusinessEntityID" to-table="person" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Password_Person_BusinessEntityID" to-table="person" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
     </table>
@@ -171,7 +171,7 @@
       <pk name="PK_Person_BusinessEntityID">
         <column name="businessentityid"></column>
       </pk>
-      <fk name="FK_Person_BusinessEntity_BusinessEntityID" to-table="businessentity" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Person_BusinessEntity_BusinessEntityID" to-table="businessentity" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
       <check name="CK_Person_EmailPromotion"><![CDATA[emailpromotion >= 0 AND emailpromotion <= 2]]></check>
@@ -187,10 +187,10 @@
         <column name="phonenumber"></column>
         <column name="phonenumbertypeid"></column>
       </pk>
-      <fk name="FK_PersonPhone_Person_BusinessEntityID" to-table="person" on-delete="restrict" on-update="restrict">
+      <fk name="FK_PersonPhone_Person_BusinessEntityID" to-table="person" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
-      <fk name="FK_PersonPhone_PhoneNumberType_PhoneNumberTypeID" to-table="phonenumbertype" on-delete="restrict" on-update="restrict">
+      <fk name="FK_PersonPhone_PhoneNumberType_PhoneNumberTypeID" to-table="phonenumbertype" on-delete="no action" on-update="no action">
         <column name="phonenumbertypeid" references="phonenumbertypeid"></column>
       </fk>
     </table>
@@ -218,10 +218,10 @@
       <pk name="PK_StateProvince_StateProvinceID">
         <column name="stateprovinceid"></column>
       </pk>
-      <fk name="FK_StateProvince_CountryRegion_CountryRegionCode" to-table="countryregion" on-delete="restrict" on-update="restrict">
+      <fk name="FK_StateProvince_CountryRegion_CountryRegionCode" to-table="countryregion" on-delete="no action" on-update="no action">
         <column name="countryregioncode" references="countryregioncode"></column>
       </fk>
-      <fk name="FK_StateProvince_SalesTerritory_TerritoryID" to-table="salesterritory" on-delete="restrict" on-update="restrict">
+      <fk name="FK_StateProvince_SalesTerritory_TerritoryID" to-table="salesterritory" on-delete="no action" on-update="no action">
         <column name="territoryid" references="territoryid"></column>
       </fk>
     </table>
@@ -255,7 +255,7 @@
       <pk name="PK_Employee_BusinessEntityID">
         <column name="businessentityid"></column>
       </pk>
-      <fk name="FK_Employee_Person_BusinessEntityID" to-table="person" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Employee_Person_BusinessEntityID" to-table="person" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
       <check name="CK_Employee_BirthDate"><![CDATA[birthdate >= '1930-01-01'::date AND birthdate <= (now() - '18 years'::interval)]]></check>
@@ -278,13 +278,13 @@
         <column name="departmentid"></column>
         <column name="shiftid"></column>
       </pk>
-      <fk name="FK_EmployeeDepartmentHistory_Department_DepartmentID" to-table="department" on-delete="restrict" on-update="restrict">
+      <fk name="FK_EmployeeDepartmentHistory_Department_DepartmentID" to-table="department" on-delete="no action" on-update="no action">
         <column name="departmentid" references="departmentid"></column>
       </fk>
-      <fk name="FK_EmployeeDepartmentHistory_Employee_BusinessEntityID" to-table="employee" on-delete="restrict" on-update="restrict">
+      <fk name="FK_EmployeeDepartmentHistory_Employee_BusinessEntityID" to-table="employee" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
-      <fk name="FK_EmployeeDepartmentHistory_Shift_ShiftID" to-table="shift" on-delete="restrict" on-update="restrict">
+      <fk name="FK_EmployeeDepartmentHistory_Shift_ShiftID" to-table="shift" on-delete="no action" on-update="no action">
         <column name="shiftid" references="shiftid"></column>
       </fk>
       <check name="CK_EmployeeDepartmentHistory_EndDate"><![CDATA[enddate >= startdate OR enddate IS NULL]]></check>
@@ -299,7 +299,7 @@
         <column name="businessentityid"></column>
         <column name="ratechangedate"></column>
       </pk>
-      <fk name="FK_EmployeePayHistory_Employee_BusinessEntityID" to-table="employee" on-delete="restrict" on-update="restrict">
+      <fk name="FK_EmployeePayHistory_Employee_BusinessEntityID" to-table="employee" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
       <check name="CK_EmployeePayHistory_PayFrequency"><![CDATA[payfrequency = ANY (ARRAY[1, 2])]]></check>
@@ -315,7 +315,7 @@
       <pk name="PK_JobCandidate_JobCandidateID">
         <column name="jobcandidateid"></column>
       </pk>
-      <fk name="FK_JobCandidate_Employee_BusinessEntityID" to-table="employee" on-delete="restrict" on-update="restrict">
+      <fk name="FK_JobCandidate_Employee_BusinessEntityID" to-table="employee" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
     </table>
@@ -346,13 +346,13 @@
       <pk name="PK_BillOfMaterials_BillOfMaterialsID">
         <column name="billofmaterialsid"></column>
       </pk>
-      <fk name="FK_BillOfMaterials_Product_ProductAssemblyID" to-table="product" on-delete="restrict" on-update="restrict">
+      <fk name="FK_BillOfMaterials_Product_ProductAssemblyID" to-table="product" on-delete="no action" on-update="no action">
         <column name="productassemblyid" references="productid"></column>
       </fk>
-      <fk name="FK_BillOfMaterials_Product_ComponentID" to-table="product" on-delete="restrict" on-update="restrict">
+      <fk name="FK_BillOfMaterials_Product_ComponentID" to-table="product" on-delete="no action" on-update="no action">
         <column name="componentid" references="productid"></column>
       </fk>
-      <fk name="FK_BillOfMaterials_UnitMeasure_UnitMeasureCode" to-table="unitmeasure" on-delete="restrict" on-update="restrict">
+      <fk name="FK_BillOfMaterials_UnitMeasure_UnitMeasureCode" to-table="unitmeasure" on-delete="no action" on-update="no action">
         <column name="unitmeasurecode" references="unitmeasurecode"></column>
       </fk>
       <check name="CK_BillOfMaterials_EndDate"><![CDATA[enddate > startdate OR enddate IS NULL]]></check>
@@ -385,7 +385,7 @@
       <pk name="PK_Document_DocumentNode">
         <column name="documentnode"></column>
       </pk>
-      <fk name="FK_Document_Employee_Owner" to-table="employee" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Document_Employee_Owner" to-table="employee" on-delete="no action" on-update="no action">
         <column name="owner" references="businessentityid"></column>
       </fk>
       <unique name="document_rowguid_key">
@@ -448,16 +448,16 @@
       <pk name="PK_Product_ProductID">
         <column name="productid"></column>
       </pk>
-      <fk name="FK_Product_UnitMeasure_SizeUnitMeasureCode" to-table="unitmeasure" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Product_UnitMeasure_SizeUnitMeasureCode" to-table="unitmeasure" on-delete="no action" on-update="no action">
         <column name="sizeunitmeasurecode" references="unitmeasurecode"></column>
       </fk>
-      <fk name="FK_Product_UnitMeasure_WeightUnitMeasureCode" to-table="unitmeasure" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Product_UnitMeasure_WeightUnitMeasureCode" to-table="unitmeasure" on-delete="no action" on-update="no action">
         <column name="weightunitmeasurecode" references="unitmeasurecode"></column>
       </fk>
-      <fk name="FK_Product_ProductModel_ProductModelID" to-table="productmodel" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Product_ProductModel_ProductModelID" to-table="productmodel" on-delete="no action" on-update="no action">
         <column name="productmodelid" references="productmodelid"></column>
       </fk>
-      <fk name="FK_Product_ProductSubcategory_ProductSubcategoryID" to-table="productsubcategory" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Product_ProductSubcategory_ProductSubcategoryID" to-table="productsubcategory" on-delete="no action" on-update="no action">
         <column name="productsubcategoryid" references="productsubcategoryid"></column>
       </fk>
       <check name="CK_Product_SafetyStockLevel"><![CDATA[safetystocklevel > 0]]></check>
@@ -492,7 +492,7 @@
         <column name="productid"></column>
         <column name="startdate"></column>
       </pk>
-      <fk name="FK_ProductCostHistory_Product_ProductID" to-table="product" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductCostHistory_Product_ProductID" to-table="product" on-delete="no action" on-update="no action">
         <column name="productid" references="productid"></column>
       </fk>
       <check name="CK_ProductCostHistory_EndDate"><![CDATA[enddate >= startdate OR enddate IS NULL]]></check>
@@ -517,10 +517,10 @@
         <column name="productid"></column>
         <column name="documentnode"></column>
       </pk>
-      <fk name="FK_ProductDocument_Product_ProductID" to-table="product" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductDocument_Product_ProductID" to-table="product" on-delete="no action" on-update="no action">
         <column name="productid" references="productid"></column>
       </fk>
-      <fk name="FK_ProductDocument_Document_DocumentNode" to-table="document" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductDocument_Document_DocumentNode" to-table="document" on-delete="no action" on-update="no action">
         <column name="documentnode" references="documentnode"></column>
       </fk>
     </table>
@@ -536,10 +536,10 @@
         <column name="productid"></column>
         <column name="locationid"></column>
       </pk>
-      <fk name="FK_ProductInventory_Location_LocationID" to-table="location" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductInventory_Location_LocationID" to-table="location" on-delete="no action" on-update="no action">
         <column name="locationid" references="locationid"></column>
       </fk>
-      <fk name="FK_ProductInventory_Product_ProductID" to-table="product" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductInventory_Product_ProductID" to-table="product" on-delete="no action" on-update="no action">
         <column name="productid" references="productid"></column>
       </fk>
       <check name="CK_ProductInventory_Bin"><![CDATA[bin >= 0 AND bin <= 100]]></check>
@@ -554,7 +554,7 @@
         <column name="productid"></column>
         <column name="startdate"></column>
       </pk>
-      <fk name="FK_ProductListPriceHistory_Product_ProductID" to-table="product" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductListPriceHistory_Product_ProductID" to-table="product" on-delete="no action" on-update="no action">
         <column name="productid" references="productid"></column>
       </fk>
       <check name="CK_ProductListPriceHistory_EndDate"><![CDATA[enddate >= startdate OR enddate IS NULL]]></check>
@@ -581,10 +581,10 @@
         <column name="productmodelid"></column>
         <column name="illustrationid"></column>
       </pk>
-      <fk name="FK_ProductModelIllustration_ProductModel_ProductModelID" to-table="productmodel" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductModelIllustration_ProductModel_ProductModelID" to-table="productmodel" on-delete="no action" on-update="no action">
         <column name="productmodelid" references="productmodelid"></column>
       </fk>
-      <fk name="FK_ProductModelIllustration_Illustration_IllustrationID" to-table="illustration" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductModelIllustration_Illustration_IllustrationID" to-table="illustration" on-delete="no action" on-update="no action">
         <column name="illustrationid" references="illustrationid"></column>
       </fk>
     </table>
@@ -598,13 +598,13 @@
         <column name="productdescriptionid"></column>
         <column name="cultureid"></column>
       </pk>
-      <fk name="FK_ProductModelProductDescriptionCulture_ProductDescription_Pro" to-table="productdescription" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductModelProductDescriptionCulture_ProductDescription_Pro" to-table="productdescription" on-delete="no action" on-update="no action">
         <column name="productdescriptionid" references="productdescriptionid"></column>
       </fk>
-      <fk name="FK_ProductModelProductDescriptionCulture_Culture_CultureID" to-table="culture" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductModelProductDescriptionCulture_Culture_CultureID" to-table="culture" on-delete="no action" on-update="no action">
         <column name="cultureid" references="cultureid"></column>
       </fk>
-      <fk name="FK_ProductModelProductDescriptionCulture_ProductModel_ProductMo" to-table="productmodel" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductModelProductDescriptionCulture_ProductModel_ProductMo" to-table="productmodel" on-delete="no action" on-update="no action">
         <column name="productmodelid" references="productmodelid"></column>
       </fk>
     </table>
@@ -630,10 +630,10 @@
         <column name="productid"></column>
         <column name="productphotoid"></column>
       </pk>
-      <fk name="FK_ProductProductPhoto_Product_ProductID" to-table="product" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductProductPhoto_Product_ProductID" to-table="product" on-delete="no action" on-update="no action">
         <column name="productid" references="productid"></column>
       </fk>
-      <fk name="FK_ProductProductPhoto_ProductPhoto_ProductPhotoID" to-table="productphoto" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductProductPhoto_ProductPhoto_ProductPhotoID" to-table="productphoto" on-delete="no action" on-update="no action">
         <column name="productphotoid" references="productphotoid"></column>
       </fk>
     </table>
@@ -651,7 +651,7 @@
       <pk name="PK_ProductReview_ProductReviewID">
         <column name="productreviewid"></column>
       </pk>
-      <fk name="FK_ProductReview_Product_ProductID" to-table="product" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductReview_Product_ProductID" to-table="product" on-delete="no action" on-update="no action">
         <column name="productid" references="productid"></column>
       </fk>
       <check name="CK_ProductReview_Rating"><![CDATA[rating >= 1 AND rating <= 5]]></check>
@@ -667,7 +667,7 @@
       <pk name="PK_ProductSubcategory_ProductSubcategoryID">
         <column name="productsubcategoryid"></column>
       </pk>
-      <fk name="FK_ProductSubcategory_ProductCategory_ProductCategoryID" to-table="productcategory" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductSubcategory_ProductCategory_ProductCategoryID" to-table="productcategory" on-delete="no action" on-update="no action">
         <column name="productcategoryid" references="productcategoryid"></column>
       </fk>
     </table>
@@ -696,7 +696,7 @@
       <pk name="PK_TransactionHistory_TransactionID">
         <column name="transactionid"></column>
       </pk>
-      <fk name="FK_TransactionHistory_Product_ProductID" to-table="product" on-delete="restrict" on-update="restrict">
+      <fk name="FK_TransactionHistory_Product_ProductID" to-table="product" on-delete="no action" on-update="no action">
         <column name="productid" references="productid"></column>
       </fk>
       <check name="CK_TransactionHistory_TransactionType"><![CDATA[upper(transactiontype::text) = ANY (ARRAY['W'::text, 'S'::text, 'P'::text])]]></check>
@@ -739,10 +739,10 @@
       <pk name="PK_WorkOrder_WorkOrderID">
         <column name="workorderid"></column>
       </pk>
-      <fk name="FK_WorkOrder_Product_ProductID" to-table="product" on-delete="restrict" on-update="restrict">
+      <fk name="FK_WorkOrder_Product_ProductID" to-table="product" on-delete="no action" on-update="no action">
         <column name="productid" references="productid"></column>
       </fk>
-      <fk name="FK_WorkOrder_ScrapReason_ScrapReasonID" to-table="scrapreason" on-delete="restrict" on-update="restrict">
+      <fk name="FK_WorkOrder_ScrapReason_ScrapReasonID" to-table="scrapreason" on-delete="no action" on-update="no action">
         <column name="scrapreasonid" references="scrapreasonid"></column>
       </fk>
       <check name="CK_WorkOrder_OrderQty"><![CDATA[orderqty > 0]]></check>
@@ -767,10 +767,10 @@
         <column name="productid"></column>
         <column name="operationsequence"></column>
       </pk>
-      <fk name="FK_WorkOrderRouting_Location_LocationID" to-table="location" on-delete="restrict" on-update="restrict">
+      <fk name="FK_WorkOrderRouting_Location_LocationID" to-table="location" on-delete="no action" on-update="no action">
         <column name="locationid" references="locationid"></column>
       </fk>
-      <fk name="FK_WorkOrderRouting_WorkOrder_WorkOrderID" to-table="workorder" on-delete="restrict" on-update="restrict">
+      <fk name="FK_WorkOrderRouting_WorkOrder_WorkOrderID" to-table="workorder" on-delete="no action" on-update="no action">
         <column name="workorderid" references="workorderid"></column>
       </fk>
       <check name="CK_WorkOrderRouting_ScheduledEndDate"><![CDATA[scheduledenddate >= scheduledstartdate]]></check>
@@ -795,13 +795,13 @@
         <column name="productid"></column>
         <column name="businessentityid"></column>
       </pk>
-      <fk name="FK_ProductVendor_Product_ProductID" to-table="product" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductVendor_Product_ProductID" to-table="product" on-delete="no action" on-update="no action">
         <column name="productid" references="productid"></column>
       </fk>
-      <fk name="FK_ProductVendor_UnitMeasure_UnitMeasureCode" to-table="unitmeasure" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductVendor_UnitMeasure_UnitMeasureCode" to-table="unitmeasure" on-delete="no action" on-update="no action">
         <column name="unitmeasurecode" references="unitmeasurecode"></column>
       </fk>
-      <fk name="FK_ProductVendor_Vendor_BusinessEntityID" to-table="vendor" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ProductVendor_Vendor_BusinessEntityID" to-table="vendor" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
       <check name="CK_ProductVendor_AverageLeadTime"><![CDATA[averageleadtime >= 1]]></check>
@@ -827,10 +827,10 @@
         <column name="purchaseorderid"></column>
         <column name="purchaseorderdetailid"></column>
       </pk>
-      <fk name="FK_PurchaseOrderDetail_Product_ProductID" to-table="product" on-delete="restrict" on-update="restrict">
+      <fk name="FK_PurchaseOrderDetail_Product_ProductID" to-table="product" on-delete="no action" on-update="no action">
         <column name="productid" references="productid"></column>
       </fk>
-      <fk name="FK_PurchaseOrderDetail_PurchaseOrderHeader_PurchaseOrderID" to-table="purchaseorderheader" on-delete="restrict" on-update="restrict">
+      <fk name="FK_PurchaseOrderDetail_PurchaseOrderHeader_PurchaseOrderID" to-table="purchaseorderheader" on-delete="no action" on-update="no action">
         <column name="purchaseorderid" references="purchaseorderid"></column>
       </fk>
       <check name="CK_PurchaseOrderDetail_RejectedQty"><![CDATA[rejectedqty >= 0.00]]></check>
@@ -856,13 +856,13 @@
       <pk name="PK_PurchaseOrderHeader_PurchaseOrderID">
         <column name="purchaseorderid"></column>
       </pk>
-      <fk name="FK_PurchaseOrderHeader_Employee_EmployeeID" to-table="employee" on-delete="restrict" on-update="restrict">
+      <fk name="FK_PurchaseOrderHeader_Employee_EmployeeID" to-table="employee" on-delete="no action" on-update="no action">
         <column name="employeeid" references="businessentityid"></column>
       </fk>
-      <fk name="FK_PurchaseOrderHeader_Vendor_VendorID" to-table="vendor" on-delete="restrict" on-update="restrict">
+      <fk name="FK_PurchaseOrderHeader_Vendor_VendorID" to-table="vendor" on-delete="no action" on-update="no action">
         <column name="vendorid" references="businessentityid"></column>
       </fk>
-      <fk name="FK_PurchaseOrderHeader_ShipMethod_ShipMethodID" to-table="shipmethod" on-delete="restrict" on-update="restrict">
+      <fk name="FK_PurchaseOrderHeader_ShipMethod_ShipMethodID" to-table="shipmethod" on-delete="no action" on-update="no action">
         <column name="shipmethodid" references="shipmethodid"></column>
       </fk>
       <check name="CK_PurchaseOrderHeader_Status"><![CDATA[status >= 1 AND status <= 4]]></check>
@@ -898,7 +898,7 @@
       <pk name="PK_Vendor_BusinessEntityID">
         <column name="businessentityid"></column>
       </pk>
-      <fk name="FK_Vendor_BusinessEntity_BusinessEntityID" to-table="businessentity" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Vendor_BusinessEntity_BusinessEntityID" to-table="businessentity" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
       <check name="CK_Vendor_CreditRating"><![CDATA[creditrating >= 1 AND creditrating <= 5]]></check>
@@ -911,10 +911,10 @@
         <column name="countryregioncode"></column>
         <column name="currencycode"></column>
       </pk>
-      <fk name="FK_CountryRegionCurrency_CountryRegion_CountryRegionCode" to-table="countryregion" on-delete="restrict" on-update="restrict">
+      <fk name="FK_CountryRegionCurrency_CountryRegion_CountryRegionCode" to-table="countryregion" on-delete="no action" on-update="no action">
         <column name="countryregioncode" references="countryregioncode"></column>
       </fk>
-      <fk name="FK_CountryRegionCurrency_Currency_CurrencyCode" to-table="currency" on-delete="restrict" on-update="restrict">
+      <fk name="FK_CountryRegionCurrency_Currency_CurrencyCode" to-table="currency" on-delete="no action" on-update="no action">
         <column name="currencycode" references="currencycode"></column>
       </fk>
     </table>
@@ -952,10 +952,10 @@
       <pk name="PK_CurrencyRate_CurrencyRateID">
         <column name="currencyrateid"></column>
       </pk>
-      <fk name="FK_CurrencyRate_Currency_FromCurrencyCode" to-table="currency" on-delete="restrict" on-update="restrict">
+      <fk name="FK_CurrencyRate_Currency_FromCurrencyCode" to-table="currency" on-delete="no action" on-update="no action">
         <column name="fromcurrencycode" references="currencycode"></column>
       </fk>
-      <fk name="FK_CurrencyRate_Currency_ToCurrencyCode" to-table="currency" on-delete="restrict" on-update="restrict">
+      <fk name="FK_CurrencyRate_Currency_ToCurrencyCode" to-table="currency" on-delete="no action" on-update="no action">
         <column name="tocurrencycode" references="currencycode"></column>
       </fk>
     </table>
@@ -971,13 +971,13 @@
       <pk name="PK_Customer_CustomerID">
         <column name="customerid"></column>
       </pk>
-      <fk name="FK_Customer_Person_PersonID" to-table="person" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Customer_Person_PersonID" to-table="person" on-delete="no action" on-update="no action">
         <column name="personid" references="businessentityid"></column>
       </fk>
-      <fk name="FK_Customer_Store_StoreID" to-table="store" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Customer_Store_StoreID" to-table="store" on-delete="no action" on-update="no action">
         <column name="storeid" references="businessentityid"></column>
       </fk>
-      <fk name="FK_Customer_SalesTerritory_TerritoryID" to-table="salesterritory" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Customer_SalesTerritory_TerritoryID" to-table="salesterritory" on-delete="no action" on-update="no action">
         <column name="territoryid" references="territoryid"></column>
       </fk>
     </table>
@@ -989,10 +989,10 @@
         <column name="businessentityid"></column>
         <column name="creditcardid"></column>
       </pk>
-      <fk name="FK_PersonCreditCard_Person_BusinessEntityID" to-table="person" on-delete="restrict" on-update="restrict">
+      <fk name="FK_PersonCreditCard_Person_BusinessEntityID" to-table="person" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
-      <fk name="FK_PersonCreditCard_CreditCard_CreditCardID" to-table="creditcard" on-delete="restrict" on-update="restrict">
+      <fk name="FK_PersonCreditCard_CreditCard_CreditCardID" to-table="creditcard" on-delete="no action" on-update="no action">
         <column name="creditcardid" references="creditcardid"></column>
       </fk>
     </table>
@@ -1013,10 +1013,10 @@
         <column name="salesorderid"></column>
         <column name="salesorderdetailid"></column>
       </pk>
-      <fk name="FK_SalesOrderDetail_SalesOrderHeader_SalesOrderID" to-table="salesorderheader" on-delete="cascade" on-update="restrict">
+      <fk name="FK_SalesOrderDetail_SalesOrderHeader_SalesOrderID" to-table="salesorderheader" on-delete="cascade" on-update="no action">
         <column name="salesorderid" references="salesorderid"></column>
       </fk>
-      <fk name="FK_SalesOrderDetail_SpecialOfferProduct_SpecialOfferIDProductID" to-table="specialofferproduct" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesOrderDetail_SpecialOfferProduct_SpecialOfferIDProductID" to-table="specialofferproduct" on-delete="no action" on-update="no action">
         <column name="specialofferid" references="specialofferid"></column>
         <column name="productid" references="productid"></column>
       </fk>
@@ -1055,28 +1055,28 @@
       <pk name="PK_SalesOrderHeader_SalesOrderID">
         <column name="salesorderid"></column>
       </pk>
-      <fk name="FK_SalesOrderHeader_Address_BillToAddressID" to-table="address" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesOrderHeader_Address_BillToAddressID" to-table="address" on-delete="no action" on-update="no action">
         <column name="billtoaddressid" references="addressid"></column>
       </fk>
-      <fk name="FK_SalesOrderHeader_Address_ShipToAddressID" to-table="address" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesOrderHeader_Address_ShipToAddressID" to-table="address" on-delete="no action" on-update="no action">
         <column name="shiptoaddressid" references="addressid"></column>
       </fk>
-      <fk name="FK_SalesOrderHeader_CreditCard_CreditCardID" to-table="creditcard" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesOrderHeader_CreditCard_CreditCardID" to-table="creditcard" on-delete="no action" on-update="no action">
         <column name="creditcardid" references="creditcardid"></column>
       </fk>
-      <fk name="FK_SalesOrderHeader_CurrencyRate_CurrencyRateID" to-table="currencyrate" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesOrderHeader_CurrencyRate_CurrencyRateID" to-table="currencyrate" on-delete="no action" on-update="no action">
         <column name="currencyrateid" references="currencyrateid"></column>
       </fk>
-      <fk name="FK_SalesOrderHeader_Customer_CustomerID" to-table="customer" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesOrderHeader_Customer_CustomerID" to-table="customer" on-delete="no action" on-update="no action">
         <column name="customerid" references="customerid"></column>
       </fk>
-      <fk name="FK_SalesOrderHeader_SalesPerson_SalesPersonID" to-table="salesperson" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesOrderHeader_SalesPerson_SalesPersonID" to-table="salesperson" on-delete="no action" on-update="no action">
         <column name="salespersonid" references="businessentityid"></column>
       </fk>
-      <fk name="FK_SalesOrderHeader_ShipMethod_ShipMethodID" to-table="shipmethod" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesOrderHeader_ShipMethod_ShipMethodID" to-table="shipmethod" on-delete="no action" on-update="no action">
         <column name="shipmethodid" references="shipmethodid"></column>
       </fk>
-      <fk name="FK_SalesOrderHeader_SalesTerritory_TerritoryID" to-table="salesterritory" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesOrderHeader_SalesTerritory_TerritoryID" to-table="salesterritory" on-delete="no action" on-update="no action">
         <column name="territoryid" references="territoryid"></column>
       </fk>
       <check name="CK_SalesOrderHeader_Status"><![CDATA[status >= 0 AND status <= 8]]></check>
@@ -1094,10 +1094,10 @@
         <column name="salesorderid"></column>
         <column name="salesreasonid"></column>
       </pk>
-      <fk name="FK_SalesOrderHeaderSalesReason_SalesReason_SalesReasonID" to-table="salesreason" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesOrderHeaderSalesReason_SalesReason_SalesReasonID" to-table="salesreason" on-delete="no action" on-update="no action">
         <column name="salesreasonid" references="salesreasonid"></column>
       </fk>
-      <fk name="FK_SalesOrderHeaderSalesReason_SalesOrderHeader_SalesOrderID" to-table="salesorderheader" on-delete="cascade" on-update="restrict">
+      <fk name="FK_SalesOrderHeaderSalesReason_SalesOrderHeader_SalesOrderID" to-table="salesorderheader" on-delete="cascade" on-update="no action">
         <column name="salesorderid" references="salesorderid"></column>
       </fk>
     </table>
@@ -1114,10 +1114,10 @@
       <pk name="PK_SalesPerson_BusinessEntityID">
         <column name="businessentityid"></column>
       </pk>
-      <fk name="FK_SalesPerson_Employee_BusinessEntityID" to-table="employee" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesPerson_Employee_BusinessEntityID" to-table="employee" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
-      <fk name="FK_SalesPerson_SalesTerritory_TerritoryID" to-table="salesterritory" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesPerson_SalesTerritory_TerritoryID" to-table="salesterritory" on-delete="no action" on-update="no action">
         <column name="territoryid" references="territoryid"></column>
       </fk>
       <check name="CK_SalesPerson_SalesQuota"><![CDATA[salesquota > 0.00]]></check>
@@ -1136,7 +1136,7 @@
         <column name="businessentityid"></column>
         <column name="quotadate"></column>
       </pk>
-      <fk name="FK_SalesPersonQuotaHistory_SalesPerson_BusinessEntityID" to-table="salesperson" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesPersonQuotaHistory_SalesPerson_BusinessEntityID" to-table="salesperson" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
       <check name="CK_SalesPersonQuotaHistory_SalesQuota"><![CDATA[salesquota > 0.00]]></check>
@@ -1165,7 +1165,7 @@
       <pk name="PK_SalesTaxRate_SalesTaxRateID">
         <column name="salestaxrateid"></column>
       </pk>
-      <fk name="FK_SalesTaxRate_StateProvince_StateProvinceID" to-table="stateprovince" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesTaxRate_StateProvince_StateProvinceID" to-table="stateprovince" on-delete="no action" on-update="no action">
         <column name="stateprovinceid" references="stateprovinceid"></column>
       </fk>
       <check name="CK_SalesTaxRate_TaxType"><![CDATA[taxtype >= 1 AND taxtype <= 3]]></check>
@@ -1186,7 +1186,7 @@
       <pk name="PK_SalesTerritory_TerritoryID">
         <column name="territoryid"></column>
       </pk>
-      <fk name="FK_SalesTerritory_CountryRegion_CountryRegionCode" to-table="countryregion" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesTerritory_CountryRegion_CountryRegionCode" to-table="countryregion" on-delete="no action" on-update="no action">
         <column name="countryregioncode" references="countryregioncode"></column>
       </fk>
       <check name="CK_SalesTerritory_SalesYTD"><![CDATA[salesytd >= 0.00]]></check>
@@ -1206,10 +1206,10 @@
         <column name="startdate"></column>
         <column name="territoryid"></column>
       </pk>
-      <fk name="FK_SalesTerritoryHistory_SalesPerson_BusinessEntityID" to-table="salesperson" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesTerritoryHistory_SalesPerson_BusinessEntityID" to-table="salesperson" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
-      <fk name="FK_SalesTerritoryHistory_SalesTerritory_TerritoryID" to-table="salesterritory" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SalesTerritoryHistory_SalesTerritory_TerritoryID" to-table="salesterritory" on-delete="no action" on-update="no action">
         <column name="territoryid" references="territoryid"></column>
       </fk>
       <check name="CK_SalesTerritoryHistory_EndDate"><![CDATA[enddate >= startdate OR enddate IS NULL]]></check>
@@ -1226,7 +1226,7 @@
       <pk name="PK_ShoppingCartItem_ShoppingCartItemID">
         <column name="shoppingcartitemid"></column>
       </pk>
-      <fk name="FK_ShoppingCartItem_Product_ProductID" to-table="product" on-delete="restrict" on-update="restrict">
+      <fk name="FK_ShoppingCartItem_Product_ProductID" to-table="product" on-delete="no action" on-update="no action">
         <column name="productid" references="productid"></column>
       </fk>
       <check name="CK_ShoppingCartItem_Quantity"><![CDATA[quantity >= 1]]></check>
@@ -1262,10 +1262,10 @@
         <column name="specialofferid"></column>
         <column name="productid"></column>
       </pk>
-      <fk name="FK_SpecialOfferProduct_Product_ProductID" to-table="product" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SpecialOfferProduct_Product_ProductID" to-table="product" on-delete="no action" on-update="no action">
         <column name="productid" references="productid"></column>
       </fk>
-      <fk name="FK_SpecialOfferProduct_SpecialOffer_SpecialOfferID" to-table="specialoffer" on-delete="restrict" on-update="restrict">
+      <fk name="FK_SpecialOfferProduct_SpecialOffer_SpecialOfferID" to-table="specialoffer" on-delete="no action" on-update="no action">
         <column name="specialofferid" references="specialofferid"></column>
       </fk>
     </table>
@@ -1279,10 +1279,10 @@
       <pk name="PK_Store_BusinessEntityID">
         <column name="businessentityid"></column>
       </pk>
-      <fk name="FK_Store_BusinessEntity_BusinessEntityID" to-table="businessentity" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Store_BusinessEntity_BusinessEntityID" to-table="businessentity" on-delete="no action" on-update="no action">
         <column name="businessentityid" references="businessentityid"></column>
       </fk>
-      <fk name="FK_Store_SalesPerson_SalesPersonID" to-table="salesperson" on-delete="restrict" on-update="restrict">
+      <fk name="FK_Store_SalesPerson_SalesPersonID" to-table="salesperson" on-delete="no action" on-update="no action">
         <column name="salespersonid" references="businessentityid"></column>
       </fk>
     </table>

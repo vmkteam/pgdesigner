@@ -63,7 +63,7 @@ Usage:
   pgdesigner version                 print version and exit
   pgdesigner convert <file>          convert .dbs/.dm2/.pdd/.sql to .pgd
   pgdesigner lint <schema.pgd>       validate schema (use -fix to auto-fix)
-  pgdesigner diff <old> <new>        generate ALTER migration SQL
+  pgdesigner diff <old> <new>        generate ALTER migration SQL (-o to write to file)
   pgdesigner generate <schema.pgd>   generate DDL SQL
   pgdesigner merge <base> <overlay>  merge two schemas into one .pgd
   pgdesigner testdata <schema.pgd>  generate test data INSERT SQL

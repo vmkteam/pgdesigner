@@ -69,7 +69,8 @@ async function createTable(schemaName: string) {
   if (!name) return
   try {
     const defaultSchema = store.info?.schemas?.[0] || 'public'
-    await createTableWithPK(schemaName, name, defaultSchema)
+    const naming = store.settings?.namingConvention || 'snake_case'
+    await createTableWithPK(schemaName, name, defaultSchema, naming)
     await store.loadAll()
   } catch (e: unknown) {
     showToast('Create failed: ' + (e instanceof Error ? e.message : e))

@@ -94,6 +94,72 @@ func TestProjectStore_UpdateTableIndexes(t *testing.T) {
 	assert.Equal(t, "idx_email", idxs[0].Name)
 }
 
+func TestProjectStore_UpdateTableIndexes_PreservesPosition(t *testing.T) {
+	p := &pgd.Project{
+		Version: 1, DefaultSchema: "public",
+		Schemas: []pgd.Schema{{
+			Name: "public",
+			Tables: []pgd.Table{
+				{Name: "a"}, {Name: "b"}, {Name: "c"},
+			},
+			Indexes: []pgd.Index{
+				{Name: "ia1", Table: "a"},
+				{Name: "ib1", Table: "b"},
+				{Name: "ib2", Table: "b"},
+				{Name: "ic1", Table: "c"},
+				{Name: "ia2", Table: "a"},
+			},
+		}},
+	}
+
+	tests := []struct {
+		name   string
+		table  string
+		input  []pgd.Index
+		expect []string
+	}{
+		{
+			name:  "replace b-block in place, c stays after b",
+			table: "b",
+			input: []pgd.Index{
+				{Name: "ib1", Table: "b"},
+				{Name: "ib2", Table: "b"},
+				{Name: "ib_new", Table: "b"},
+			},
+			expect: []string{"ia1", "ib1", "ib2", "ib_new", "ic1", "ia2"},
+		},
+		{
+			name:  "add first index for table without any: append to end",
+			table: "c",
+			input: []pgd.Index{
+				{Name: "ic1", Table: "c"},
+				{Name: "ic2", Table: "c"},
+			},
+			expect: []string{"ia1", "ib1", "ib2", "ic1", "ic2", "ia2"},
+		},
+		{
+			name:   "empty input drops the table's indexes, keeps others",
+			table:  "a",
+			input:  nil,
+			expect: []string{"ib1", "ib2", "ic1"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := NewProjectStore(deepCopyProject(p), "")
+			require.NoError(t, s.UpdateTableIndexes(tc.table, tc.input))
+
+			got := s.Project().Schemas[0].Indexes
+			names := make([]string, len(got))
+			for i, idx := range got {
+				names[i] = idx.Name
+			}
+			assert.Equal(t, tc.expect, names)
+		})
+	}
+}
+
 func TestProjectStore_UpdateTableGeneral(t *testing.T) {
 	s := NewProjectStore(testProject(), "")
 
@@ -185,6 +251,7 @@ func TestProjectStore_SaveBackup(t *testing.T) {
 func TestProjectStore_NotFound(t *testing.T) {
 	s := NewProjectStore(testProject(), "")
 	require.Error(t, s.UpdateTableColumns("nonexistent", nil))
+	require.Error(t, s.UpdateTableIndexes("nonexistent", nil))
 	require.Error(t, s.DeleteTable("nonexistent"))
 	require.Error(t, s.CreateTable("nonexistent_schema", "t"))
 }

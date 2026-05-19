@@ -281,7 +281,39 @@ func convertIndex(tableName string, idx pgIndex) *pgd.Index {
 		}
 	}
 
+	include, nullsNotDistinct, tablespace := parseIndexExtras(idx.Def)
+	if len(include) > 0 {
+		out.Include = &pgd.Include{Columns: include}
+	}
+	if nullsNotDistinct {
+		out.NullsDistinct = "false"
+	}
+	if tablespace != "" {
+		out.Tablespace = tablespace
+	}
+
 	return out
+}
+
+// parseIndexExtras extracts INCLUDE columns, NULLS NOT DISTINCT, and TABLESPACE
+// from a CREATE INDEX statement (typically pg_get_indexdef output).
+func parseIndexExtras(def string) (include []pgd.ColRef, nullsNotDistinct bool, tablespace string) {
+	tree, err := pgquery.Parse(def)
+	if err != nil || len(tree.Stmts) == 0 {
+		return nil, false, ""
+	}
+	stmt := tree.Stmts[0].Stmt.GetIndexStmt()
+	if stmt == nil {
+		return nil, false, ""
+	}
+	for _, n := range stmt.IndexIncludingParams {
+		ie, ok := n.Node.(*pg.Node_IndexElem)
+		if !ok || ie.IndexElem.Name == "" {
+			continue
+		}
+		include = append(include, pgd.ColRef{Name: ie.IndexElem.Name})
+	}
+	return include, stmt.NullsNotDistinct, stmt.TableSpace
 }
 
 // parseExcludeConstraintDef parses pg_get_constraintdef output for EXCLUDE constraints
@@ -390,80 +422,60 @@ func splitIndexWith(def string) (string, []pgd.WithParam) {
 	return def[:idx+1] + rest, params
 }
 
-// parseIndexColumns extracts columns with sort direction from pg_get_indexdef output.
+// parseIndexColumns extracts columns and expressions (with sort direction and
+// operator class) from pg_get_indexdef output by parsing it via pg_query.
+// Expressions are returned with surrounding parens so callers can route them
+// through pgd.IsExpression.
 func parseIndexColumns(def string) []pgd.ColRef {
-	onIdx := strings.Index(strings.ToUpper(def), " ON ")
-	if onIdx < 0 {
+	tree, err := pgquery.Parse(def)
+	if err != nil || len(tree.Stmts) == 0 {
 		return nil
 	}
-	start := strings.IndexByte(def[onIdx:], '(')
-	if start < 0 {
+	is := tree.Stmts[0].Stmt.GetIndexStmt()
+	if is == nil {
 		return nil
 	}
-	start += onIdx
-	depth := 1
-	end := start + 1
-	for end < len(def) && depth > 0 {
-		switch def[end] {
-		case '(':
-			depth++
-		case ')':
-			depth--
-		}
-		end++
-	}
-	if depth != 0 {
-		return nil
-	}
-	inner := def[start+1 : end-1]
-
-	parts := splitTopLevel(inner, ',')
 	var cols []pgd.ColRef
-	for _, p := range parts {
-		col := strings.TrimSpace(p)
+	for _, p := range is.IndexParams {
+		ie := p.GetIndexElem()
+		if ie == nil {
+			continue
+		}
 		var ref pgd.ColRef
-		if strings.HasSuffix(col, " NULLS FIRST") {
-			ref.Nulls = "first"
-			col = strings.TrimSuffix(col, " NULLS FIRST")
-		} else if strings.HasSuffix(col, " NULLS LAST") {
-			ref.Nulls = "last"
-			col = strings.TrimSuffix(col, " NULLS LAST")
+		switch {
+		case ie.Name != "":
+			ref.Name = ie.Name
+		case ie.Expr != nil:
+			ref.Name = "(" + nodeToSQL(ie.Expr) + ")"
+		default:
+			continue
 		}
-		if strings.HasSuffix(col, " DESC") {
+		if ie.Ordering == pg.SortByDir_SORTBY_DESC {
 			ref.Order = "desc"
-			col = strings.TrimSuffix(col, " DESC")
-		} else {
-			col = strings.TrimSuffix(col, " ASC")
 		}
-		col = strings.TrimSpace(col)
-		if col != "" {
-			ref.Name = col
-			cols = append(cols, ref)
+		switch ie.NullsOrdering {
+		case pg.SortByNulls_SORTBY_NULLS_FIRST:
+			ref.Nulls = "first"
+		case pg.SortByNulls_SORTBY_NULLS_LAST:
+			ref.Nulls = "last"
 		}
+		if op := lastQualName(ie.Opclass); op != "" {
+			ref.Opclass = op
+		}
+		cols = append(cols, ref)
 	}
 	return cols
 }
 
-// splitTopLevel splits a string by sep, but only at the top level (not inside parentheses).
-func splitTopLevel(s string, sep byte) []string {
-	var parts []string
-	depth := 0
-	start := 0
-	for i := range len(s) {
-		switch s[i] {
-		case '(':
-			depth++
-		case ')':
-			depth--
-		case sep:
-			if depth == 0 {
-				parts = append(parts, s[start:i])
-				start = i + 1
-			}
+// lastQualName returns the last string component of a qualified name node
+// list (e.g. ["pg_catalog","gin_trgm_ops"] → "gin_trgm_ops").
+func lastQualName(nodes []*pg.Node) string {
+	for i := len(nodes) - 1; i >= 0; i-- {
+		if s, ok := nodes[i].Node.(*pg.Node_String_); ok {
+			return s.String_.Sval
 		}
 	}
-	parts = append(parts, s[start:])
-	return parts
+	return ""
 }
 
 func convertSequence(s pgSequence) pgd.Sequence {

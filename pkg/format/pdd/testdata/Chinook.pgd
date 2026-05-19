@@ -18,7 +18,7 @@
       <pk name="PK_Album">
         <column name="AlbumId"></column>
       </pk>
-      <fk name="FK_AlbumArtistId" to-table="Artist" on-delete="restrict" on-update="restrict">
+      <fk name="FK_AlbumArtistId" to-table="Artist" on-delete="no action" on-update="no action">
         <column name="ArtistId" references="ArtistId"></column>
       </fk>
     </table>
@@ -46,7 +46,7 @@
       <pk name="PK_Customer">
         <column name="CustomerId"></column>
       </pk>
-      <fk name="FK_CustomerSupportRepId" to-table="Employee" on-delete="restrict" on-update="restrict">
+      <fk name="FK_CustomerSupportRepId" to-table="Employee" on-delete="no action" on-update="no action">
         <column name="SupportRepId" references="EmployeeId"></column>
       </fk>
     </table>
@@ -69,7 +69,7 @@
       <pk name="PK_Employee">
         <column name="EmployeeId"></column>
       </pk>
-      <fk name="FK_EmployeeReportsTo" to-table="Employee" on-delete="restrict" on-update="restrict">
+      <fk name="FK_EmployeeReportsTo" to-table="Employee" on-delete="no action" on-update="no action">
         <column name="ReportsTo" references="EmployeeId"></column>
       </fk>
     </table>
@@ -93,7 +93,7 @@
       <pk name="PK_Invoice">
         <column name="InvoiceId"></column>
       </pk>
-      <fk name="FK_InvoiceCustomerId" to-table="Customer" on-delete="restrict" on-update="restrict">
+      <fk name="FK_InvoiceCustomerId" to-table="Customer" on-delete="no action" on-update="no action">
         <column name="CustomerId" references="CustomerId"></column>
       </fk>
     </table>
@@ -106,10 +106,10 @@
       <pk name="PK_InvoiceLine">
         <column name="InvoiceLineId"></column>
       </pk>
-      <fk name="FK_InvoiceLineInvoiceId" to-table="Invoice" on-delete="restrict" on-update="restrict">
+      <fk name="FK_InvoiceLineInvoiceId" to-table="Invoice" on-delete="no action" on-update="no action">
         <column name="InvoiceId" references="InvoiceId"></column>
       </fk>
-      <fk name="FK_InvoiceLineTrackId" to-table="Track" on-delete="restrict" on-update="restrict">
+      <fk name="FK_InvoiceLineTrackId" to-table="Track" on-delete="no action" on-update="no action">
         <column name="TrackId" references="TrackId"></column>
       </fk>
     </table>
@@ -134,10 +134,10 @@
         <column name="PlaylistId"></column>
         <column name="TrackId"></column>
       </pk>
-      <fk name="FK_PlaylistTrackPlaylistId" to-table="Playlist" on-delete="restrict" on-update="restrict">
+      <fk name="FK_PlaylistTrackPlaylistId" to-table="Playlist" on-delete="no action" on-update="no action">
         <column name="PlaylistId" references="PlaylistId"></column>
       </fk>
-      <fk name="FK_PlaylistTrackTrackId" to-table="Track" on-delete="restrict" on-update="restrict">
+      <fk name="FK_PlaylistTrackTrackId" to-table="Track" on-delete="no action" on-update="no action">
         <column name="TrackId" references="TrackId"></column>
       </fk>
     </table>
@@ -154,13 +154,13 @@
       <pk name="PK_Track">
         <column name="TrackId"></column>
       </pk>
-      <fk name="FK_TrackAlbumId" to-table="Album" on-delete="restrict" on-update="restrict">
+      <fk name="FK_TrackAlbumId" to-table="Album" on-delete="no action" on-update="no action">
         <column name="AlbumId" references="AlbumId"></column>
       </fk>
-      <fk name="FK_TrackGenreId" to-table="Genre" on-delete="restrict" on-update="restrict">
+      <fk name="FK_TrackGenreId" to-table="Genre" on-delete="no action" on-update="no action">
         <column name="GenreId" references="GenreId"></column>
       </fk>
-      <fk name="FK_TrackMediaTypeId" to-table="MediaType" on-delete="restrict" on-update="restrict">
+      <fk name="FK_TrackMediaTypeId" to-table="MediaType" on-delete="no action" on-update="no action">
         <column name="MediaTypeId" references="MediaTypeId"></column>
       </fk>
     </table>

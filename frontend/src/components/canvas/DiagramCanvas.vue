@@ -374,7 +374,8 @@ async function executeCreateTable(event: MouseEvent) {
 
   try {
     const defaultSchema = store.info?.schemas?.[0] || 'public'
-    const fullName = await createTableWithPK(schemaName, name, defaultSchema)
+    const naming = store.settings?.namingConvention || 'snake_case'
+    const fullName = await createTableWithPK(schemaName, name, defaultSchema, naming)
 
     // Calculate click position in canvas coordinates
     let posX = 0, posY = 0

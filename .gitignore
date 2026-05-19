@@ -10,7 +10,7 @@ demo-fst/
 .idea/
 
 # Go binary
-pgdesigner
+/pgdesigner
 
 # Frontend
 node_modules/

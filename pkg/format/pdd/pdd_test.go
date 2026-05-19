@@ -81,6 +81,25 @@ func TestConvert(t *testing.T) {
 	}
 }
 
+func TestRefAction(t *testing.T) {
+	tests := []struct {
+		code int
+		want string
+	}{
+		{0, "restrict"},
+		{1, "cascade"},
+		{2, "set-null"},
+		{3, "no action"},
+		{4, "set-default"},
+		{99, "no action"},
+	}
+	for _, tt := range tests {
+		if got := refAction(tt.code); got != tt.want {
+			t.Errorf("refAction(%d): got %q, want %q", tt.code, got, tt.want)
+		}
+	}
+}
+
 func splitLines(s string) []string {
 	var lines []string
 	start := 0

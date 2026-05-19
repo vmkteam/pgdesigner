@@ -65,3 +65,12 @@ func pgdFilePath(path string) string {
 	}
 	return path
 }
+
+// writeOutput writes data to path, or to stdout when path is empty.
+func writeOutput(path string, data []byte) error {
+	if path == "" {
+		_, err := os.Stdout.Write(data)
+		return err
+	}
+	return os.WriteFile(path, data, 0644)
+}

@@ -149,6 +149,12 @@ CREATE INDEX idx_audit_table_record ON audit_log (table_name, record_id);
 CREATE INDEX idx_audit_created ON audit_log (created_at DESC);
 CREATE INDEX idx_categories_parent ON categories (parent_id);
 
+-- Covering index with INCLUDE
+CREATE UNIQUE INDEX idx_documents_author_include ON documents (author_id, title) INCLUDE (status, version);
+
+-- NULLS NOT DISTINCT
+CREATE UNIQUE INDEX idx_categories_slug_nnd ON categories (slug) NULLS NOT DISTINCT;
+
 -- Row Level Security
 ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
 

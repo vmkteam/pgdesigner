@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+        Required for wazero (WASM runtime used by wasilibs/go-pgquery) to
+        allocate JIT pages on hardened runtime. Without these entitlements,
+        macOS 26+ codesigning monitor kills the process with SIGKILL
+        (Code Signature Invalid / Invalid Page) when wazero compiles WASM
+        on large SQL inputs.
+    -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+</dict>
+</plist>

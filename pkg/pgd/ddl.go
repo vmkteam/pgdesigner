@@ -1103,9 +1103,15 @@ func (d *ddlWriter) writeIndex(q string, idx *Index) {
 	} else {
 		d.S("CREATE INDEX ")
 	}
+	d.If(idx.Concurrently == "true", "CONCURRENTLY ")
 	d.P("%s ON %s%s", QuoteIdent(idx.Name), q, QuoteIdent(idx.Table))
 	d.If(idx.Using != "" && idx.Using != "btree", " USING %s", strings.ToUpper(idx.Using))
 	d.P(" (\n%s\n)", indexElements(idx))
+	// PG clause order: ON (...) USING ... (cols) INCLUDE NULLS WITH TABLESPACE WHERE
+	if idx.Include != nil && len(idx.Include.Columns) > 0 {
+		d.P("\n\tINCLUDE (%s)", QuotedColList(idx.Include.Columns))
+	}
+	d.If(idx.NullsDistinct == "false", "\n\tNULLS NOT DISTINCT")
 	if idx.With != nil && len(idx.With.Params) > 0 {
 		var params []string
 		for _, p := range idx.With.Params {
@@ -1113,6 +1119,7 @@ func (d *ddlWriter) writeIndex(q string, idx *Index) {
 		}
 		d.P("\n\tWITH (%s)", strings.Join(params, ", "))
 	}
+	d.If(idx.Tablespace != "", "\n\tTABLESPACE %s", QuoteIdent(idx.Tablespace))
 	if idx.Where != nil && idx.Where.Value != "" {
 		d.P("\n\tWHERE %s", idx.Where.Value)
 	}

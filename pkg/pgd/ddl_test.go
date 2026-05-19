@@ -567,6 +567,43 @@ func TestWriteIndex(t *testing.T) {
 	assert.Contains(t, sql, "WHERE")
 }
 
+func TestWriteIndex_FullOptions(t *testing.T) {
+	idx := &Index{
+		Name:          "ix_orders_full",
+		Table:         "orders",
+		Unique:        "true",
+		Using:         "btree",
+		Concurrently:  "true",
+		NullsDistinct: "false",
+		Tablespace:    "fastssd",
+		Columns:       []ColRef{{Name: "customerId"}},
+		Include:       &Include{Columns: []ColRef{{Name: "totalAmount"}, {Name: "createdAt"}}},
+		With:          &With{Params: []WithParam{{Name: "fillfactor", Value: "80"}}},
+		Where:         &WhereClause{Value: `"statusId" = 1`},
+	}
+
+	var buf bytes.Buffer
+	require.NoError(t, WriteIndex(&buf, "", idx))
+	sql := buf.String()
+
+	assert.Contains(t, sql, `CREATE UNIQUE INDEX CONCURRENTLY "ix_orders_full" ON "orders"`)
+	assert.Contains(t, sql, `INCLUDE ("totalAmount", "createdAt")`)
+	assert.Contains(t, sql, "NULLS NOT DISTINCT")
+	assert.Contains(t, sql, `WITH (fillfactor='80')`)
+	assert.Contains(t, sql, `TABLESPACE "fastssd"`)
+	assert.Contains(t, sql, `WHERE "statusId" = 1`)
+
+	idxInclude := strings.Index(sql, "INCLUDE")
+	idxNullsDist := strings.Index(sql, "NULLS NOT DISTINCT")
+	idxWith := strings.Index(sql, "WITH")
+	idxTablespace := strings.Index(sql, "TABLESPACE")
+	idxWhere := strings.Index(sql, "WHERE")
+	require.Less(t, idxInclude, idxNullsDist, "INCLUDE must precede NULLS NOT DISTINCT")
+	require.Less(t, idxNullsDist, idxWith, "NULLS NOT DISTINCT must precede WITH")
+	require.Less(t, idxWith, idxTablespace, "WITH must precede TABLESPACE")
+	require.Less(t, idxTablespace, idxWhere, "TABLESPACE must precede WHERE")
+}
+
 func TestWriteFK(t *testing.T) {
 	fk := &ForeignKey{
 		Name:     "fk_orders_user",

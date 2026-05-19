@@ -9,28 +9,28 @@
   <roles></roles>
   <tablespaces></tablespaces>
   <extensions>
-    <extension name="btree_gist" schema="public"></extension>
+    <extension name="btree_gist"></extension>
   </extensions>
   <types>
-    <enum name="document_status" schema="public">
+    <enum name="document_status">
       <label>draft</label>
       <label>review</label>
       <label>published</label>
       <label>archived</label>
     </enum>
-    <enum name="user_role" schema="public">
+    <enum name="user_role">
       <label>viewer</label>
       <label>editor</label>
       <label>admin</label>
       <label>owner</label>
     </enum>
-    <domain name="email_address" schema="public" type="text">
+    <domain name="email_address" type="text">
       <constraint name="email_address_check"><![CDATA[value ~ E'^[^@]+@[^@]+\\.[^@]+$'::text]]></constraint>
     </domain>
-    <domain name="positive_int" schema="public" type="integer">
+    <domain name="positive_int" type="integer">
       <constraint name="positive_int_check"><![CDATA[value > 0]]></constraint>
     </domain>
-    <domain name="slug" schema="public" type="varchar">
+    <domain name="slug" type="varchar">
       <not-null></not-null>
       <constraint name="slug_format"><![CDATA[value::text ~ '^[a-z0-9]([a-z0-9-]*[a-z0-9])?$'::text]]></constraint>
     </domain>
@@ -52,7 +52,7 @@
       <pk name="audit_log_pkey">
         <column name="id"></column>
       </pk>
-      <fk name="audit_log_user_id_fkey" to-table="users" on-delete="set-null" on-update="no action">
+      <fk name="fk_audit_user" to-table="users" on-delete="set-null" on-update="no action">
         <column name="user_id" references="id"></column>
       </fk>
       <check name="chk_audit_action"><![CDATA[action::text = ANY(ARRAY['INSERT'::varchar, 'UPDATE'::varchar, 'DELETE'::varchar]::text[])]]></check>
@@ -67,9 +67,13 @@
       <pk name="booking_slots_pkey">
         <column name="id"></column>
       </pk>
-      <fk name="booking_slots_booked_by_fkey" to-table="users" on-delete="cascade" on-update="no action">
+      <fk name="fk_booking_user" to-table="users" on-delete="cascade" on-update="no action">
         <column name="booked_by" references="id"></column>
       </fk>
+      <exclude name="excl_booking_no_overlap" using="gist">
+        <element column="room_name" with="="></element>
+        <element column="booked_during" with="&amp;&amp;"></element>
+      </exclude>
     </table>
     <table name="categories">
       <column name="id" type="integer" nullable="false">
@@ -84,7 +88,7 @@
       <pk name="categories_pkey">
         <column name="id"></column>
       </pk>
-      <fk name="categories_parent_id_fkey" to-table="categories" on-delete="set-null" on-update="no action">
+      <fk name="fk_categories_parent" to-table="categories" on-delete="set-null" on-update="no action">
         <column name="parent_id" references="id"></column>
       </fk>
     </table>
@@ -100,10 +104,10 @@
       <pk name="document_permissions_pkey">
         <column name="id"></column>
       </pk>
-      <fk name="document_permissions_document_id_fkey" to-table="documents" on-delete="cascade" on-update="no action">
+      <fk name="fk_docperm_document" to-table="documents" on-delete="cascade" on-update="no action">
         <column name="document_id" references="id"></column>
       </fk>
-      <fk name="document_permissions_user_id_fkey" to-table="users" on-delete="cascade" on-update="no action">
+      <fk name="fk_docperm_user" to-table="users" on-delete="cascade" on-update="no action">
         <column name="user_id" references="id"></column>
       </fk>
       <unique name="uq_docperm_document_user">
@@ -115,14 +119,14 @@
     <table name="document_tags">
       <column name="document_id" type="bigint" nullable="false"></column>
       <column name="tag_id" type="integer" nullable="false"></column>
-      <pk name="document_tags_pkey">
+      <pk name="pk_document_tags">
         <column name="document_id"></column>
         <column name="tag_id"></column>
       </pk>
-      <fk name="document_tags_document_id_fkey" to-table="documents" on-delete="cascade" on-update="no action">
+      <fk name="fk_doctags_document" to-table="documents" on-delete="cascade" on-update="no action">
         <column name="document_id" references="id"></column>
       </fk>
-      <fk name="document_tags_tag_id_fkey" to-table="tags" on-delete="cascade" on-update="no action">
+      <fk name="fk_doctags_tag" to-table="tags" on-delete="cascade" on-update="no action">
         <column name="tag_id" references="id"></column>
       </fk>
     </table>
@@ -134,8 +138,8 @@
       <column name="author_id" type="bigint" nullable="false"></column>
       <column name="title" type="varchar" length="500" nullable="false"></column>
       <column name="body" type="text"></column>
-      <column name="metadata" type="jsonb" nullable="false" default="&#39;{}&#39;::jsonb"></column>
-      <column name="tags" type="text[]" nullable="false" default="&#39;{}&#39;::text[]"></column>
+      <column name="metadata" type="jsonb" nullable="false" default="&#39;{}&#39;"></column>
+      <column name="tags" type="text[]" nullable="false" default="&#39;{}&#39;"></column>
       <column name="status" type="document_status" nullable="false" default="&#39;draft&#39;::public.document_status"></column>
       <column name="version" type="positive_int" nullable="false" default="1"></column>
       <column name="search_vector" type="tsvector"></column>
@@ -145,10 +149,10 @@
       <pk name="documents_pkey">
         <column name="id"></column>
       </pk>
-      <fk name="documents_author_id_fkey" to-table="users" on-delete="restrict" on-update="no action">
+      <fk name="fk_documents_author" to-table="users" on-delete="restrict" on-update="no action">
         <column name="author_id" references="id"></column>
       </fk>
-      <fk name="documents_category_id_fkey" to-table="categories" on-delete="set-null" on-update="no action">
+      <fk name="fk_documents_category" to-table="categories" on-delete="set-null" on-update="no action">
         <column name="category_id" references="id"></column>
       </fk>
       <check name="chk_documents_publish"><![CDATA[status <> 'published'::public.document_status OR published_at IS NOT NULL]]></check>
@@ -158,7 +162,7 @@
         <identity generated="by-default"></identity>
       </column>
       <column name="name" type="varchar" length="60" nullable="false"></column>
-      <column name="color" type="bpchar" default="&#39;#cccccc&#39;::bpchar"></column>
+      <column name="color" type="char" length="7" default="&#39;#cccccc&#39;::bpchar"></column>
       <pk name="tags_pkey">
         <column name="id"></column>
       </pk>
@@ -174,8 +178,8 @@
       <column name="email" type="email_address" nullable="false"></column>
       <column name="display_name" type="varchar" length="200" nullable="false"></column>
       <column name="role" type="user_role" nullable="false" default="&#39;viewer&#39;::public.user_role"></column>
-      <column name="settings" type="jsonb" nullable="false" default="&#39;{}&#39;::jsonb"></column>
-      <column name="tags" type="text[]" nullable="false" default="&#39;{}&#39;::text[]"></column>
+      <column name="settings" type="jsonb" nullable="false" default="&#39;{}&#39;"></column>
+      <column name="tags" type="text[]" nullable="false" default="&#39;{}&#39;"></column>
       <column name="search_vector" type="tsvector"></column>
       <column name="is_active" type="boolean" nullable="false" default="true"></column>
       <column name="created_at" type="timestamptz" nullable="false" default="now()"></column>
@@ -198,7 +202,7 @@
     </index>
     <index name="idx_audit_recent" table="audit_log">
       <column name="created_at" order="desc"></column>
-      <where><![CDATA[created_at > '2024-01-01 00:00:00+03'::timestamp with time zone]]></where>
+      <where><![CDATA[created_at > '2024-01-01 00:00:00+03']]></where>
     </index>
     <index name="idx_audit_table_record" table="audit_log">
       <column name="table_name"></column>
@@ -210,12 +214,23 @@
     <index name="idx_categories_slug_lower" table="categories">
       <expression><![CDATA[lower(slug::text)]]></expression>
     </index>
+    <index name="idx_categories_slug_nnd" table="categories" unique="true" nulls-distinct="false">
+      <column name="slug"></column>
+    </index>
     <index name="idx_documents_active" table="documents">
       <column name="created_at" order="desc"></column>
-      <where><![CDATA[status = 'published'::public.document_status]]></where>
+      <where><![CDATA[status = 'published'.document_status]]></where>
     </index>
     <index name="idx_documents_author" table="documents">
       <column name="author_id"></column>
+    </index>
+    <index name="idx_documents_author_include" table="documents" unique="true">
+      <column name="author_id"></column>
+      <column name="title"></column>
+      <include>
+        <column name="status"></column>
+        <column name="version"></column>
+      </include>
     </index>
     <index name="idx_documents_category" table="documents">
       <column name="category_id"></column>
@@ -223,7 +238,7 @@
     <index name="idx_documents_draft" table="documents">
       <column name="author_id"></column>
       <column name="updated_at" order="desc"></column>
-      <where><![CDATA[status = 'draft'::public.document_status]]></where>
+      <where><![CDATA[status = 'draft'.document_status]]></where>
     </index>
     <index name="idx_documents_metadata_gin" table="documents" using="gin">
       <column name="metadata"></column>
@@ -258,14 +273,14 @@
     </index>
   </schema>
   <functions>
-    <function name="audit_trigger_func" schema="public" returns="trigger" language="plpgsql">
-      <body>&#xA;BEGIN&#xA;    IF TG_OP = &#39;INSERT&#39; THEN&#xA;        INSERT INTO audit_log (user_id, table_name, record_id, action, new_data)&#xA;        VALUES (current_setting(&#39;app.current_user_id&#39;, true)::bigint, TG_TABLE_NAME, NEW.id, TG_OP, to_jsonb(NEW));&#xA;        RETURN NEW;&#xA;    ELSIF TG_OP = &#39;UPDATE&#39; THEN&#xA;        INSERT INTO audit_log (user_id, table_name, record_id, action, old_data, new_data)&#xA;        VALUES (current_setting(&#39;app.current_user_id&#39;, true)::bigint, TG_TABLE_NAME, NEW.id, TG_OP, to_jsonb(OLD), to_jsonb(NEW));&#xA;        RETURN NEW;&#xA;    ELSIF TG_OP = &#39;DELETE&#39; THEN&#xA;        INSERT INTO audit_log (user_id, table_name, record_id, action, old_data)&#xA;        VALUES (current_setting(&#39;app.current_user_id&#39;, true)::bigint, TG_TABLE_NAME, OLD.id, TG_OP, to_jsonb(OLD));&#xA;        RETURN OLD;&#xA;    END IF;&#xA;    RETURN NULL;&#xA;END;&#xA;</body>
+    <function name="audit_trigger_func" returns="trigger" language="plpgsql">
+      <body>BEGIN&#xA;    IF TG_OP = &#39;INSERT&#39; THEN&#xA;        INSERT INTO audit_log (user_id, table_name, record_id, action, new_data)&#xA;        VALUES (current_setting(&#39;app.current_user_id&#39;, true)::bigint, TG_TABLE_NAME, NEW.id, TG_OP, to_jsonb(NEW));&#xA;        RETURN NEW;&#xA;    ELSIF TG_OP = &#39;UPDATE&#39; THEN&#xA;        INSERT INTO audit_log (user_id, table_name, record_id, action, old_data, new_data)&#xA;        VALUES (current_setting(&#39;app.current_user_id&#39;, true)::bigint, TG_TABLE_NAME, NEW.id, TG_OP, to_jsonb(OLD), to_jsonb(NEW));&#xA;        RETURN NEW;&#xA;    ELSIF TG_OP = &#39;DELETE&#39; THEN&#xA;        INSERT INTO audit_log (user_id, table_name, record_id, action, old_data)&#xA;        VALUES (current_setting(&#39;app.current_user_id&#39;, true)::bigint, TG_TABLE_NAME, OLD.id, TG_OP, to_jsonb(OLD));&#xA;        RETURN OLD;&#xA;    END IF;&#xA;    RETURN NULL;&#xA;END;</body>
     </function>
-    <function name="update_document_search_vector" schema="public" returns="trigger" language="plpgsql">
-      <body>&#xA;BEGIN&#xA;    NEW.search_vector := to_tsvector(&#39;english&#39;, coalesce(NEW.title, &#39;&#39;) || &#39; &#39; || coalesce(NEW.body, &#39;&#39;));&#xA;    RETURN NEW;&#xA;END;&#xA;</body>
+    <function name="update_document_search_vector" returns="trigger" language="plpgsql">
+      <body>BEGIN&#xA;    NEW.search_vector := to_tsvector(&#39;english&#39;, coalesce(NEW.title, &#39;&#39;) || &#39; &#39; || coalesce(NEW.body, &#39;&#39;));&#xA;    RETURN NEW;&#xA;END;</body>
     </function>
-    <function name="update_user_search_vector" schema="public" returns="trigger" language="plpgsql">
-      <body>&#xA;BEGIN&#xA;    NEW.search_vector := to_tsvector(&#39;english&#39;, coalesce(NEW.display_name, &#39;&#39;) || &#39; &#39; || coalesce(NEW.email::text, &#39;&#39;));&#xA;    RETURN NEW;&#xA;END;&#xA;</body>
+    <function name="update_user_search_vector" returns="trigger" language="plpgsql">
+      <body>BEGIN&#xA;    NEW.search_vector := to_tsvector(&#39;english&#39;, coalesce(NEW.display_name, &#39;&#39;) || &#39; &#39; || coalesce(NEW.email::text, &#39;&#39;));&#xA;    RETURN NEW;&#xA;END;</body>
     </function>
   </functions>
   <triggers>
@@ -284,29 +299,7 @@
   </triggers>
   <rules></rules>
   <policies></policies>
-  <comments>
-    <comment on="table" schema="public" name="audit_log">Immutable audit trail for all data changes</comment>
-    <comment on="column" schema="public" table="audit_log" name="old_data">Previous row state as JSON (NULL for INSERT)</comment>
-    <comment on="column" schema="public" table="audit_log" name="new_data">New row state as JSON (NULL for DELETE)</comment>
-    <comment on="table" schema="public" name="booking_slots">Room booking with non-overlapping time range constraint</comment>
-    <comment on="column" schema="public" table="booking_slots" name="booked_during">Time range for the booking (tstzrange with EXCLUDE constraint)</comment>
-    <comment on="table" schema="public" name="categories">Hierarchical document categories (self-referencing tree)</comment>
-    <comment on="table" schema="public" name="document_permissions">Per-document user permissions with optional expiration</comment>
-    <comment on="table" schema="public" name="document_tags">Many-to-many relationship between documents and tags</comment>
-    <comment on="table" schema="public" name="documents">Core document storage with full-text search and versioning</comment>
-    <comment on="column" schema="public" table="documents" name="metadata">Arbitrary document metadata as JSON (custom fields, etc.)</comment>
-    <comment on="column" schema="public" table="documents" name="version">Monotonically increasing version number</comment>
-    <comment on="column" schema="public" table="documents" name="search_vector">Full-text search index over title and body</comment>
-    <comment on="table" schema="public" name="tags">Flat tag taxonomy for document classification</comment>
-    <comment on="table" schema="public" name="users">System users with role-based access control</comment>
-    <comment on="column" schema="public" table="users" name="settings">User preferences as JSON (theme, notifications, etc.)</comment>
-    <comment on="column" schema="public" table="users" name="tags">Free-form text tags for user categorization</comment>
-    <comment on="column" schema="public" table="users" name="search_vector">Full-text search index over display_name and email</comment>
-    <comment on="index" schema="public" name="idx_documents_active">Partial index: only published documents</comment>
-    <comment on="index" schema="public" name="idx_documents_metadata_gin">GIN index for JSONB containment queries on document metadata</comment>
-    <comment on="index" schema="public" name="idx_documents_search_gist">GiST index for full-text search on documents</comment>
-    <comment on="index" schema="public" name="idx_users_settings_gin">GIN index for JSONB containment queries on user settings</comment>
-  </comments>
+  <comments></comments>
   <layouts>
     <layout name="Default Diagram" default="true"></layout>
   </layouts>
