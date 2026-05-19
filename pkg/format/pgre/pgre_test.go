@@ -81,6 +81,51 @@ func skipIfNoPG(t *testing.T) {
 	}
 }
 
+func TestParseIndexColumns(t *testing.T) {
+	tests := []struct {
+		name string
+		def  string
+		want []pgd.ColRef
+	}{
+		{
+			name: "plain column",
+			def:  `CREATE INDEX foo ON t ("name")`,
+			want: []pgd.ColRef{{Name: "name"}},
+		},
+		{
+			name: "desc nulls last",
+			def:  `CREATE INDEX foo ON t ("name" DESC NULLS LAST)`,
+			want: []pgd.ColRef{{Name: "name", Order: "desc", Nulls: "last"}},
+		},
+		{
+			name: "gin with opclass",
+			def:  `CREATE INDEX foo ON t USING gin ("query" gin_trgm_ops)`,
+			want: []pgd.ColRef{{Name: "query", Opclass: "gin_trgm_ops"}},
+		},
+		{
+			name: "btree opclass with desc",
+			def:  `CREATE INDEX foo ON t ("email" text_pattern_ops DESC)`,
+			want: []pgd.ColRef{{Name: "email", Order: "desc", Opclass: "text_pattern_ops"}},
+		},
+		{
+			name: "multi-column with mixed opclass",
+			def:  `CREATE INDEX foo ON t ("a" int4_ops, "b" DESC)`,
+			want: []pgd.ColRef{{Name: "a", Opclass: "int4_ops"}, {Name: "b", Order: "desc"}},
+		},
+		{
+			name: "expression index",
+			def:  `CREATE INDEX foo ON t ((lower("name")))`,
+			want: []pgd.ColRef{{Name: `(lower(name))`}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseIndexColumns(tt.def)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestIntrospect_RoundTrip(t *testing.T) {
 	skipIfNoPG(t)
 
