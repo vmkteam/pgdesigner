@@ -69,6 +69,7 @@ function updateCol(i: number, field: string, value: string) {
         <option value="first">NULLS FIRST</option>
         <option value="last">NULLS LAST</option>
       </select>
+      <input class="ip-col-opclass ip-mono" :value="col.opclass || ''" placeholder="opclass" title="operator class (e.g. gin_trgm_ops)" @change="updateCol(i, 'opclass', ($event.target as HTMLInputElement).value)" />
       <button class="ip-btn-del" @click="removeCol(i)">×</button>
     </div>
     <button class="ip-btn-add" @click="addCol">+ Add column</button>
@@ -125,6 +126,12 @@ function updateCol(i: number, field: string, value: string) {
   color: var(--color-text-secondary); outline: none; cursor: pointer;
 }
 .ip-col-order:focus, .ip-col-nulls:focus { border-color: var(--color-accent); }
+.ip-col-opclass {
+  width: 8.5rem; padding: 1px 0.308rem; font-size: 0.846rem; height: 1.538rem;
+  border: 1px solid var(--color-border); background: var(--color-bg-surface);
+  color: var(--color-text-primary); outline: none;
+}
+.ip-col-opclass:focus { border-color: var(--color-accent); }
 .ip-expr-row { display: flex; gap: 0.231rem; margin-bottom: 0.231rem; }
 .ip-btn-del {
   width: 1.538rem; height: 1.538rem; font-size: 0.923rem;

@@ -281,6 +281,38 @@ func TestParseSQL_Indexes(t *testing.T) {
 	}
 }
 
+func TestParseSQL_IndexOpclass(t *testing.T) {
+	sql := `
+	CREATE TABLE "productSearchQueries" ("query" text, "email" text);
+	CREATE INDEX "ix_query_trgm" ON "productSearchQueries" USING GIN ("query" gin_trgm_ops);
+	CREATE INDEX "ix_email_pat" ON "productSearchQueries" ("email" text_pattern_ops);
+	`
+
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+
+	idxs := p.Schemas[0].Indexes
+	require.Len(t, idxs, 2)
+
+	idxMap := map[string]int{}
+	for i, idx := range idxs {
+		idxMap[idx.Name] = i
+	}
+
+	gin := idxs[idxMap["ix_query_trgm"]]
+	require.Len(t, gin.Columns, 1)
+	assert.Equal(t, "gin_trgm_ops", gin.Columns[0].Opclass, "GIN opclass must be preserved")
+
+	btree := idxs[idxMap["ix_email_pat"]]
+	require.Len(t, btree.Columns, 1)
+	assert.Equal(t, "text_pattern_ops", btree.Columns[0].Opclass, "btree opclass must be preserved")
+
+	// Round-trip: opclass survives DDL regeneration.
+	ddl := pgd.GenerateDDL(p)
+	assert.Contains(t, ddl, "gin_trgm_ops", "regenerated DDL must contain opclass")
+	assert.Contains(t, ddl, "text_pattern_ops", "regenerated DDL must contain opclass")
+}
+
 func TestParseSQL_Serial(t *testing.T) {
 	sql := `CREATE TABLE "t" (
 		"id" SERIAL NOT NULL,

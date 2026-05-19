@@ -676,6 +676,9 @@ func (c *sqlConverter) convertCreateIndex(stmt *pg.IndexStmt) { //nolint:gocogni
 				case pg.SortByNulls_SORTBY_NULLS_LAST:
 					ref.Nulls = "last"
 				}
+				if op := funcName(elem.Opclass); op != "" {
+					ref.Opclass = op
+				}
 				idx.Columns = append(idx.Columns, ref)
 			} else if elem.Expr != nil {
 				idx.Expressions = append(idx.Expressions, pgd.Expression{Value: nodeToSQL(elem.Expr)})
