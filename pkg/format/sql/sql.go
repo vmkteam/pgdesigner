@@ -175,6 +175,10 @@ func indexKey(idx *pgd.Index) string {
 			b.WriteByte(',')
 		}
 		b.WriteString(c.Name)
+		b.WriteByte('|')
+		b.WriteString(c.Order)
+		b.WriteByte('|')
+		b.WriteString(c.Opclass)
 	}
 	for i, e := range idx.Expressions {
 		if i > 0 || len(idx.Columns) > 0 {
@@ -182,9 +186,33 @@ func indexKey(idx *pgd.Index) string {
 		}
 		b.WriteString(e.Value)
 	}
+	b.WriteByte(':')
+	if idx.Include != nil {
+		for i, c := range idx.Include.Columns {
+			if i > 0 {
+				b.WriteByte(',')
+			}
+			b.WriteString(c.Name)
+		}
+	}
+	b.WriteByte(':')
+	b.WriteString(idx.NullsDistinct)
+	b.WriteByte(':')
+	b.WriteString(idx.Tablespace)
+	b.WriteByte(':')
 	if idx.Where != nil {
-		b.WriteByte(':')
 		b.WriteString(idx.Where.Value)
+	}
+	b.WriteByte(':')
+	if idx.With != nil {
+		for i, p := range idx.With.Params {
+			if i > 0 {
+				b.WriteByte(',')
+			}
+			b.WriteString(p.Name)
+			b.WriteByte('=')
+			b.WriteString(p.Value)
+		}
 	}
 	return b.String()
 }
@@ -686,6 +714,18 @@ func (c *sqlConverter) convertCreateIndex(stmt *pg.IndexStmt) { //nolint:gocogni
 		}
 	}
 
+	if include := parseIncludeColumns(stmt.IndexIncludingParams); len(include) > 0 {
+		idx.Include = &pgd.Include{Columns: include}
+	}
+
+	if stmt.NullsNotDistinct {
+		idx.NullsDistinct = "false"
+	}
+
+	if stmt.TableSpace != "" {
+		idx.Tablespace = stmt.TableSpace
+	}
+
 	if params := parseWithParams(stmt.Options); len(params) > 0 {
 		idx.With = &pgd.With{Params: params}
 	}
@@ -695,6 +735,20 @@ func (c *sqlConverter) convertCreateIndex(stmt *pg.IndexStmt) { //nolint:gocogni
 	}
 
 	schema.Indexes = append(schema.Indexes, idx)
+}
+
+func parseIncludeColumns(nodes []*pg.Node) []pgd.ColRef {
+	var cols []pgd.ColRef
+	for _, n := range nodes {
+		ie, ok := n.Node.(*pg.Node_IndexElem)
+		if !ok {
+			continue
+		}
+		if ie.IndexElem.Name != "" {
+			cols = append(cols, pgd.ColRef{Name: ie.IndexElem.Name})
+		}
+	}
+	return cols
 }
 
 // ALTER TABLE ADD FOREIGN KEY

@@ -281,6 +281,64 @@ func TestParseSQL_Indexes(t *testing.T) {
 	}
 }
 
+func TestParseSQL_IndexExtras(t *testing.T) {
+	sql := `
+	CREATE TABLE "orders" ("customerId" int, "totalAmount" numeric, "createdAt" timestamptz, "statusId" int);
+	CREATE UNIQUE INDEX "ix_orders_include" ON "orders" ("customerId") INCLUDE ("totalAmount", "createdAt");
+	CREATE UNIQUE INDEX "ix_orders_nnd" ON "orders" ("statusId") NULLS NOT DISTINCT;
+	CREATE INDEX "ix_orders_tbls" ON "orders" ("totalAmount") TABLESPACE "fastssd";
+	`
+
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+
+	idxs := p.Schemas[0].Indexes
+	require.Len(t, idxs, 3)
+	idxMap := map[string]int{}
+	for i, idx := range idxs {
+		idxMap[idx.Name] = i
+	}
+
+	inc := idxs[idxMap["ix_orders_include"]]
+	require.NotNil(t, inc.Include)
+	require.Len(t, inc.Include.Columns, 2)
+	assert.Equal(t, "totalAmount", inc.Include.Columns[0].Name)
+	assert.Equal(t, "createdAt", inc.Include.Columns[1].Name)
+
+	assert.Equal(t, "false", idxs[idxMap["ix_orders_nnd"]].NullsDistinct)
+	assert.Equal(t, "fastssd", idxs[idxMap["ix_orders_tbls"]].Tablespace)
+
+	ddl := pgd.GenerateDDL(p)
+	assert.Contains(t, ddl, `INCLUDE ("totalAmount", "createdAt")`)
+	assert.Contains(t, ddl, "NULLS NOT DISTINCT")
+	assert.Contains(t, ddl, `TABLESPACE "fastssd"`)
+}
+
+func TestDeduplicateIndexes_DistinctByExtras(t *testing.T) {
+	sql := `
+	CREATE TABLE "t" ("a" int, "b" int, "c" int);
+	CREATE INDEX "i_plain" ON "t" ("a");
+	CREATE INDEX "i_include" ON "t" ("a") INCLUDE ("b");
+	CREATE UNIQUE INDEX "i_nnd" ON "t" ("a") NULLS NOT DISTINCT;
+	CREATE INDEX "i_partial" ON "t" ("a") WHERE "c" > 0;
+	CREATE INDEX "i_with" ON "t" ("a") WITH (fillfactor=80);
+	`
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+	require.Len(t, p.Schemas[0].Indexes, 5, "indexes that differ only by INCLUDE/NULLS/WHERE/WITH must survive deduplication")
+}
+
+func TestDeduplicateIndexes_TrueDuplicateCollapses(t *testing.T) {
+	sql := `
+	CREATE TABLE "t" ("a" int);
+	CREATE INDEX "i1" ON "t" ("a");
+	CREATE INDEX "i2" ON "t" ("a");
+	`
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+	assert.Len(t, p.Schemas[0].Indexes, 1, "indexes with identical structure should still collapse to one")
+}
+
 func TestParseSQL_IndexOpclass(t *testing.T) {
 	sql := `
 	CREATE TABLE "productSearchQueries" ("query" text, "email" text);

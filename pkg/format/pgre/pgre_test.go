@@ -126,6 +126,51 @@ func TestParseIndexColumns(t *testing.T) {
 	}
 }
 
+func TestParseIndexExtras(t *testing.T) {
+	tests := []struct {
+		name             string
+		def              string
+		wantInclude      []pgd.ColRef
+		wantNullsNotDist bool
+		wantTablespace   string
+	}{
+		{
+			name: "plain index",
+			def:  `CREATE INDEX foo ON t ("name")`,
+		},
+		{
+			name:        "include columns",
+			def:         `CREATE UNIQUE INDEX foo ON t ("customerId") INCLUDE ("totalAmount", "createdAt")`,
+			wantInclude: []pgd.ColRef{{Name: "totalAmount"}, {Name: "createdAt"}},
+		},
+		{
+			name:             "nulls not distinct",
+			def:              `CREATE UNIQUE INDEX foo ON t ("statusId") NULLS NOT DISTINCT`,
+			wantNullsNotDist: true,
+		},
+		{
+			name:           "tablespace",
+			def:            `CREATE INDEX foo ON t ("statusId") TABLESPACE fastssd`,
+			wantTablespace: "fastssd",
+		},
+		{
+			name:             "all combined",
+			def:              `CREATE UNIQUE INDEX foo ON t ("customerId") INCLUDE ("totalAmount") NULLS NOT DISTINCT WITH (fillfactor='80') TABLESPACE fastssd WHERE "statusId" = 1`,
+			wantInclude:      []pgd.ColRef{{Name: "totalAmount"}},
+			wantNullsNotDist: true,
+			wantTablespace:   "fastssd",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotInc, gotNND, gotTS := parseIndexExtras(tt.def)
+			assert.Equal(t, tt.wantInclude, gotInc)
+			assert.Equal(t, tt.wantNullsNotDist, gotNND)
+			assert.Equal(t, tt.wantTablespace, gotTS)
+		})
+	}
+}
+
 func TestIntrospect_RoundTrip(t *testing.T) {
 	skipIfNoPG(t)
 

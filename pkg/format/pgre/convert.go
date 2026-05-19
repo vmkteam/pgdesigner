@@ -281,7 +281,39 @@ func convertIndex(tableName string, idx pgIndex) *pgd.Index {
 		}
 	}
 
+	include, nullsNotDistinct, tablespace := parseIndexExtras(idx.Def)
+	if len(include) > 0 {
+		out.Include = &pgd.Include{Columns: include}
+	}
+	if nullsNotDistinct {
+		out.NullsDistinct = "false"
+	}
+	if tablespace != "" {
+		out.Tablespace = tablespace
+	}
+
 	return out
+}
+
+// parseIndexExtras extracts INCLUDE columns, NULLS NOT DISTINCT, and TABLESPACE
+// from a CREATE INDEX statement (typically pg_get_indexdef output).
+func parseIndexExtras(def string) (include []pgd.ColRef, nullsNotDistinct bool, tablespace string) {
+	tree, err := pgquery.Parse(def)
+	if err != nil || len(tree.Stmts) == 0 {
+		return nil, false, ""
+	}
+	stmt := tree.Stmts[0].Stmt.GetIndexStmt()
+	if stmt == nil {
+		return nil, false, ""
+	}
+	for _, n := range stmt.IndexIncludingParams {
+		ie, ok := n.Node.(*pg.Node_IndexElem)
+		if !ok || ie.IndexElem.Name == "" {
+			continue
+		}
+		include = append(include, pgd.ColRef{Name: ie.IndexElem.Name})
+	}
+	return include, stmt.NullsNotDistinct, stmt.TableSpace
 }
 
 // parseExcludeConstraintDef parses pg_get_constraintdef output for EXCLUDE constraints
