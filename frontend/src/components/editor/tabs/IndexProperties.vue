@@ -113,21 +113,21 @@ function updateCol(i: number, field: string, value: string) {
 .ip-mono { font-family: monospace; }
 .ip-check { font-size: 0.923rem; display: flex; align-items: center; gap: 0.308rem; cursor: pointer; }
 .ip-section-label { font-size: 0.769rem; font-weight: 600; color: var(--color-text-muted); margin: 0.462rem 0 0.231rem; }
-.ip-col-row { display: flex; gap: 0.231rem; margin-bottom: 0.231rem; }
+.ip-col-row { display: flex; flex-wrap: wrap; gap: 0.231rem; margin-bottom: 0.231rem; }
 .ip-col-select {
-  flex: 1; padding: 1px 0.308rem; font-size: 0.923rem; height: 1.538rem;
+  flex: 1 1 8rem; min-width: 6rem; padding: 1px 0.308rem; font-size: 0.923rem; height: 1.538rem;
   border: 1px solid var(--color-border); background: var(--color-bg-surface);
   color: var(--color-text-primary); outline: none; cursor: pointer;
 }
 .ip-col-select:focus { border-color: var(--color-accent); }
 .ip-col-order, .ip-col-nulls {
-  width: 5rem; padding: 1px 0.231rem; font-size: 0.769rem; height: 1.538rem;
+  width: 4.25rem; padding: 1px 0.231rem; font-size: 0.769rem; height: 1.538rem;
   border: 1px solid var(--color-border); background: var(--color-bg-surface);
   color: var(--color-text-secondary); outline: none; cursor: pointer;
 }
 .ip-col-order:focus, .ip-col-nulls:focus { border-color: var(--color-accent); }
 .ip-col-opclass {
-  width: 8.5rem; padding: 1px 0.308rem; font-size: 0.846rem; height: 1.538rem;
+  flex: 1 1 6rem; min-width: 5rem; padding: 1px 0.308rem; font-size: 0.846rem; height: 1.538rem;
   border: 1px solid var(--color-border); background: var(--color-bg-surface);
   color: var(--color-text-primary); outline: none;
 }
