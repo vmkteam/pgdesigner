@@ -357,20 +357,8 @@ func (c *sqlConverter) convertCreateTable(stmt *pg.CreateStmt) {
 		tbl.Tablespace = stmt.Tablespacename
 	}
 
-	// inherits (#12)
-	if len(stmt.InhRelations) > 0 {
-		var parents []string
-		for _, inh := range stmt.InhRelations {
-			if rv, ok := inh.Node.(*pg.Node_RangeVar); ok {
-				name := rv.RangeVar.Relname
-				if rv.RangeVar.Schemaname != "" {
-					name = rv.RangeVar.Schemaname + "." + name
-				}
-				parents = append(parents, name)
-			}
-		}
-		tbl.Inherits = strings.Join(parents, ",")
-	}
+	// inherits (#12) / inline PARTITION OF (#13)
+	applyInheritance(&tbl, stmt)
 
 	// partition by (#13)
 	if stmt.Partspec != nil {
@@ -1657,6 +1645,39 @@ func defElemBool(de *pg.DefElem) bool {
 		return i.Integer.Ival != 0
 	}
 	return false
+}
+
+// applyInheritance sets either PartitionOf (inline "PARTITION OF parent FOR
+// VALUES ...") or Inherits on tbl. Both populate stmt.InhRelations; a partition
+// is distinguished by a non-nil Partbound. Treating an inline partition as a
+// plain INHERITS loses the link and breaks round-trip of our generated DDL.
+func applyInheritance(tbl *pgd.Table, stmt *pg.CreateStmt) {
+	if len(stmt.InhRelations) == 0 {
+		return
+	}
+	if stmt.Partbound != nil {
+		if rv, ok := stmt.InhRelations[0].Node.(*pg.Node_RangeVar); ok {
+			// unqualified parent name to match MigratePartitions / attachPartitionChild
+			tbl.PartitionOf = rv.RangeVar.Relname
+		}
+		if bound := deparseBound(stmt.Partbound); bound != "" {
+			tbl.PartitionBound = &pgd.PartitionBound{Value: bound}
+		}
+		return
+	}
+	var parents []string
+	for _, inh := range stmt.InhRelations {
+		rv, ok := inh.Node.(*pg.Node_RangeVar)
+		if !ok {
+			continue
+		}
+		name := rv.RangeVar.Relname
+		if rv.RangeVar.Schemaname != "" {
+			name = rv.RangeVar.Schemaname + "." + name
+		}
+		parents = append(parents, name)
+	}
+	tbl.Inherits = strings.Join(parents, ",")
 }
 
 func attachPartitionChild(schema *pgd.Schema, tableIdx int, cmd *pg.AlterTableCmd) {

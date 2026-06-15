@@ -327,6 +327,42 @@ func TestStripLiteralTypeCasts(t *testing.T) {
 	}
 }
 
+func TestParseSQL_InlinePartitionOfRoundTrip(t *testing.T) {
+	// Regression: GenerateDDL emits "CREATE TABLE child PARTITION OF parent".
+	// The parser must read that back as a partition (not a plain table / INHERITS),
+	// otherwise round-trip of partitioned schemas explodes children into base tables.
+	sql := `
+	CREATE TABLE "events" ("id" bigint, "kind" text) PARTITION BY LIST ("kind");
+	CREATE TABLE "events_a" PARTITION OF "events" FOR VALUES IN ('a');
+	CREATE TABLE "events_b" PARTITION OF "events" FOR VALUES IN ('b');
+	CREATE INDEX "ix_events_id" ON ONLY "events" USING btree ("id");
+	`
+
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+
+	// children collapsed into the parent (Variant B)
+	require.Len(t, p.Schemas[0].Tables, 1, "partition children must collapse into parent")
+	parent := p.Schemas[0].Tables[0]
+	assert.Equal(t, "events", parent.Name)
+	assert.Empty(t, parent.Inherits, "PARTITION OF must not be parsed as INHERITS")
+	require.NotNil(t, parent.PartitionBy)
+	require.Len(t, parent.Partitions, 2)
+	assert.Equal(t, "events_a", parent.Partitions[0].Name)
+	assert.Contains(t, parent.Partitions[0].Bound, "FOR VALUES IN ('a')")
+
+	// round-trip: generate DDL, parse it again, structure must survive
+	ddl := pgd.GenerateDDL(p)
+	assert.NotContains(t, ddl, "ON ONLY", "partitioned-parent index is normalized without ONLY")
+	p2, err := ParseSQL(ddl, "test")
+	require.NoError(t, err)
+	require.Len(t, p2.Schemas[0].Tables, 1, "children must not explode into base tables on re-parse")
+	require.Len(t, p2.Schemas[0].Tables[0].Partitions, 2)
+
+	// idempotent DDL
+	assert.Equal(t, ddl, pgd.GenerateDDL(p2), "DDL generation must be idempotent")
+}
+
 func TestParseSQL_IndexExtras(t *testing.T) {
 	sql := `
 	CREATE TABLE "orders" ("customerId" int, "totalAmount" numeric, "createdAt" timestamptz, "statusId" int);
