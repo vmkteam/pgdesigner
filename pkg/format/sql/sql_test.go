@@ -281,6 +281,88 @@ func TestParseSQL_Indexes(t *testing.T) {
 	}
 }
 
+func TestParseSQL_PartialIndexLiteralCast(t *testing.T) {
+	// Regression: a literal cast like 'sent'::text in a partial index WHERE clause
+	// must not swallow the following " AND ..." while stripping the cast.
+	sql := `
+	CREATE TABLE "smsMessages" ("realSentAt" timestamptz, "status" text, "deliveredAt" timestamptz, "externalId" text);
+	CREATE INDEX "ix_partial" ON "smsMessages" USING btree ("realSentAt")
+		WHERE (((status)::text = 'sent'::text) AND ("deliveredAt" IS NULL) AND ("externalId" IS NOT NULL));
+	`
+
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+
+	idxs := p.Schemas[0].Indexes
+	require.Len(t, idxs, 1)
+	require.NotNil(t, idxs[0].Where)
+
+	where := idxs[0].Where.Value
+	// The literal cast is stripped, but the conjunction stays intact.
+	assert.NotContains(t, where, `'sent'"`, "literal must not be glued to next column")
+	assert.Contains(t, where, "'sent'")
+	assert.Contains(t, where, `"deliveredAt" IS NULL`)
+	assert.Contains(t, where, `"externalId" IS NOT NULL`)
+	assert.Equal(t, 2, strings.Count(where, " AND "), "both AND conjunctions must survive: %q", where)
+}
+
+func TestStripLiteralTypeCasts(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"literal then AND", `'sent'::text AND "x" IS NULL`, `'sent' AND "x" IS NULL`},
+		{"literal then OR", `'a'::text OR "y" = 1`, `'a' OR "y" = 1`},
+		{"multiword type kept", `'a'::character varying = "b"`, `'a' = "b"`},
+		{"timestamptz multiword", `'2020-01-01'::timestamp with time zone < "t"`, `'2020-01-01' < "t"`},
+		{"array suffix", `'{}'::text[] = "z"`, `'{}' = "z"`},
+		{"column cast untouched", `(status)::text = 'sent'::text`, `(status)::text = 'sent'`},
+		{"no cast", `'plain' = "c"`, `'plain' = "c"`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, stripLiteralTypeCasts(tt.in))
+		})
+	}
+}
+
+func TestParseSQL_InlinePartitionOfRoundTrip(t *testing.T) {
+	// Regression: GenerateDDL emits "CREATE TABLE child PARTITION OF parent".
+	// The parser must read that back as a partition (not a plain table / INHERITS),
+	// otherwise round-trip of partitioned schemas explodes children into base tables.
+	sql := `
+	CREATE TABLE "events" ("id" bigint, "kind" text) PARTITION BY LIST ("kind");
+	CREATE TABLE "events_a" PARTITION OF "events" FOR VALUES IN ('a');
+	CREATE TABLE "events_b" PARTITION OF "events" FOR VALUES IN ('b');
+	CREATE INDEX "ix_events_id" ON ONLY "events" USING btree ("id");
+	`
+
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+
+	// children collapsed into the parent (Variant B)
+	require.Len(t, p.Schemas[0].Tables, 1, "partition children must collapse into parent")
+	parent := p.Schemas[0].Tables[0]
+	assert.Equal(t, "events", parent.Name)
+	assert.Empty(t, parent.Inherits, "PARTITION OF must not be parsed as INHERITS")
+	require.NotNil(t, parent.PartitionBy)
+	require.Len(t, parent.Partitions, 2)
+	assert.Equal(t, "events_a", parent.Partitions[0].Name)
+	assert.Contains(t, parent.Partitions[0].Bound, "FOR VALUES IN ('a')")
+
+	// round-trip: generate DDL, parse it again, structure must survive
+	ddl := pgd.GenerateDDL(p)
+	assert.NotContains(t, ddl, "ON ONLY", "partitioned-parent index is normalized without ONLY")
+	p2, err := ParseSQL(ddl, "test")
+	require.NoError(t, err)
+	require.Len(t, p2.Schemas[0].Tables, 1, "children must not explode into base tables on re-parse")
+	require.Len(t, p2.Schemas[0].Tables[0].Partitions, 2)
+
+	// idempotent DDL
+	assert.Equal(t, ddl, pgd.GenerateDDL(p2), "DDL generation must be idempotent")
+}
+
 func TestParseSQL_IndexExtras(t *testing.T) {
 	sql := `
 	CREATE TABLE "orders" ("customerId" int, "totalAmount" numeric, "createdAt" timestamptz, "statusId" int);
