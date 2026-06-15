@@ -281,6 +281,52 @@ func TestParseSQL_Indexes(t *testing.T) {
 	}
 }
 
+func TestParseSQL_PartialIndexLiteralCast(t *testing.T) {
+	// Regression: a literal cast like 'sent'::text in a partial index WHERE clause
+	// must not swallow the following " AND ..." while stripping the cast.
+	sql := `
+	CREATE TABLE "smsMessages" ("realSentAt" timestamptz, "status" text, "deliveredAt" timestamptz, "externalId" text);
+	CREATE INDEX "ix_partial" ON "smsMessages" USING btree ("realSentAt")
+		WHERE (((status)::text = 'sent'::text) AND ("deliveredAt" IS NULL) AND ("externalId" IS NOT NULL));
+	`
+
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+
+	idxs := p.Schemas[0].Indexes
+	require.Len(t, idxs, 1)
+	require.NotNil(t, idxs[0].Where)
+
+	where := idxs[0].Where.Value
+	// The literal cast is stripped, but the conjunction stays intact.
+	assert.NotContains(t, where, `'sent'"`, "literal must not be glued to next column")
+	assert.Contains(t, where, "'sent'")
+	assert.Contains(t, where, `"deliveredAt" IS NULL`)
+	assert.Contains(t, where, `"externalId" IS NOT NULL`)
+	assert.Equal(t, 2, strings.Count(where, " AND "), "both AND conjunctions must survive: %q", where)
+}
+
+func TestStripLiteralTypeCasts(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"literal then AND", `'sent'::text AND "x" IS NULL`, `'sent' AND "x" IS NULL`},
+		{"literal then OR", `'a'::text OR "y" = 1`, `'a' OR "y" = 1`},
+		{"multiword type kept", `'a'::character varying = "b"`, `'a' = "b"`},
+		{"timestamptz multiword", `'2020-01-01'::timestamp with time zone < "t"`, `'2020-01-01' < "t"`},
+		{"array suffix", `'{}'::text[] = "z"`, `'{}' = "z"`},
+		{"column cast untouched", `(status)::text = 'sent'::text`, `(status)::text = 'sent'`},
+		{"no cast", `'plain' = "c"`, `'plain' = "c"`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, stripLiteralTypeCasts(tt.in))
+		})
+	}
+}
+
 func TestParseSQL_IndexExtras(t *testing.T) {
 	sql := `
 	CREATE TABLE "orders" ("customerId" int, "totalAmount" numeric, "createdAt" timestamptz, "statusId" int);

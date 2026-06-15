@@ -1454,20 +1454,9 @@ func stripLiteralTypeCasts(expr string) string {
 		rest := expr[j+1:]
 		// check for ::type immediately after closing quote
 		if strings.HasPrefix(rest, "::") {
-			// find end of type name (letters, digits, _, [], spaces for "character varying" etc.)
-			k := 2
-			for k < len(rest) {
-				ch := rest[k]
-				if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' || ch == '[' || ch == ']' || ch == ' ' {
-					k++
-				} else {
-					break
-				}
-			}
-			typeName := strings.TrimRight(rest[2:k], " ")
-			if typeName != "" {
+			if n := scanCastType(rest[2:]); n > 0 {
 				b.WriteString(literal)
-				i = j + 1 + k
+				i = j + 1 + 2 + n
 				continue
 			}
 		}
@@ -1475,6 +1464,84 @@ func stripLiteralTypeCasts(expr string) string {
 		i = j + 1
 	}
 	return b.String()
+}
+
+// multiWordTypes are the standard PostgreSQL type names that contain spaces.
+// scanCastType only crosses a space while the accumulated phrase still matches
+// one of these — otherwise a literal cast like 'x'::text AND ... would greedily
+// swallow the trailing " AND ..." (which is not part of the type name).
+var multiWordTypes = []string{
+	"character varying",
+	"bit varying",
+	"double precision",
+	"timestamp without time zone",
+	"timestamp with time zone",
+	"time without time zone",
+	"time with time zone",
+}
+
+// scanCastType returns the byte length of the type name at the start of s,
+// where s is the text immediately following "::". It handles array suffixes
+// ("text[]") and multi-word types ("character varying"), but stops at the first
+// token that does not continue a known type so it never consumes trailing SQL
+// such as " AND ...".
+func scanCastType(s string) int {
+	n := scanWord(s)
+	if n == 0 {
+		return 0
+	}
+	phrase := strings.ToLower(s[:n])
+	// extend across single spaces only while phrase remains a valid type prefix
+	for {
+		rest := s[n:]
+		sp := 0
+		for sp < len(rest) && rest[sp] == ' ' {
+			sp++
+		}
+		if sp == 0 {
+			break
+		}
+		w := scanWord(rest[sp:])
+		if w == 0 {
+			break
+		}
+		next := phrase + " " + strings.ToLower(rest[sp:sp+w])
+		if !isTypePrefix(next) {
+			break
+		}
+		phrase = next
+		n += sp + w
+	}
+	// array suffixes: text[], int[][]
+	for strings.HasPrefix(s[n:], "[]") {
+		n += 2
+	}
+	return n
+}
+
+// scanWord returns the length of the leading identifier run (letters, digits, _).
+func scanWord(s string) int {
+	n := 0
+	for n < len(s) {
+		ch := s[n]
+		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_' {
+			n++
+		} else {
+			break
+		}
+	}
+	return n
+}
+
+// isTypePrefix reports whether phrase equals or is a leading prefix (on a word
+// boundary) of any known multi-word type name.
+func isTypePrefix(phrase string) bool {
+	for _, t := range multiWordTypes {
+		if t == phrase || strings.HasPrefix(t, phrase+" ") {
+			return true
+		}
+	}
+	return false
 }
 
 // cleanOperators removes schema-qualified operator syntax that pg_query deparse produces.
