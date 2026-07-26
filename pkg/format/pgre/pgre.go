@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/go-pg/pg/v10"
 	"github.com/vmkteam/pgdesigner/pkg/pgd"
@@ -50,7 +51,7 @@ func connectDB(dsn string) (*pg.DB, error) {
 
 // IsDSN returns true if the input looks like a PostgreSQL DSN.
 func IsDSN(s string) bool {
-	return len(s) > 11 && (s[:11] == "postgres://" || s[:13] == "postgresql://")
+	return strings.HasPrefix(s, "postgres://") || strings.HasPrefix(s, "postgresql://")
 }
 
 func parseDSN(dsn string) (*pg.Options, error) {
