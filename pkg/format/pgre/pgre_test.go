@@ -81,6 +81,25 @@ func skipIfNoPG(t *testing.T) {
 	}
 }
 
+func TestIsDSN(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want bool
+	}{
+		{name: "postgres scheme", in: "postgres://localhost/db", want: true},
+		{name: "postgresql scheme", in: "postgresql://localhost/db", want: true},
+		{name: "plain path", in: "docs/apisrv.xml", want: false},
+		{name: "trailing dot 12 chars", in: "docs/apisrv.", want: false},
+		{name: "empty", in: "", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, IsDSN(tt.in))
+		})
+	}
+}
+
 func TestParseIndexColumns(t *testing.T) {
 	tests := []struct {
 		name string
