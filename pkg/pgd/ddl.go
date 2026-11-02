@@ -336,9 +336,17 @@ func (d *ddlWriter) writeExtension(e *Extension) {
 func (d *ddlWriter) writeEnum(e *Enum) {
 	labels := make([]string, len(e.Labels))
 	for i, l := range e.Labels {
-		labels[i] = "'" + l + "'"
+		labels[i] = QuoteLiteral(l)
 	}
 	d.P("CREATE TYPE %s AS ENUM (%s);\n\n", QualifiedName(e.Schema, e.Name), strings.Join(labels, ", "))
+}
+
+// WriteEnum writes CREATE TYPE ... AS ENUM DDL for a single enum.
+// Public API used by diff engine.
+func WriteEnum(w io.Writer, e *Enum) error {
+	d := &ddlWriter{w: w}
+	d.writeEnum(e)
+	return d.Err()
 }
 
 func (d *ddlWriter) writeComposite(c *Composite) {
@@ -816,6 +824,11 @@ func hasColumnStorage(t *Table) bool {
 
 // EscapeComment wraps s in single quotes and escapes embedded quotes for SQL.
 func EscapeComment(s string) string {
+	return QuoteLiteral(s)
+}
+
+// QuoteLiteral returns s as an SQL string literal.
+func QuoteLiteral(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
 }
 
