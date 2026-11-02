@@ -64,7 +64,7 @@ function itemDetail(item: ConstraintItem): string {
 function addUnique() {
   const u = props.uniques || []
   const name = `uq_${props.tableName}_${u.length + 1}`
-  emit('updateUniques', [...u, { name, columns: [], nullsDistinct: false }])
+  emit('updateUniques', [...u, { name, columns: [], nullsNotDistinct: false }])
   const newIdx = (props.pk ? 1 : 0) + u.length
   selectedIdx.value = newIdx
 }

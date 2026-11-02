@@ -59,7 +59,7 @@ function moveKey(i: number, delta: number) {
     <div class="ip-row">
       <label class="ip-label"></label>
       <label class="ip-check"><input type="checkbox" :checked="index.unique" @change="set('unique', ($event.target as HTMLInputElement).checked)" /> Unique</label>
-      <label v-if="index.unique" class="ip-check"><input type="checkbox" :checked="index.nullsDistinct" @change="set('nullsDistinct', ($event.target as HTMLInputElement).checked)" /> Nulls Distinct</label>
+      <label v-if="index.unique" class="ip-check"><input type="checkbox" :checked="index.nullsNotDistinct" @change="set('nullsNotDistinct', ($event.target as HTMLInputElement).checked)" /> Nulls Not Distinct</label>
     </div>
 
     <div class="ip-section-label">Columns and expressions</div>

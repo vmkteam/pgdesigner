@@ -313,7 +313,7 @@ export interface IIgnoredRule {
 export interface IIndexDetail {
   name: string,
   unique: boolean,
-  nullsDistinct: boolean,
+  nullsNotDistinct: boolean,
   using: string,
   keys: Array<IIndexKeyDetail>,
   with: Array<IWithParamDetail>,
@@ -325,7 +325,7 @@ export interface IIndexInput {
   name: string,
   table: string,
   unique: boolean,
-  nullsDistinct: boolean,
+  nullsNotDistinct: boolean,
   using: string,
   keys: Array<IIndexKeyInput>,
   with: Array<IWithParamInput>,
@@ -567,13 +567,13 @@ export interface ITypeInfo {
 export interface IUniqueDetail {
   name: string,
   columns: Array<string>,
-  nullsDistinct: boolean
+  nullsNotDistinct: boolean
 }
 
 export interface IUniqueInput {
   name: string,
   columns: Array<string>,
-  nullsDistinct: boolean
+  nullsNotDistinct: boolean
 }
 
 export interface IUpdateInfo {

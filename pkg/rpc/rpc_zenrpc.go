@@ -1532,7 +1532,7 @@ func (ProjectService) SMD() smd.ServiceInfo {
 									},
 								},
 								{
-									Name: "nullsDistinct",
+									Name: "nullsNotDistinct",
 									Type: smd.Boolean,
 								},
 							},
@@ -1656,7 +1656,7 @@ func (ProjectService) SMD() smd.ServiceInfo {
 									Type: smd.Boolean,
 								},
 								{
-									Name: "nullsDistinct",
+									Name: "nullsNotDistinct",
 									Type: smd.Boolean,
 								},
 								{
@@ -2167,7 +2167,7 @@ Used for saving DDL, diff patches, and other generated text.`,
 										},
 									},
 									{
-										Name: "nullsDistinct",
+										Name: "nullsNotDistinct",
 										Type: smd.Boolean,
 									},
 								},
@@ -2279,7 +2279,7 @@ Used for saving DDL, diff patches, and other generated text.`,
 										Type: smd.Boolean,
 									},
 									{
-										Name: "nullsDistinct",
+										Name: "nullsNotDistinct",
 										Type: smd.Boolean,
 									},
 									{
@@ -2630,7 +2630,7 @@ Used for saving DDL, diff patches, and other generated text.`,
 									},
 								},
 								{
-									Name: "nullsDistinct",
+									Name: "nullsNotDistinct",
 									Type: smd.Boolean,
 								},
 							},
@@ -2754,7 +2754,7 @@ Used for saving DDL, diff patches, and other generated text.`,
 									Type: smd.Boolean,
 								},
 								{
-									Name: "nullsDistinct",
+									Name: "nullsNotDistinct",
 									Type: smd.Boolean,
 								},
 								{
@@ -3117,7 +3117,7 @@ It does NOT modify the project — only computes the diff.`,
 										},
 									},
 									{
-										Name: "nullsDistinct",
+										Name: "nullsNotDistinct",
 										Type: smd.Boolean,
 									},
 								},
@@ -3229,7 +3229,7 @@ It does NOT modify the project — only computes the diff.`,
 										Type: smd.Boolean,
 									},
 									{
-										Name: "nullsDistinct",
+										Name: "nullsNotDistinct",
 										Type: smd.Boolean,
 									},
 									{

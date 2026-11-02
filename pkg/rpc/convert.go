@@ -158,7 +158,7 @@ func newTableDetail(p *pgd.Project, t *pgd.Table, schema *pgd.Schema) *TableDeta
 
 	// Uniques
 	for _, u := range t.Uniques {
-		ud := UniqueDetail{Name: u.Name, NullsDistinct: u.NullsDistinct == "true"}
+		ud := UniqueDetail{Name: u.Name, NullsNotDistinct: u.NullsDistinct == "false"}
 		for _, c := range u.Columns {
 			ud.Columns = append(ud.Columns, c.Name)
 		}
@@ -204,10 +204,10 @@ func newTableDetail(p *pgd.Project, t *pgd.Table, schema *pgd.Schema) *TableDeta
 			continue
 		}
 		id := IndexDetail{
-			Name:          idx.Name,
-			Unique:        idx.Unique == "true",
-			NullsDistinct: idx.NullsDistinct == "true",
-			Using:         idx.Using,
+			Name:             idx.Name,
+			Unique:           idx.Unique == "true",
+			NullsNotDistinct: idx.NullsDistinct == "false",
+			Using:            idx.Using,
 		}
 		id.Keys = MapV(idx.Keys, newIndexKeyDetail)
 		if idx.With != nil {

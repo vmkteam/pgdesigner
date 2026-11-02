@@ -474,7 +474,7 @@ async function executeCreateFK(fromTable: string, toTable: string) {
     const existingIndexes = tableData.indexes || []
     const newIndexes = fkColNames
       .filter(col => !existingIndexes.some(ix => ix.keys?.length === 1 && ix.keys[0]?.kind === 'column' && ix.keys[0]?.name === col))
-      .map(col => ({ name: `ix_${shortFrom}_${col}`, unique: false, nullsDistinct: false, using: 'btree', keys: [{ kind: 'column', name: col }], where: '', include: [] }))
+      .map(col => ({ name: `ix_${shortFrom}_${col}`, unique: false, nullsNotDistinct: false, using: 'btree', keys: [{ kind: 'column', name: col }], where: '', include: [] }))
 
     await api.project.updateTable({
       name: fromTable,
@@ -564,7 +564,7 @@ async function executeCreateM2M(tableA: string, tableB: string) {
 
     // Create indexes for each FK column
     const indexes = [...fkColNamesA, ...fkColNamesB].map(col => ({
-      name: `ix_${junctionName}_${col}`, unique: false, nullsDistinct: false,
+      name: `ix_${junctionName}_${col}`, unique: false, nullsNotDistinct: false,
       using: 'btree', keys: [{ kind: 'column', name: col }], where: '', include: [],
     }))
 

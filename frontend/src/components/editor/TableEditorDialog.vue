@@ -230,7 +230,7 @@ function onCreateIndex(columnName: string) {
     return
   }
   const newIndex = {
-    name, unique: false, nullsDistinct: false, using: 'btree',
+    name, unique: false, nullsNotDistinct: false, using: 'btree',
     keys: [{ kind: 'column', name: columnName, expression: '', order: '', nulls: '', opclass: '' }], with: [], where: '', include: [],
   }
   editor.draft.indexes = [...(editor.draft.indexes || []), newIndex]

@@ -245,9 +245,9 @@ type PKDetail struct {
 
 // UniqueDetail holds unique constraint data.
 type UniqueDetail struct {
-	Name          string   `json:"name"`
-	Columns       []string `json:"columns"`
-	NullsDistinct bool     `json:"nullsDistinct,omitempty"`
+	Name             string   `json:"name"`
+	Columns          []string `json:"columns"`
+	NullsNotDistinct bool     `json:"nullsNotDistinct,omitempty"`
 }
 
 // CheckDetail holds check constraint data.
@@ -340,14 +340,14 @@ type ObjectItem struct {
 
 // IndexDetail holds index data.
 type IndexDetail struct {
-	Name          string            `json:"name"`
-	Unique        bool              `json:"unique,omitempty"`
-	NullsDistinct bool              `json:"nullsDistinct,omitempty"`
-	Using         string            `json:"using,omitempty"`
-	Keys          []IndexKeyDetail  `json:"keys"`
-	With          []WithParamDetail `json:"with,omitempty"`
-	Where         string            `json:"where,omitempty"`
-	Include       []string          `json:"include,omitempty"`
+	Name             string            `json:"name"`
+	Unique           bool              `json:"unique,omitempty"`
+	NullsNotDistinct bool              `json:"nullsNotDistinct,omitempty"`
+	Using            string            `json:"using,omitempty"`
+	Keys             []IndexKeyDetail  `json:"keys"`
+	With             []WithParamDetail `json:"with,omitempty"`
+	Where            string            `json:"where,omitempty"`
+	Include          []string          `json:"include,omitempty"`
 }
 
 // WithParamDetail holds a key-value storage parameter.

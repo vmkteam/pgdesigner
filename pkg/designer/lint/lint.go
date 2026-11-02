@@ -829,15 +829,15 @@ func prefixMatch(ids, names []string) bool {
 }
 
 // indexSig describes what an index does apart from its name: duplicate indexes have
-// equal signatures. Indexes that differ in method, uniqueness, predicate, INCLUDE or key
-// opclass and ordering are not duplicates.
+// equal signatures. Indexes that differ in method, uniqueness, NULLS NOT DISTINCT, predicate,
+// INCLUDE or key opclass and ordering are not duplicates.
 func indexSig(idx *pgd.Index) string {
 	var include []string
 	if idx.Include != nil {
 		include = pgd.ColRefNames(idx.Include.Columns)
 	}
 	return strings.Join([]string{idx.Table, idx.Method(), strconv.FormatBool(idx.Unique == "true"),
-		idx.Predicate(), strings.Join(keyDefs(idx), ","), strings.Join(include, ",")}, "|")
+		strconv.FormatBool(idx.NullsDistinct == "false"), idx.Predicate(), strings.Join(keyDefs(idx), ","), strings.Join(include, ",")}, "|")
 }
 
 // keyDefs describes index keys in order as in DDL: column or expression, opclass and ordering.
@@ -1430,7 +1430,7 @@ func checkVersionFeatures(v *validator, schema string, t *pgd.Table) {
 		v.versionWarn(path, 10, "table partitioning")
 	}
 	for _, u := range t.Uniques {
-		if u.NullsDistinct == "true" {
+		if u.NullsDistinct == "false" {
 			v.versionWarn(path, 15, "NULLS NOT DISTINCT")
 		}
 	}
