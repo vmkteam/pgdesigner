@@ -4,7 +4,7 @@
 **Target:** PostgreSQL 18
 **File Extension:** `.pgd`
 **Encoding:** UTF-8
-**Validation:** `pgd-format.xsd` (see `lfdfq pgd-format.xsd`)
+**Validation:** [`pgd-format.xsd`](pgd-format.xsd)
 
 ## Overview
 
