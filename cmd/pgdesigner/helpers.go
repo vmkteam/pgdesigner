@@ -9,44 +9,9 @@ import (
 	"strings"
 
 	"github.com/vmkteam/pgdesigner/pkg/format"
-	"github.com/vmkteam/pgdesigner/pkg/format/dbs"
-	"github.com/vmkteam/pgdesigner/pkg/format/dm2"
-	"github.com/vmkteam/pgdesigner/pkg/format/pdd"
 	"github.com/vmkteam/pgdesigner/pkg/format/pgre"
-	sqlfmt "github.com/vmkteam/pgdesigner/pkg/format/sql"
 	"github.com/vmkteam/pgdesigner/pkg/pgd"
 )
-
-var converters = map[string]format.Converter{
-	format.ExtDBS: format.ConverterFunc(dbs.Convert),
-	format.ExtDM2: format.ConverterFunc(dm2.Convert),
-	format.ExtPDD: format.ConverterFunc(pdd.Convert),
-	format.ExtSQL: format.ConverterFunc(sqlfmt.Convert),
-}
-
-// loadFile loads a .pgd file, auto-converts other formats, or introspects a PostgreSQL DSN.
-func loadFile(path string, opts pgre.Options) (*pgd.Project, error) {
-	if pgre.IsDSN(path) {
-		return pgre.Connect(path, opts)
-	}
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	ext := strings.ToLower(filepath.Ext(path))
-	if c, ok := converters[ext]; ok {
-		name := strings.TrimSuffix(filepath.Base(path), ext)
-		return c.Convert(data, name)
-	}
-
-	var project pgd.Project
-	if err := xml.Unmarshal(data, &project); err != nil {
-		return nil, fmt.Errorf("parsing XML: %w", err)
-	}
-	return &project, nil
-}
 
 // saveProject writes a project to a .pgd file.
 func saveProject(p *pgd.Project, path string) error {
@@ -71,43 +36,42 @@ func pgdFilePath(path string) string {
 }
 
 // parseArgs parses flags placed anywhere in args, so "generate in.pgd -o out.sql"
-// works like "generate -o out.sql in.pgd". Arguments after "--" are positional.
-// It returns the positional arguments.
-func parseArgs(fs *flag.FlagSet, args []string) []string {
+// works like "generate -o out.sql in.pgd", and returns the positional arguments.
+// Arguments after "--" are positional. It exits with usage when the number of
+// positional arguments is out of [minArgs, maxArgs]; maxArgs < 0 means no limit.
+func parseArgs(fs *flag.FlagSet, args []string, minArgs, maxArgs int) []string {
 	var positional []string
 	for {
 		_ = fs.Parse(args) // flag.ExitOnError: exits on bad flags
 		rest := fs.Args()
 		if n := len(args) - len(rest); n > 0 && args[n-1] == "--" {
-			return append(positional, rest...)
+			positional = append(positional, rest...)
+			break
 		}
 		if len(rest) == 0 {
-			return positional
+			break
 		}
 		positional = append(positional, rest[0])
 		args = rest[1:]
 	}
-}
 
-// checkArgs exits with usage when the number of positional arguments is out of [minArgs, maxArgs].
-// maxArgs < 0 means no upper limit.
-func checkArgs(fs *flag.FlagSet, args []string, minArgs, maxArgs int) {
-	tooMany := maxArgs >= 0 && len(args) > maxArgs
-	if !tooMany && len(args) >= minArgs {
-		return
+	tooMany := maxArgs >= 0 && len(positional) > maxArgs
+	if !tooMany && len(positional) >= minArgs {
+		return positional
 	}
 	if tooMany {
-		fmt.Fprintf(fs.Output(), "unexpected argument: %s\n\n", args[maxArgs])
+		fmt.Fprintf(fs.Output(), "unexpected argument: %s\n\n", positional[maxArgs])
 	}
 	fs.Usage()
 	os.Exit(1)
+	return nil
 }
 
-// reOptions returns reverse engineering options from the -schema and -full flags.
-func reOptions(schemas string, full bool) pgre.Options {
-	opts := pgre.Options{Full: full}
+// dsnOptions returns database introspection options from the -schema and -full flags.
+func dsnOptions(schemas string, full bool) []format.Option {
+	opts := []format.Option{format.WithFull(full)}
 	if schemas != "" {
-		opts.Schemas = strings.Split(schemas, ",")
+		opts = append(opts, format.WithSchemas(strings.Split(schemas, ",")...))
 	}
 	return opts
 }

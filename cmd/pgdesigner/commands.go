@@ -28,8 +28,7 @@ func runConvert(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner convert [-o output.pgd] [-schema s1,s2] [-full] <input.dbs|.dm2|.pdd|.sql|postgres://...>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	pos := parseArgs(fs, args)
-	checkArgs(fs, pos, 1, 1)
+	pos := parseArgs(fs, args, 1, 1)
 
 	inputPath := pos[0]
 	ext := strings.ToLower(filepath.Ext(inputPath))
@@ -41,9 +40,9 @@ func runConvert(args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	project, err := loadFile(inputPath, reOptions(*schemaFilter, *fullRE))
+	project, err := format.LoadFile(inputPath, dsnOptions(*schemaFilter, *fullRE)...)
 	if err != nil {
-		log.Fatalf("conversion failed: %v", err)
+		log.Fatal(err)
 	}
 	if err := saveProject(project, output); err != nil {
 		log.Fatal(err)
@@ -76,13 +75,12 @@ func runLint(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner lint [-f text|json] [-s error|warning|info] [-fix] <file.pgd|.dbs|.pdd|.sql>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	pos := parseArgs(fs, args)
-	checkArgs(fs, pos, 1, 1)
+	pos := parseArgs(fs, args, 1, 1)
 
 	inputPath := pos[0]
-	project, err := loadFile(inputPath, pgre.Options{})
+	project, err := format.LoadFile(inputPath)
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", pgre.RedactDSN(inputPath), err)
+		log.Fatal(err)
 	}
 
 	issues := lint.Validate(project)
@@ -195,18 +193,16 @@ func runDiff(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner diff [-f sql|json] [-o output] <old.pgd> <new.pgd>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	pos := parseArgs(fs, args)
-	checkArgs(fs, pos, 2, 2)
+	pos := parseArgs(fs, args, 2, 2)
 
 	// a database is introspected fully: without its enums diff would create them again
-	opts := pgre.Options{Full: true}
-	oldProject, err := loadFile(pos[0], opts)
+	oldProject, err := format.LoadFile(pos[0], format.WithFull(true))
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", pgre.RedactDSN(pos[0]), err)
+		log.Fatal(err)
 	}
-	newProject, err := loadFile(pos[1], opts)
+	newProject, err := format.LoadFile(pos[1], format.WithFull(true))
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", pgre.RedactDSN(pos[1]), err)
+		log.Fatal(err)
 	}
 
 	result := diff.Diff(oldProject, newProject)
@@ -249,12 +245,11 @@ func runGenerate(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner generate [-o output.sql] <file.pgd|.dbs|.pdd|.sql>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	pos := parseArgs(fs, args)
-	checkArgs(fs, pos, 1, 1)
+	pos := parseArgs(fs, args, 1, 1)
 
-	project, err := loadFile(pos[0], pgre.Options{})
+	project, err := format.LoadFile(pos[0])
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", pgre.RedactDSN(pos[0]), err)
+		log.Fatal(err)
 	}
 
 	ddl := pgd.GenerateDDL(project)
@@ -275,15 +270,13 @@ func runMerge(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner merge [flags] <base> <overlay> [<extra>...]\n\nMerges multiple schema files into one .pgd. Overlay wins on conflicts.\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	pos := parseArgs(fs, args)
-	checkArgs(fs, pos, 2, -1)
+	pos := parseArgs(fs, args, 2, -1)
 
-	opts := pgre.Options{}
 	projects := make([]*pgd.Project, len(pos))
 	for i, path := range pos {
-		p, err := loadFile(path, opts)
+		p, err := format.LoadFile(path)
 		if err != nil {
-			log.Fatalf("failed to load %s: %v", pgre.RedactDSN(path), err)
+			log.Fatal(err)
 		}
 		projects[i] = p
 		tables := 0
@@ -323,12 +316,11 @@ func runTestData(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner testdata [flags] <file.pgd|.dbs|.pdd|.sql>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	pos := parseArgs(fs, args)
-	checkArgs(fs, pos, 1, 1)
+	pos := parseArgs(fs, args, 1, 1)
 
-	project, err := loadFile(pos[0], pgre.Options{})
+	project, err := format.LoadFile(pos[0])
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", pgre.RedactDSN(pos[0]), err)
+		log.Fatal(err)
 	}
 
 	opts := gendata.Options{

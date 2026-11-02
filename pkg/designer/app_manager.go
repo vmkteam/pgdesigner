@@ -100,7 +100,7 @@ func NewAppManager() *AppManager {
 func (m *AppManager) OpenFile(path string) (*pgd.Project, string, error) {
 	project, err := format.LoadFile(path)
 	if err != nil {
-		return nil, "", fmt.Errorf("loading %s: %w", path, err)
+		return nil, "", err
 	}
 	return project, pgdFilePath(path), nil
 }

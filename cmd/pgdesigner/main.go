@@ -13,6 +13,7 @@ import (
 	"github.com/vmkteam/pgdesigner/frontend"
 	"github.com/vmkteam/pgdesigner/pkg/app"
 	"github.com/vmkteam/pgdesigner/pkg/designer/store"
+	"github.com/vmkteam/pgdesigner/pkg/format"
 	"github.com/vmkteam/pgdesigner/pkg/format/pgre"
 	"github.com/vmkteam/pgdesigner/pkg/pgd"
 )
@@ -71,8 +72,7 @@ Flags:
 `, version)
 		flag.PrintDefaults()
 	}
-	args := parseArgs(flag.CommandLine, os.Args[1:])
-	checkArgs(flag.CommandLine, args, 0, 1)
+	args := parseArgs(flag.CommandLine, os.Args[1:], 0, 1)
 
 	if *tsClient {
 		p := &pgd.Project{Version: 1, PgVersion: "18"}
@@ -95,9 +95,9 @@ Flags:
 		inputPath = "(demo)"
 	} else {
 		inputPath = args[0]
-		project, err := loadFile(inputPath, reOptions(*schemaFilter, *fullRE))
+		project, err := format.LoadFile(inputPath, dsnOptions(*schemaFilter, *fullRE)...)
 		if err != nil {
-			log.Fatalf("failed to load %s: %v", pgre.RedactDSN(inputPath), err)
+			log.Fatal(err)
 		}
 
 		st = store.NewProjectStore(project, pgdFilePath(inputPath))

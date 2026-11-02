@@ -81,7 +81,7 @@ func TestParseArgs(t *testing.T) {
 			fs := flag.NewFlagSet("test", flag.ContinueOnError)
 			out := fs.String("o", "", "")
 			f := fs.String("f", "sql", "")
-			pos := parseArgs(fs, tt.args)
+			pos := parseArgs(fs, tt.args, 0, -1)
 			assert.Equal(t, tt.wantPos, pos)
 			assert.Equal(t, tt.wantOut, *out)
 			assert.Equal(t, tt.wantF, *f)
