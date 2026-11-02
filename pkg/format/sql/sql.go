@@ -3,7 +3,6 @@ package sql
 import (
 	"bytes"
 	"fmt"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -1362,37 +1361,12 @@ func nodeToSQL(n *pg.Node) string {
 // around every operation and cast) compares equal to the same one parsed from DDL.
 // On a parse error expr is returned as is.
 func NormalizeExpr(expr string) string {
-	tree, err := pgquery.Parse("SELECT " + expr)
-	if err != nil || len(tree.Stmts) != 1 {
-		return expr
-	}
-	targets := tree.Stmts[0].GetStmt().GetSelectStmt().GetTargetList()
-	if len(targets) != 1 || targets[0].GetResTarget().GetVal() == nil {
-		return expr
-	}
-	if s := nodeToSQL(targets[0].GetResTarget().GetVal()); s != "" {
-		return s
+	if n := parseExpr(expr); n != nil {
+		if s := nodeToSQL(n); s != "" {
+			return s
+		}
 	}
 	return expr
-}
-
-var (
-	// castRe matches a type cast in deparsed SQL: ::text, ::varchar(10), ::text[], ::"Type".
-	castRe = regexp.MustCompile(`::(?:"[^"]+"|[a-z_][a-z0-9_.]*(?: (?:varying|precision|with(?:out)? time zone))*)(?:\(\d+(?:,\s*\d+)?\))?(?:\[\])*`)
-	// anyArrayRe and allArrayRe match how PostgreSQL stores IN and NOT IN lists.
-	anyArrayRe = regexp.MustCompile(`\s*=\s*ANY\s*\(\s*ARRAY\[([^\[\]]*)\]\s*\)`)
-	allArrayRe = regexp.MustCompile(`\s*<>\s*ALL\s*\(\s*ARRAY\[([^\[\]]*)\]\s*\)`)
-)
-
-// ExprKey returns a key for comparing SQL expressions that differ only in how they are
-// written: an expression from the database (pg_get_expr) has extra parentheses and casts,
-// and IN lists are stored as = ANY (ARRAY[...]). The key is for comparison only: it drops
-// all casts, so expressions that differ only in a cast get the same key.
-func ExprKey(expr string) string {
-	s := castRe.ReplaceAllString(NormalizeExpr(strings.TrimSpace(expr)), "")
-	s = anyArrayRe.ReplaceAllString(s, " IN ($1)")
-	s = allArrayRe.ReplaceAllString(s, " NOT IN ($1)")
-	return NormalizeExpr(s)
 }
 
 // stripDefaultTypeCast removes redundant type casts from default values.

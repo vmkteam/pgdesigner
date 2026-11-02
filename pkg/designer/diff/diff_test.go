@@ -1036,6 +1036,10 @@ func TestDiff_ExpressionFormatting(t *testing.T) {
 
 	changed := table("price >= 0::numeric", "price*qty::numeric", "upper(code)", "code <> 'x'")
 	assert.Len(t, Diff(db, changed).Changes, 4) // CHECK and index: drop + add
+
+	// a cast is a change: only casts that pg_get_expr adds are ignored
+	recast := table("(price)::integer > 0", "price*qty::numeric", "(code)::date", "code <> 'x'")
+	assert.Len(t, Diff(table("price > 0", "price*qty::numeric", "(code)::time", "code <> 'x'"), recast).Changes, 4)
 }
 
 func TestDiff_DefaultFormatting(t *testing.T) {
@@ -1045,6 +1049,9 @@ func TestDiff_DefaultFormatting(t *testing.T) {
 	assert.Empty(t, Diff(table("'open'::character varying"), table("'open'")).Changes)
 	assert.Len(t, Diff(table("'open'::character varying"), table("'closed'")).Changes, 1)
 	assert.Len(t, Diff(table("'open'"), table("")).Changes, 1)
+	assert.Empty(t, Diff(table("'-1'::integer"), table("-1")).Changes)
+	assert.Len(t, Diff(table("now()"), table("now()::date")).Changes, 1)
+	assert.Len(t, Diff(table("'fe80::a'::inet"), table("'fe80::b'::inet")).Changes, 1)
 }
 
 func TestDiff_TableOptions(t *testing.T) {
