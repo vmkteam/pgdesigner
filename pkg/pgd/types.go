@@ -62,6 +62,15 @@ func ColRefNames(refs []ColRef) []string {
 	return names
 }
 
+// FKColNames returns the local column names of an FK.
+func FKColNames(cols []FKCol) []string {
+	names := make([]string, len(cols))
+	for i, c := range cols {
+		names[i] = c.Name
+	}
+	return names
+}
+
 // IsExpression reports whether s looks like an SQL expression rather than a plain column name.
 func IsExpression(s string) bool {
 	c := strings.TrimSpace(s)

@@ -110,8 +110,7 @@ type validator struct {
 	tables      map[string]*pgd.Table             // "schema.table" → *pgd.Table
 	columns     map[string]map[string]*pgd.Column // "schema.table" → colName → *pgd.Column
 	indexes     map[string][]*pgd.Index           // "schema.table" → []*pgd.Index
-	userTypes   map[string]bool                   // user-defined type names
-	typeSchemas map[string][]string               // user-defined type name → schemas defining it
+	typeSchemas map[string][]string               // lowercase user-defined type name → schemas defining it
 	naming      string                            // convention from settings
 	pgVersion   int                               // project PG target version (e.g. 18)
 	ignoreRules map[string]bool                   // global codes to skip
@@ -205,7 +204,6 @@ func (v *validator) buildIndex() {
 	v.tables = make(map[string]*pgd.Table)
 	v.columns = make(map[string]map[string]*pgd.Column)
 	v.indexes = make(map[string][]*pgd.Index)
-	v.userTypes = make(map[string]bool)
 	v.typeSchemas = make(map[string][]string)
 
 	for i := range v.p.Schemas {
@@ -261,11 +259,17 @@ func (v *validator) buildIndex() {
 }
 
 func (v *validator) addUserType(schema, name string) {
-	v.userTypes[strings.ToLower(name)] = true
-	if schema != "" {
-		v.userTypes[strings.ToLower(schema+"."+name)] = true
+	key := strings.ToLower(name)
+	v.typeSchemas[key] = append(v.typeSchemas[key], cmp.Or(schema, "public"))
+}
+
+// isUserType reports whether t, a lowercase type name optionally qualified, is defined in the project.
+func (v *validator) isUserType(t string) bool {
+	schema, name, qualified := strings.Cut(t, ".")
+	if !qualified {
+		return len(v.typeSchemas[t]) > 0
 	}
-	v.typeSchemas[strings.ToLower(name)] = append(v.typeSchemas[strings.ToLower(name)], cmp.Or(schema, "public"))
+	return slices.ContainsFunc(v.typeSchemas[name], func(s string) bool { return strings.EqualFold(s, schema) })
 }
 
 // typeSchema returns the schema of a user-defined type written without one, when the type
@@ -384,7 +388,7 @@ func (v *validator) resolveTable(ref, currentSchema string) (*pgd.Table, string)
 
 func (v *validator) isKnownType(typ string) bool {
 	t := pgd.StripTypeParams(typ)
-	return pgd.IsKnownBuiltinType(typ) || v.userTypes[t]
+	return pgd.IsKnownBuiltinType(typ) || v.isUserType(t)
 }
 
 func normalizeBaseType(typ string) string {
@@ -832,29 +836,16 @@ func indexSig(idx *pgd.Index) string {
 	if idx.Include != nil {
 		include = pgd.ColRefNames(idx.Include.Columns)
 	}
-	return strings.Join([]string{idx.Table, indexMethod(idx), strconv.FormatBool(idx.Unique == "true"),
-		indexWhere(idx), strings.Join(keyDefs(idx), ","), strings.Join(include, ",")}, "|")
+	return strings.Join([]string{idx.Table, idx.Method(), strconv.FormatBool(idx.Unique == "true"),
+		idx.Predicate(), strings.Join(keyDefs(idx), ","), strings.Join(include, ",")}, "|")
 }
 
-func indexMethod(idx *pgd.Index) string {
-	if idx.Using == "" {
-		return "btree"
-	}
-	return strings.ToLower(idx.Using)
-}
-
-func indexWhere(idx *pgd.Index) string {
-	if idx.Where == nil {
-		return ""
-	}
-	return strings.TrimSpace(idx.Where.Value)
-}
-
-// keyDefs describes index keys in order: what each key indexes, its opclass and ordering.
+// keyDefs describes index keys in order as in DDL: column or expression, opclass and ordering.
 func keyDefs(idx *pgd.Index) []string {
 	defs := make([]string, len(idx.Keys))
 	for i, k := range idx.Keys {
-		defs[i] = strings.Join([]string{k.ID(), k.Opclass, k.Order, k.Nulls}, " ")
+		k.Expression = strings.TrimSpace(k.Expression)
+		defs[i] = pgd.IndexKeyDef(k)
 	}
 	return defs
 }
@@ -1310,7 +1301,7 @@ func checkOverlappingIndexes(v *validator) {
 				for j, b := range idxs {
 					ak, bk := keys[i], keys[j]
 					if i == j || len(ak) == 0 || a.Unique == "true" ||
-						indexMethod(&a) != "btree" || indexMethod(&b) != "btree" || indexWhere(&a) != indexWhere(&b) {
+						a.Method() != "btree" || b.Method() != "btree" || a.Predicate() != b.Predicate() {
 						continue
 					}
 					// a non-unique btree is redundant if its keys are a strict prefix of b's keys

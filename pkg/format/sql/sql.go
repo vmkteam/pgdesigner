@@ -23,11 +23,18 @@ func Convert(data []byte, name string) (*pgd.Project, error) {
 
 // ParseSQL parses PostgreSQL DDL statements and returns a pgd.Project.
 func ParseSQL(sql string, projectName string) (*pgd.Project, error) {
-	sql = markVirtualGenerated(cleanDump(sql))
+	sql = cleanDump(sql)
 
 	result, err := pgquery.Parse(sql)
 	if err != nil {
-		return nil, fmt.Errorf("parse sql: %w", err)
+		// PG18 virtual generated columns are a syntax error for the PG17 parser
+		marked := markVirtualGenerated(sql)
+		if marked == sql {
+			return nil, fmt.Errorf("parse sql: %w", err)
+		}
+		if result, err = pgquery.Parse(marked); err != nil {
+			return nil, fmt.Errorf("parse sql: %w", err)
+		}
 	}
 
 	c := &sqlConverter{
@@ -1359,15 +1366,11 @@ func NormalizeExpr(expr string) string {
 	if err != nil || len(tree.Stmts) != 1 {
 		return expr
 	}
-	sel := tree.Stmts[0].Stmt.GetSelectStmt()
-	if sel == nil || len(sel.TargetList) != 1 {
+	targets := tree.Stmts[0].GetStmt().GetSelectStmt().GetTargetList()
+	if len(targets) != 1 || targets[0].GetResTarget().GetVal() == nil {
 		return expr
 	}
-	rt := sel.TargetList[0].GetResTarget()
-	if rt == nil || rt.Val == nil {
-		return expr
-	}
-	if s := nodeToSQL(rt.Val); s != "" {
+	if s := nodeToSQL(targets[0].GetResTarget().GetVal()); s != "" {
 		return s
 	}
 	return expr

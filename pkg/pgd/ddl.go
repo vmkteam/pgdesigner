@@ -1170,10 +1170,7 @@ func (d *ddlWriter) writeIndex(q string, idx *Index) {
 		d.P("\n\tINCLUDE (%s)", QuotedColList(idx.Include.Columns))
 	}
 	d.If(idx.NullsDistinct == "false", "\n\tNULLS NOT DISTINCT")
-	if idx.With != nil && len(idx.With.Params) > 0 {
-		d.P("\n\tWITH (%s)", WithParams(idx.With.Params))
-	}
-	d.If(idx.Tablespace != "", "\n\tTABLESPACE %s", QuoteIdent(idx.Tablespace))
+	d.S(storageClauses("\n\t", idx.With, idx.Tablespace))
 	if idx.Where != nil && idx.Where.Value != "" {
 		d.P("\n\tWHERE %s", idx.Where.Value)
 	}

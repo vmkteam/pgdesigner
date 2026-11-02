@@ -4,7 +4,7 @@
 // indexes, types, views, functions, triggers, policies, roles, extensions,
 // grants, comments, and diagram layouts.
 //
-// XSD schema: docs/architecture/pgd-format.xsd
+// XSD schema: docs/pgd-format/pgd-format.xsd
 package pgd
 
 import (
@@ -392,6 +392,22 @@ type Index struct {
 	Include       *Include     `xml:"include,omitempty"`
 	With          *With        `xml:"with,omitempty"`
 	Where         *WhereClause `xml:"where,omitempty"`
+}
+
+// Method returns the index access method, btree by default.
+func (idx *Index) Method() string {
+	if idx.Using == "" {
+		return "btree"
+	}
+	return strings.ToLower(idx.Using)
+}
+
+// Predicate returns the WHERE predicate of a partial index, "" for a full index.
+func (idx *Index) Predicate() string {
+	if idx.Where == nil {
+		return ""
+	}
+	return strings.TrimSpace(idx.Where.Value)
 }
 
 // KeyColumns returns the column names of the index keys in order, skipping expressions.

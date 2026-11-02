@@ -283,7 +283,7 @@ func convertIndex(tableName string, idx pgIndex) *pgd.Index {
 		out.Using = idx.Method
 	}
 	if idx.Predicate != "" {
-		out.Where = &pgd.WhereClause{Value: idx.Predicate}
+		out.Where = &pgd.WhereClause{Value: sqlconv.NormalizeExpr(idx.Predicate)}
 	}
 
 	// Parse columns and WITH params from index definition

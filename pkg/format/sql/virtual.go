@@ -19,10 +19,8 @@ const virtualMarker = "__pgdesigner_virtual__"
 //
 // pg_dump 18 writes virtual columns without the VIRTUAL keyword. The SQL is tokenized by
 // the PostgreSQL lexer, so string literals, comments and function bodies are left untouched.
+// ParseSQL calls it only when the SQL doesn't parse.
 func markVirtualGenerated(sql string) string {
-	if !strings.Contains(strings.ToUpper(sql), "GENERATED") {
-		return sql // lexing a large dump is not free
-	}
 	scan, err := pgquery.Scan(sql)
 	if err != nil {
 		return sql // the parser reports the error

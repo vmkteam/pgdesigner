@@ -160,31 +160,35 @@ func (b *diffBuilder) qt(table string) string {
 
 // --- Phase 1: DROP ---
 
-// dropFKs drops removed and changed FKs of tables that remain.
-func (b *diffBuilder) dropFKs(old, updated *pgd.Schema) {
+// eachKeptTable runs f for each table of old that remains in updated.
+func eachKeptTable(old, updated *pgd.Schema, f func(ot, nt *pgd.Table)) {
 	newTables := tableMap(nilTables(updated))
-	for _, ot := range old.Tables {
-		if nt, exists := newTables[ot.Name]; exists {
-			b.dropRemovedFK(ot.Name, ot.FKs, nt.FKs)
+	for i := range old.Tables {
+		if nt, exists := newTables[old.Tables[i].Name]; exists {
+			f(&old.Tables[i], nt)
 		}
 	}
+}
+
+// dropFKs drops removed and changed FKs of tables that remain.
+func (b *diffBuilder) dropFKs(old, updated *pgd.Schema) {
+	eachKeptTable(old, updated, func(ot, nt *pgd.Table) {
+		b.dropRemovedFK(ot.Name, ot.FKs, nt.FKs)
+	})
 }
 
 // dropKeys drops removed and changed CHECK, UNIQUE and PK constraints of tables that remain.
 func (b *diffBuilder) dropKeys(old, updated *pgd.Schema) {
-	newTables := tableMap(nilTables(updated))
-	for _, ot := range old.Tables {
-		if nt, exists := newTables[ot.Name]; exists {
-			b.dropRemovedChecks(ot.Name, ot.Checks, nt.Checks)
-			b.dropRemovedUniques(ot.Name, ot.Uniques, nt.Uniques)
-			b.dropModifiedPK(ot.Name, ot.PK, nt.PK)
-		}
-	}
+	eachKeptTable(old, updated, func(ot, nt *pgd.Table) {
+		b.dropRemovedChecks(ot.Name, ot.Checks, nt.Checks)
+		b.dropRemovedUniques(ot.Name, ot.Uniques, nt.Uniques)
+		b.dropModifiedPK(ot.Name, ot.PK, nt.PK)
+	})
 }
 
 func (b *diffBuilder) dropIndexes(old, updated *pgd.Schema) {
 	newIndexes := indexMap(nilIndexes(updated))
-	renamed := renamedIndexes(nilIndexes(updated), indexMap(old.Indexes))
+	renamed := newRenameCandidates(nilIndexes(updated), indexMap(old.Indexes), indexName, indexIdentity)
 	for i := range old.Indexes {
 		oi := &old.Indexes[i]
 		ni, exists := newIndexes[oi.Name]
@@ -198,21 +202,18 @@ func (b *diffBuilder) dropIndexes(old, updated *pgd.Schema) {
 }
 
 func (b *diffBuilder) dropColumns(old, updated *pgd.Schema) {
-	newTables := tableMap(nilTables(updated))
-	for _, ot := range old.Tables {
-		if nt, exists := newTables[ot.Name]; exists {
-			b.dropRemovedColumns(ot.Name, ot.Columns, nt.Columns)
-		}
-	}
+	eachKeptTable(old, updated, func(ot, nt *pgd.Table) {
+		b.dropRemovedColumns(ot.Name, ot.Columns, nt.Columns)
+	})
 }
 
 // droppedTable is a table of an old schema missing in the updated project.
 type droppedTable struct {
-	schema string
+	schema  string
+	key     string   // schema.table
+	targets []string // schema.table referenced by its FKs
 	*pgd.Table
 }
-
-func (t droppedTable) key() string { return t.schema + "." + t.Name }
 
 // fkTarget returns the schema-qualified table referenced by an FK of a table in schema.
 func fkTarget(schema string, fk *pgd.ForeignKey) string {
@@ -230,58 +231,63 @@ func (b *diffBuilder) dropTables(old, updated *pgd.Project) {
 		os := &old.Schemas[i]
 		newTables := tableMap(nilTables(findSchema(updated.Schemas, os.Name)))
 		for j := range os.Tables {
-			if _, exists := newTables[os.Tables[j].Name]; !exists {
-				tables = append(tables, droppedTable{os.Name, &os.Tables[j]})
+			t := &os.Tables[j]
+			if _, exists := newTables[t.Name]; exists {
+				continue
+			}
+			d := droppedTable{schema: os.Name, key: os.Name + "." + t.Name, Table: t}
+			for k := range t.FKs {
+				d.targets = append(d.targets, fkTarget(os.Name, &t.FKs[k]))
+			}
+			tables = append(tables, d)
+		}
+	}
+
+	// refs counts the FKs of other remaining tables that reference a table
+	refs := make(map[string]int, len(tables))
+	for _, t := range tables {
+		refs[t.key] = 0
+	}
+	for _, t := range tables {
+		for _, target := range t.targets {
+			if n, remains := refs[target]; remains && target != t.key {
+				refs[target] = n + 1
 			}
 		}
 	}
 
 	for len(tables) > 0 {
-		dropped := make(map[string]bool, len(tables))
+		var ready, referenced []droppedTable
 		for _, t := range tables {
-			dropped[t.key()] = true
-		}
-		var referenced []droppedTable
-		for _, t := range tables {
-			if isReferenced(t, tables) {
+			if refs[t.key] > 0 {
 				referenced = append(referenced, t)
-				continue
+			} else {
+				ready = append(ready, t)
 			}
-			b.schema = t.schema
-			b.dropTable(t.Name)
 		}
-		if len(referenced) == len(tables) { // a reference cycle
+		if len(ready) == 0 { // a reference cycle
 			for _, t := range tables {
 				b.schema = t.schema
-				for k := range t.FKs {
-					if target := fkTarget(t.schema, &t.FKs[k]); target != t.key() && dropped[target] {
+				for k, target := range t.targets {
+					if _, remains := refs[target]; remains && target != t.key {
 						b.dropFK(t.Name, &t.FKs[k])
 					}
 				}
 			}
-			for _, t := range tables {
-				b.schema = t.schema
-				b.dropTable(t.Name)
+			ready, referenced = tables, nil
+		}
+		for _, t := range ready {
+			b.schema = t.schema
+			b.dropTable(t.Name)
+			delete(refs, t.key)
+			for _, target := range t.targets {
+				if _, remains := refs[target]; remains && target != t.key {
+					refs[target]--
+				}
 			}
-			return
 		}
 		tables = referenced
 	}
-}
-
-// isReferenced reports whether an FK of another table in tables references t.
-func isReferenced(t droppedTable, tables []droppedTable) bool {
-	for _, u := range tables {
-		if u.key() == t.key() {
-			continue
-		}
-		for k := range u.FKs {
-			if fkTarget(u.schema, &u.FKs[k]) == t.key() {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 // --- Phases 3–5: CREATE/ALTER ---
@@ -370,7 +376,7 @@ func (b *diffBuilder) createConstraints(old, updated *pgd.Schema) {
 
 	// add/recreate indexes
 	oldIndexes := indexMap(nilIndexes(old))
-	renamed := renamedIndexes(nilIndexes(old), indexMap(updated.Indexes))
+	renamed := newRenameCandidates(nilIndexes(old), indexMap(updated.Indexes), indexName, indexIdentity)
 	for i := range updated.Indexes {
 		ni := &updated.Indexes[i]
 		oi, exists := oldIndexes[ni.Name]
@@ -871,7 +877,7 @@ func (b *diffBuilder) dropIndex(name string) {
 
 func (b *diffBuilder) dropRemovedFK(table string, old, updated []pgd.ForeignKey) {
 	newFKs := fkMap(updated)
-	renamed := renamedFKs(updated, fkMap(old))
+	renamed := newRenameCandidates(updated, fkMap(old), fkKey, fkIdentity)
 	for i := range old {
 		ofk := &old[i]
 		nfk, exists := newFKs[fkKey(ofk)]
@@ -886,7 +892,7 @@ func (b *diffBuilder) dropRemovedFK(table string, old, updated []pgd.ForeignKey)
 
 func (b *diffBuilder) addNewFK(table string, old, updated []pgd.ForeignKey) {
 	oldFKs := fkMap(old)
-	renamed := renamedFKs(old, fkMap(updated))
+	renamed := newRenameCandidates(old, fkMap(updated), fkKey, fkIdentity)
 	for i := range updated {
 		nfk := &updated[i]
 		ofk, exists := oldFKs[fkKey(nfk)]
@@ -894,13 +900,10 @@ func (b *diffBuilder) addNewFK(table string, old, updated []pgd.ForeignKey) {
 			ofk = renamed.take(fkIdentity(nfk)) // the FK may be renamed
 		}
 		switch {
-		case ofk == nil || fkChanged(ofk, nfk) || b.touchesRecreated(table, fkColNames(nfk.Columns)):
+		case ofk == nil || fkChanged(ofk, nfk) || b.touchesRecreated(table, pgd.FKColNames(nfk.Columns)):
 			b.addFK(table, nfk)
-		case ofk.Name != nfk.Name && ofk.Name != "" && nfk.Name != "":
-			b.add(Change{
-				Object: "fk", Action: "alter", Table: table, Name: nfk.Name,
-				SQL: fmt.Sprintf("ALTER TABLE %s RENAME CONSTRAINT %s TO %s;", b.qt(table), b.q(ofk.Name), b.q(nfk.Name)),
-			})
+		default:
+			b.renameConstraint("fk", table, ofk.Name, nfk.Name)
 		}
 	}
 }
@@ -914,8 +917,19 @@ func (b *diffBuilder) addFK(table string, fk *pgd.ForeignKey) {
 	})
 }
 
+// renameConstraint renames a constraint matched by definition; unnamed ones keep their names.
+func (b *diffBuilder) renameConstraint(object, table, from, to string) {
+	if from == to || from == "" || to == "" {
+		return
+	}
+	b.add(Change{
+		Object: object, Action: "alter", Table: table, Name: to,
+		SQL: fmt.Sprintf("ALTER TABLE %s RENAME CONSTRAINT %s TO %s;", b.qt(table), b.q(from), b.q(to)),
+	})
+}
+
 func (b *diffBuilder) dropFK(table string, fk *pgd.ForeignKey) {
-	cols := strings.Join(fkColNames(fk.Columns), ", ")
+	cols := strings.Join(pgd.FKColNames(fk.Columns), ", ")
 	b.dropConstraint("fk", table, fk.Name, fmt.Sprintf("FOREIGN KEY (%s) to %s", cols, fk.ToTable))
 }
 
@@ -953,10 +967,7 @@ func (b *diffBuilder) addNewPK(table string, old, updated *pgd.PrimaryKey) {
 	}
 	if old == nil || pkChanged(old, updated) || b.touchesRecreated(table, pgd.ColRefNames(updated.Columns)) {
 		cols := pgd.QuotedColList(updated.Columns)
-		name := updated.Name
-		if name == "" {
-			name = table + "_pkey"
-		}
+		name := cmp.Or(updated.Name, table+"_pkey")
 		b.add(Change{
 			Object: "pk", Action: "add", Table: table, Name: name,
 			SQL: fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (%s);", b.qt(table), b.q(name), cols),
@@ -1197,10 +1208,13 @@ func (b *diffBuilder) diffComments(old, updated *pgd.Project) {
 			b.addComment(k, v)
 		}
 	}
-	oldTargets, newTargets := commentTargets(old), commentTargets(updated)
+	var oldTargets, newTargets map[commentKey]bool
 	for _, k := range oldKeys {
 		if _, exists := newC[k]; exists || oldC[k] == "" || b.commentRecreated(k) {
 			continue
+		}
+		if oldTargets == nil {
+			oldTargets, newTargets = commentTargets(old), commentTargets(updated)
 		}
 		// comments of dropped objects are gone with them
 		if oldTargets[k] && newTargets[k] {
@@ -1330,17 +1344,19 @@ func (c renameCandidates[T]) take(id string) *T {
 	return q[0]
 }
 
-// renamedIndexes returns indexes whose names are absent in other: rename candidates.
-func renamedIndexes(indexes []pgd.Index, other map[string]*pgd.Index) renameCandidates[pgd.Index] {
-	c := renameCandidates[pgd.Index]{}
-	for i := range indexes {
-		if _, exists := other[indexes[i].Name]; !exists {
-			id := indexIdentity(&indexes[i])
-			c[id] = append(c[id], &indexes[i])
+// newRenameCandidates returns the items whose keys are absent in other, grouped by identity.
+func newRenameCandidates[T any](items []T, other map[string]*T, key, identity func(*T) string) renameCandidates[T] {
+	c := renameCandidates[T]{}
+	for i := range items {
+		if _, exists := other[key(&items[i])]; !exists {
+			id := identity(&items[i])
+			c[id] = append(c[id], &items[i])
 		}
 	}
 	return c
 }
+
+func indexName(idx *pgd.Index) string { return idx.Name }
 
 func indexMap(indexes []pgd.Index) map[string]*pgd.Index {
 	m := make(map[string]*pgd.Index, len(indexes))
@@ -1348,18 +1364,6 @@ func indexMap(indexes []pgd.Index) map[string]*pgd.Index {
 		m[indexes[i].Name] = &indexes[i]
 	}
 	return m
-}
-
-// renamedFKs returns FKs whose keys are absent in other: rename candidates.
-func renamedFKs(fks []pgd.ForeignKey, other map[string]*pgd.ForeignKey) renameCandidates[pgd.ForeignKey] {
-	c := renameCandidates[pgd.ForeignKey]{}
-	for i := range fks {
-		if _, exists := other[fkKey(&fks[i])]; !exists {
-			id := fkIdentity(&fks[i])
-			c[id] = append(c[id], &fks[i])
-		}
-	}
-	return c
 }
 
 // fkIdentity identifies an FK by its target table and column mapping.
@@ -1459,14 +1463,6 @@ func indexElemKey(name, order, nulls, opclass string) string {
 	return s
 }
 
-func fkColNames(cols []pgd.FKCol) []string {
-	out := make([]string, len(cols))
-	for i, c := range cols {
-		out[i] = c.Name
-	}
-	return out
-}
-
 // indexIdentity identifies what an index indexes. Indexes with equal identities are
 // the same index, possibly renamed.
 func indexIdentity(idx *pgd.Index) string {
@@ -1483,12 +1479,11 @@ func indexIdentityExpr(idx *pgd.Index, expr func(string) string) string {
 		}
 		keys[i] = indexElemKey(id, k.Order, k.Nulls, k.Opclass)
 	}
-	where := ""
-	if idx.Where != nil {
-		where = expr(idx.Where.Value)
+	where := idx.Predicate()
+	if where != "" {
+		where = expr(where)
 	}
-	using := strings.ToLower(cmp.Or(idx.Using, "btree"))
-	return strings.Join([]string{idx.Table, strconv.FormatBool(idx.Unique == "true"), using,
+	return strings.Join([]string{idx.Table, strconv.FormatBool(idx.Unique == "true"), idx.Method(),
 		strings.Join(keys, ","), where}, "|")
 }
 
@@ -1508,32 +1503,15 @@ func indexOptions(idx *pgd.Index) string {
 	if idx.Include != nil {
 		include = strings.Join(pgd.ColRefNames(idx.Include.Columns), ",")
 	}
-	var with []string
+	var with string
 	if idx.With != nil {
-		for _, p := range idx.With.Params {
-			with = append(with, p.Name+"="+p.Value)
-		}
+		with = pgd.WithParams(idx.With.Params)
 	}
-	return strings.Join([]string{include, strconv.FormatBool(idx.NullsDistinct == "false"),
-		strings.Join(with, ","), idx.Tablespace}, "|")
+	return strings.Join([]string{include, strconv.FormatBool(idx.NullsDistinct == "false"), with, idx.Tablespace}, "|")
 }
 
 func fkChanged(old, updated *pgd.ForeignKey) bool {
-	if old.ToTable != updated.ToTable {
-		return true
-	}
-	if old.OnDelete != updated.OnDelete || old.OnUpdate != updated.OnUpdate {
-		return true
-	}
-	if len(old.Columns) != len(updated.Columns) {
-		return true
-	}
-	for i := range old.Columns {
-		if old.Columns[i].Name != updated.Columns[i].Name || old.Columns[i].References != updated.Columns[i].References {
-			return true
-		}
-	}
-	return false
+	return fkIdentity(old) != fkIdentity(updated) || old.OnDelete != updated.OnDelete || old.OnUpdate != updated.OnUpdate
 }
 
 func pkChanged(old, updated *pgd.PrimaryKey) bool {
