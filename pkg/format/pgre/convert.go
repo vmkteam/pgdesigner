@@ -141,10 +141,14 @@ func convertColumn(c pgColumn) pgd.Column {
 		col.Identity = &pgd.Identity{Generated: gen}
 	}
 
-	if c.AttGenerated == "s" {
+	if c.AttGenerated == "s" || c.AttGenerated == "v" { // stored | virtual (PG18)
+		stored := "true"
+		if c.AttGenerated == "v" {
+			stored = "false"
+		}
 		col.Generated = &pgd.Generated{
 			Expression: c.DefaultValue,
-			Stored:     "true",
+			Stored:     stored,
 		}
 		col.Default = "" // generated columns don't have separate default
 	}

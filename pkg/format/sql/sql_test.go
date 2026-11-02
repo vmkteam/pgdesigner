@@ -195,6 +195,31 @@ func TestParseSQL_ColumnTypes(t *testing.T) {
 	assert.Equal(t, "always", tbl.Columns[8].Identity.Generated)
 }
 
+func TestParseSQL_GeneratedColumn(t *testing.T) {
+	sql := `CREATE TABLE people (
+		id integer PRIMARY KEY, first_name text NOT NULL, last_name text NOT NULL,
+		full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED,
+		tsv tsvector GENERATED ALWAYS AS (to_tsvector('russian'::regconfig, first_name)) STORED
+	);`
+
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+
+	cols := p.Schemas[0].Tables[0].Columns
+	require.Len(t, cols, 5)
+	// pg_query deparse makes the left-associative || explicit
+	assert.Equal(t, &pgd.Generated{Expression: "(first_name || ' ') || last_name", Stored: "true"}, cols[3].Generated)
+	assert.Equal(t, &pgd.Generated{Expression: "to_tsvector('russian'::regconfig, first_name)", Stored: "true"}, cols[4].Generated)
+	assert.Empty(t, cols[3].Default)
+
+	// round-trip
+	ddl := pgd.GenerateDDL(p)
+	assert.Contains(t, ddl, `"full_name" text GENERATED ALWAYS AS ((first_name || ' ') || last_name) STORED`)
+	p2, err := ParseSQL(ddl, "test")
+	require.NoError(t, err)
+	assert.Equal(t, cols, p2.Schemas[0].Tables[0].Columns)
+}
+
 func TestParseSQL_Constraints(t *testing.T) {
 	sql := `
 	CREATE TABLE "statuses" (

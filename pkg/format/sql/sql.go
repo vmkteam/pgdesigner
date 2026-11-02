@@ -22,7 +22,7 @@ func Convert(data []byte, name string) (*pgd.Project, error) {
 
 // ParseSQL parses PostgreSQL DDL statements and returns a pgd.Project.
 func ParseSQL(sql string, projectName string) (*pgd.Project, error) {
-	sql = cleanDump(sql)
+	sql = markVirtualGenerated(cleanDump(sql))
 
 	result, err := pgquery.Parse(sql)
 	if err != nil {
@@ -493,6 +493,8 @@ func convertColumnDef(col *pg.ColumnDef) pgd.Column {
 				gen = "always"
 			}
 			c.Identity = &pgd.Identity{Generated: gen}
+		case pg.ConstrType_CONSTR_GENERATED:
+			c.Generated = convertGenerated(con.Constraint.RawExpr)
 		}
 	}
 

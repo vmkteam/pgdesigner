@@ -939,6 +939,9 @@ func checkColumns(v *validator, schema string, t *pgd.Table) {
 		if c.Identity != nil && c.Default != "" {
 			v.warnf(RuleIdentityDefault, cp, "column has both identity and default")
 		}
+		if c.Generated != nil && strings.TrimSpace(c.Generated.Expression) == "" {
+			v.errorf(RuleGeneratedNoExpr, cp, `generated column has no expression: set it in the attribute, <generated expression="...">`)
+		}
 		if c.Generated != nil && c.Default != "" {
 			v.warnf(RuleGeneratedDefault, cp, "column has both generated expression and default")
 		}

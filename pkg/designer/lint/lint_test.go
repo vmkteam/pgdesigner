@@ -257,6 +257,23 @@ func TestValidate_E030_ViewNoQuery(t *testing.T) {
 	assert.True(t, hasCode(Validate(p), RuleViewNoQuery))
 }
 
+func TestValidate_E033_GeneratedNoExpression(t *testing.T) {
+	// the expression written as element text is ignored by the model
+	const pgdXML = `<pgd><schema name="public"><table name="people">
+		<column name="first_name" type="text"></column>
+		<column name="full_name" type="text"><generated stored="true"><![CDATA[first_name || '!']]></generated></column>
+	</table></schema></pgd>`
+	var p pgd.Project
+	require.NoError(t, xml.Unmarshal([]byte(pgdXML), &p))
+	assert.True(t, hasCode(Validate(&p), RuleGeneratedNoExpr))
+
+	p.Schemas[0].Tables[0].Columns[1].Generated.Expression = " "
+	assert.True(t, hasCode(Validate(&p), RuleGeneratedNoExpr))
+
+	p.Schemas[0].Tables[0].Columns[1].Generated.Expression = "first_name || '!'"
+	assert.False(t, hasCode(Validate(&p), RuleGeneratedNoExpr))
+}
+
 // --- W rules ---
 
 func TestValidate_W001_FKTypeMismatch(t *testing.T) {

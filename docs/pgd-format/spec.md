@@ -453,6 +453,8 @@ Custom types (enums, composites, domains) are referenced by name. Schema-qualifi
 | `expression` | string | (required) | SQL expression |
 | `stored` | boolean | `true` | `true` = STORED, `false` = VIRTUAL (PG18+) |
 
+Unlike `<check>`, the expression is an attribute, not element text. An empty `expression` is a lint error (E033).
+
 ---
 
 ## 11. Constraints
