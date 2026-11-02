@@ -95,7 +95,8 @@ func Diff(old, updated *pgd.Project) *DiffResult {
 	b.eachOldSchema(old, updated, b.dropColumns)
 	b.dropTables(old, updated)
 
-	// Phase 2: enums, before the tables and columns that use them
+	// Phase 2: new schemas and enums, before the tables and columns that use them
+	b.createSchemas(old, updated)
 	b.diffEnums(oldEnums, newEnums)
 
 	// Phase 3: tables and columns
@@ -286,10 +287,6 @@ func isReferenced(t droppedTable, tables []droppedTable) bool {
 // --- Phases 3–5: CREATE/ALTER ---
 
 func (b *diffBuilder) createTables(old, updated *pgd.Schema) {
-	if old == nil && updated.Name != "" && updated.Name != "public" {
-		b.add(Change{Object: "schema", Action: "add", Name: updated.Name,
-			SQL: fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s;", b.q(updated.Name))})
-	}
 	oldTables := tableMap(nilTables(old))
 
 	// add new tables
@@ -1019,6 +1016,17 @@ func checkChanged(old, updated *pgd.Check) bool {
 func sameExpr(a, b string) bool {
 	a, b = strings.TrimSpace(a), strings.TrimSpace(b)
 	return a == b || sqlconv.ExprKey(a) == sqlconv.ExprKey(b)
+}
+
+// createSchemas creates the non-public schemas missing in old.
+func (b *diffBuilder) createSchemas(old, updated *pgd.Project) {
+	existing := pgd.NonPublicSchemas(old)
+	for _, name := range pgd.NonPublicSchemas(updated) {
+		if !slices.Contains(existing, name) {
+			b.add(Change{Schema: name, Object: "schema", Action: "add", Name: name,
+				SQL: fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s;", b.q(name))})
+		}
+	}
 }
 
 // --- Enums ---

@@ -1077,3 +1077,10 @@ func TestDiff_TableOptions(t *testing.T) {
 	assert.Equal(t, []string{`ALTER TABLE "t" SET TABLESPACE "pg_default";`},
 		changeSQLs(Diff(table(func(t *pgd.Table) { t.Tablespace = "fast" }), old)))
 }
+
+func TestDiff_NewSchemaBeforeEnum(t *testing.T) {
+	updated := project(schema("public", nil, nil))
+	updated.Types = &pgd.Types{Enums: []pgd.Enum{{Name: "st", Schema: "mp", Labels: []string{"a"}}}}
+	assert.Equal(t, []string{`CREATE SCHEMA IF NOT EXISTS "mp";`, `CREATE TYPE "mp"."st" AS ENUM ('a');`},
+		changeSQLs(Diff(project(schema("public", nil, nil)), updated)))
+}

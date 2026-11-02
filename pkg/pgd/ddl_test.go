@@ -1186,3 +1186,17 @@ CREATE TABLE "t_1" PARTITION OF "t"
 
 `, buf.String())
 }
+
+func TestGenerateDDL_SchemaBeforeTypes(t *testing.T) {
+	p := &Project{
+		Extensions: []Extension{{Name: "pg_trgm", Schema: "ext"}},
+		Types:      &Types{Enums: []Enum{{Name: "st", Schema: "mp", Labels: []string{"a"}}}},
+		Schemas:    []Schema{{Name: "public", Tables: []Table{{Name: "t", Columns: []Column{{Name: "s", Type: "mp.st"}}}}}},
+	}
+	ddl := GenerateDDL(p)
+	for _, stmt := range []string{`CREATE SCHEMA IF NOT EXISTS "ext"`, `CREATE SCHEMA IF NOT EXISTS "mp"`, `CREATE EXTENSION`, `CREATE TYPE "mp"."st"`} {
+		require.Contains(t, ddl, stmt)
+	}
+	assert.Less(t, strings.Index(ddl, `CREATE SCHEMA IF NOT EXISTS "ext"`), strings.Index(ddl, "CREATE EXTENSION"))
+	assert.Less(t, strings.Index(ddl, `CREATE SCHEMA IF NOT EXISTS "mp"`), strings.Index(ddl, `CREATE TYPE "mp"."st"`))
+}

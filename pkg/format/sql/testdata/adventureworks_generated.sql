@@ -1,19 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS "tablefunc";
-
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
-CREATE DOMAIN "AccountNumber" AS varchar;
-
-CREATE DOMAIN "Flag" AS boolean NOT NULL;
-
-CREATE DOMAIN "Name" AS varchar;
-
-CREATE DOMAIN "NameStyle" AS boolean NOT NULL;
-
-CREATE DOMAIN "OrderNumber" AS varchar;
-
-CREATE DOMAIN "Phone" AS varchar;
-
 CREATE SCHEMA IF NOT EXISTS "hr";
 
 CREATE SCHEMA IF NOT EXISTS "humanresources";
@@ -33,6 +17,22 @@ CREATE SCHEMA IF NOT EXISTS "purchasing";
 CREATE SCHEMA IF NOT EXISTS "sa";
 
 CREATE SCHEMA IF NOT EXISTS "sales";
+
+CREATE EXTENSION IF NOT EXISTS "tablefunc";
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE DOMAIN "AccountNumber" AS varchar;
+
+CREATE DOMAIN "Flag" AS boolean NOT NULL;
+
+CREATE DOMAIN "Name" AS varchar;
+
+CREATE DOMAIN "NameStyle" AS boolean NOT NULL;
+
+CREATE DOMAIN "OrderNumber" AS varchar;
+
+CREATE DOMAIN "Phone" AS varchar;
 
 CREATE SEQUENCE "humanresources"."department_departmentid_seq" INCREMENT BY 1 START WITH 1 CACHE 1;
 

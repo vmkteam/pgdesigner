@@ -47,10 +47,10 @@ func (d *ddlWriter) Err() error { return d.err }
 // Output order follows dependency topology:
 //
 //  1. CREATE ROLE
-//  2. CREATE EXTENSION
-//  3. CREATE TYPE (enum, composite, range)
-//  4. CREATE DOMAIN
-//  5. CREATE SCHEMA (non-public)
+//  2. CREATE SCHEMA (non-public)
+//  3. CREATE EXTENSION
+//  4. CREATE TYPE (enum, composite, range)
+//  5. CREATE DOMAIN
 //  6. CREATE SEQUENCE
 //  7. CREATE TABLE (columns, PK, UNIQUE, CHECK — no FK)
 //  8. ALTER TABLE ENABLE ROW LEVEL SECURITY
@@ -73,7 +73,12 @@ func WriteDDL(w io.Writer, p *Project) error {
 		d.writeRole(&p.Roles[i])
 	}
 
-	// Phase 1: extensions
+	// Phase 1: CREATE SCHEMA for all non-public schemas, before the objects in them
+	for _, name := range NonPublicSchemas(p) {
+		d.P("CREATE SCHEMA IF NOT EXISTS %s;\n\n", QuoteIdent(name))
+	}
+
+	// Phase 1.5: extensions
 	for i := range p.Extensions {
 		d.writeExtension(&p.Extensions[i])
 	}
@@ -92,11 +97,6 @@ func WriteDDL(w io.Writer, p *Project) error {
 		for i := range p.Types.Domains {
 			d.writeDomain(&p.Types.Domains[i])
 		}
-	}
-
-	// Phase 3: CREATE SCHEMA for all non-public schemas
-	for _, name := range collectSchemas(p) {
-		d.P("CREATE SCHEMA IF NOT EXISTS %s;\n\n", QuoteIdent(name))
 	}
 
 	// Phase 4: sequences (skip identity-owned)
@@ -261,33 +261,51 @@ func (d *ddlWriter) writeMatViewIndexes(p *Project, mvNames map[string]bool) {
 	}
 }
 
-// collectSchemas returns all non-public schema names from schemas, sequences, views, mat views.
-func collectSchemas(p *Project) []string {
+// NonPublicSchemas returns the sorted names of non-public schemas the project uses:
+// schemas of tables, sequences, views, types, extensions and functions.
+func NonPublicSchemas(p *Project) []string {
 	seen := make(map[string]bool)
-	for _, s := range p.Schemas {
-		if s.Name != "" && s.Name != "public" {
-			seen[s.Name] = true
+	add := func(name string) {
+		if name != "" && name != "public" {
+			seen[name] = true
 		}
 	}
+	for _, s := range p.Schemas {
+		add(s.Name)
+	}
 	for _, seq := range p.Sequences {
-		if seq.Schema != "" && seq.Schema != "public" {
-			seen[seq.Schema] = true
-		}
+		add(seq.Schema)
 	}
 	if p.Views != nil {
 		for _, v := range p.Views.Views {
-			if v.Schema != "" && v.Schema != "public" {
-				seen[v.Schema] = true
-			}
+			add(v.Schema)
 		}
 		for _, mv := range p.Views.MatViews {
-			if mv.Schema != "" && mv.Schema != "public" {
-				seen[mv.Schema] = true
-			}
+			add(mv.Schema)
 		}
 	}
+	if p.Types != nil {
+		for _, e := range p.Types.Enums {
+			add(e.Schema)
+		}
+		for _, c := range p.Types.Composites {
+			add(c.Schema)
+		}
+		for _, r := range p.Types.Ranges {
+			add(r.Schema)
+		}
+		for _, d := range p.Types.Domains {
+			add(d.Schema)
+		}
+	}
+	for _, e := range p.Extensions {
+		add(e.Schema)
+	}
+	for _, f := range p.Functions {
+		add(f.Schema)
+	}
 
-	var names []string
+	names := make([]string, 0, len(seen))
 	for name := range seen {
 		names = append(names, name)
 	}
