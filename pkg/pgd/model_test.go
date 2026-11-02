@@ -3,6 +3,8 @@ package pgd
 import (
 	"encoding/xml"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -159,4 +161,33 @@ func TestIndexKeys_UnknownElement(t *testing.T) {
 	err := xml.Unmarshal([]byte(`<index name="ix" table="t"><colum name="a"></colum></index>`), &idx)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unexpected <colum> in <index>")
+}
+
+// TestXSD validates saved .pgd files against the XSD with xmllint, if it is installed.
+func TestXSD(t *testing.T) {
+	xmllint, err := exec.LookPath("xmllint")
+	if err != nil {
+		t.Skip("xmllint is not installed")
+	}
+	files := []string{
+		"../format/sql/testdata/chinook.pgd",
+		"../format/sql/testdata/pagila.pgd",
+		"../format/sql/testdata/adventureworks.pgd",
+		"../../docs/pgd-format/examples/synthetic.pgd",
+	}
+	for _, f := range files {
+		t.Run(filepath.Base(f), func(t *testing.T) {
+			data, err := os.ReadFile(f)
+			require.NoError(t, err)
+			var p Project
+			require.NoError(t, xml.Unmarshal(data, &p))
+			out, err := xml.MarshalIndent(&p, "", "  ")
+			require.NoError(t, err)
+
+			saved := filepath.Join(t.TempDir(), "saved.pgd")
+			require.NoError(t, os.WriteFile(saved, []byte(xml.Header+string(out)), 0o644))
+			res, err := exec.Command(xmllint, "--noout", "--schema", "../../docs/pgd-format/pgd-format.xsd", saved).CombinedOutput()
+			assert.NoError(t, err, string(res))
+		})
+	}
 }
