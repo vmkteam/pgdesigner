@@ -3,6 +3,7 @@ package pgre
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -63,9 +64,25 @@ func DatabaseName(dsn string) string {
 	return strings.TrimPrefix(u.Path, "/")
 }
 
+// RedactDSN hides the password of a PostgreSQL DSN for printing; other strings are returned as is.
+func RedactDSN(s string) string {
+	if !IsDSN(s) {
+		return s
+	}
+	u, err := url.Parse(s)
+	if err != nil {
+		return "postgres://(invalid DSN)"
+	}
+	return u.Redacted()
+}
+
 func parseDSN(dsn string) (*pg.Options, error) {
 	u, err := url.Parse(dsn)
 	if err != nil {
+		var ue *url.Error
+		if errors.As(err, &ue) {
+			err = ue.Err // url.Error quotes the whole DSN with the password
+		}
 		return nil, err
 	}
 

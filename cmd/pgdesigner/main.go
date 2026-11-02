@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -96,14 +95,9 @@ Flags:
 		inputPath = "(demo)"
 	} else {
 		inputPath = args[0]
-		reOpts := pgre.Options{Full: *fullRE}
-		if *schemaFilter != "" {
-			reOpts.Schemas = strings.Split(*schemaFilter, ",")
-		}
-
-		project, err := loadFile(inputPath, reOpts)
+		project, err := loadFile(inputPath, reOptions(*schemaFilter, *fullRE))
 		if err != nil {
-			log.Fatalf("failed to load %s: %v", inputPath, err)
+			log.Fatalf("failed to load %s: %v", pgre.RedactDSN(inputPath), err)
 		}
 
 		st = store.NewProjectStore(project, pgdFilePath(inputPath))
@@ -117,8 +111,8 @@ Flags:
 	a := app.NewWithStore(st, appOpts...)
 
 	// Track recent file.
-	if inputPath != "(demo)" {
-		a.Config().AddRecentFile(pgdFilePath(inputPath))
+	if path := pgdFilePath(inputPath); path != "" && inputPath != "(demo)" {
+		a.Config().AddRecentFile(path)
 		_ = a.Config().Save()
 	}
 
@@ -130,7 +124,7 @@ Flags:
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("PgDesigner serving %s at %s\n", inputPath, addr)
+	fmt.Printf("PgDesigner serving %s at %s\n", pgre.RedactDSN(inputPath), addr)
 	fmt.Printf("RPC: %s/rpc/  SMDBox: %s/rpc/doc/\n", addr, addr)
 
 	if *appMode {

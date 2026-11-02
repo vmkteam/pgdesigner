@@ -57,9 +57,12 @@ func saveProject(p *pgd.Project, path string) error {
 	return os.WriteFile(path, []byte(xml.Header+string(data)+"\n"), 0644)
 }
 
-// pgdFilePath returns the .pgd output path for a given input.
+// pgdFilePath returns the .pgd output path for a given input, "" for a database.
 // For non-.pgd inputs it replaces the extension so we never overwrite the source file.
 func pgdFilePath(path string) string {
+	if pgre.IsDSN(path) {
+		return ""
+	}
 	ext := strings.ToLower(filepath.Ext(path))
 	if ext != ".pgd" && ext != "" {
 		return strings.TrimSuffix(path, filepath.Ext(path)) + ".pgd"
@@ -89,15 +92,24 @@ func parseArgs(fs *flag.FlagSet, args []string) []string {
 // checkArgs exits with usage when the number of positional arguments is out of [minArgs, maxArgs].
 // maxArgs < 0 means no upper limit.
 func checkArgs(fs *flag.FlagSet, args []string, minArgs, maxArgs int) {
-	switch {
-	case maxArgs >= 0 && len(args) > maxArgs:
-		fmt.Fprintf(fs.Output(), "unexpected argument: %s\n\n", args[maxArgs])
-	case len(args) < minArgs:
-	default:
+	tooMany := maxArgs >= 0 && len(args) > maxArgs
+	if !tooMany && len(args) >= minArgs {
 		return
+	}
+	if tooMany {
+		fmt.Fprintf(fs.Output(), "unexpected argument: %s\n\n", args[maxArgs])
 	}
 	fs.Usage()
 	os.Exit(1)
+}
+
+// reOptions returns reverse engineering options from the -schema and -full flags.
+func reOptions(schemas string, full bool) pgre.Options {
+	opts := pgre.Options{Full: full}
+	if schemas != "" {
+		opts.Schemas = strings.Split(schemas, ",")
+	}
+	return opts
 }
 
 // writeOutput writes data to path, or to stdout when path is empty.

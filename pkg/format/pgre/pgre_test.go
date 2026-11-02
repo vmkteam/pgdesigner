@@ -102,6 +102,15 @@ func TestIsDSN(t *testing.T) {
 	}
 }
 
+func TestRedactDSN(t *testing.T) {
+	assert.Equal(t, "postgres://u:xxxxx@h:5432/db", RedactDSN("postgres://u:S3cret@h:5432/db"))
+	assert.Equal(t, "file.pgd", RedactDSN("file.pgd"))
+
+	_, err := parseDSN("postgres://u:S3cret@h:badport/db")
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), "S3cret")
+}
+
 func TestDatabaseName(t *testing.T) {
 	assert.Equal(t, "mydb", DatabaseName("postgres://u:p@localhost:5432/mydb?sslmode=disable"))
 	assert.Empty(t, DatabaseName("postgres://u@localhost:5432/"))

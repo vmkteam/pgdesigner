@@ -32,32 +32,39 @@ func runConvert(args []string) {
 	checkArgs(fs, pos, 1, 1)
 
 	inputPath := pos[0]
-	isDSN := pgre.IsDSN(inputPath)
 	ext := strings.ToLower(filepath.Ext(inputPath))
-	if !isDSN && ext == format.ExtPGD {
+	if !pgre.IsDSN(inputPath) && ext == format.ExtPGD {
 		log.Fatalf("input is already .pgd: %s", inputPath)
 	}
 
-	reOpts := pgre.Options{Full: *fullRE}
-	if *schemaFilter != "" {
-		reOpts.Schemas = strings.Split(*schemaFilter, ",")
+	output, err := convertOutput(inputPath, *outFile)
+	if err != nil {
+		log.Fatal(err)
 	}
-	project, err := loadFile(inputPath, reOpts)
+	project, err := loadFile(inputPath, reOptions(*schemaFilter, *fullRE))
 	if err != nil {
 		log.Fatalf("conversion failed: %v", err)
 	}
-
-	source, output := inputPath, *outFile
-	if isDSN {
-		dbName := cmp.Or(pgre.DatabaseName(inputPath), "schema")
-		source = "database " + dbName // don't print the DSN: it may contain a password
-		output = cmp.Or(output, dbName+format.ExtPGD)
-	}
-	output = cmp.Or(output, strings.TrimSuffix(inputPath, filepath.Ext(inputPath))+format.ExtPGD)
 	if err := saveProject(project, output); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Converted %s → %s\n", source, output)
+	fmt.Printf("Converted %s → %s\n", pgre.RedactDSN(inputPath), output)
+}
+
+// convertOutput returns the output file of convert: the -o value, the input with the .pgd
+// extension or, for a DSN, <dbname>.pgd in the current directory, which must not exist yet.
+func convertOutput(input, output string) (string, error) {
+	switch {
+	case output != "":
+		return output, nil
+	case !pgre.IsDSN(input):
+		return strings.TrimSuffix(input, filepath.Ext(input)) + format.ExtPGD, nil
+	}
+	output = filepath.Base(cmp.Or(pgre.DatabaseName(input), "schema")) + format.ExtPGD
+	if _, err := os.Stat(output); err == nil {
+		return "", fmt.Errorf("%s already exists, set the output file with -o", output)
+	}
+	return output, nil
 }
 
 func runLint(args []string) {
@@ -75,7 +82,7 @@ func runLint(args []string) {
 	inputPath := pos[0]
 	project, err := loadFile(inputPath, pgre.Options{})
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", inputPath, err)
+		log.Fatalf("failed to load %s: %v", pgre.RedactDSN(inputPath), err)
 	}
 
 	issues := lint.Validate(project)
@@ -107,6 +114,9 @@ func lintFix(project *pgd.Project, issues []lint.Issue, inputPath string) []lint
 	fmt.Fprintf(os.Stderr, "Fixed %d issues\n", len(results))
 
 	outPath := pgdFilePath(inputPath)
+	if outPath == "" {
+		log.Fatal("-fix saves the project to a file: convert the database first")
+	}
 	if err := saveProject(project, outPath); err != nil {
 		log.Fatalf("save %s: %v", outPath, err)
 	}
@@ -188,14 +198,15 @@ func runDiff(args []string) {
 	pos := parseArgs(fs, args)
 	checkArgs(fs, pos, 2, 2)
 
-	opts := pgre.Options{}
+	// a database is introspected fully: without its enums diff would create them again
+	opts := pgre.Options{Full: true}
 	oldProject, err := loadFile(pos[0], opts)
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", pos[0], err)
+		log.Fatalf("failed to load %s: %v", pgre.RedactDSN(pos[0]), err)
 	}
 	newProject, err := loadFile(pos[1], opts)
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", pos[1], err)
+		log.Fatalf("failed to load %s: %v", pgre.RedactDSN(pos[1]), err)
 	}
 
 	result := diff.Diff(oldProject, newProject)
@@ -243,7 +254,7 @@ func runGenerate(args []string) {
 
 	project, err := loadFile(pos[0], pgre.Options{})
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", pos[0], err)
+		log.Fatalf("failed to load %s: %v", pgre.RedactDSN(pos[0]), err)
 	}
 
 	ddl := pgd.GenerateDDL(project)
@@ -272,7 +283,7 @@ func runMerge(args []string) {
 	for i, path := range pos {
 		p, err := loadFile(path, opts)
 		if err != nil {
-			log.Fatalf("failed to load %s: %v", path, err)
+			log.Fatalf("failed to load %s: %v", pgre.RedactDSN(path), err)
 		}
 		projects[i] = p
 		tables := 0
@@ -317,7 +328,7 @@ func runTestData(args []string) {
 
 	project, err := loadFile(pos[0], pgre.Options{})
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", pos[0], err)
+		log.Fatalf("failed to load %s: %v", pgre.RedactDSN(pos[0]), err)
 	}
 
 	opts := gendata.Options{

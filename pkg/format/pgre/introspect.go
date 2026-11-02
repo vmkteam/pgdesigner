@@ -216,7 +216,7 @@ func (i *introspector) schemaFilter() string {
 	}
 	quoted := make([]string, len(i.opts.Schemas))
 	for j, s := range i.opts.Schemas {
-		quoted[j] = "'" + s + "'"
+		quoted[j] = pgd.QuoteLiteral(strings.TrimSpace(s))
 	}
 	return "AND n.nspname IN (" + strings.Join(quoted, ",") + ")"
 }
