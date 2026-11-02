@@ -567,10 +567,11 @@ The element text content is the CHECK expression (use CDATA for special characte
 <with>
   <param name="fillfactor" value="90"></param>
   <param name="autovacuum_enabled" value="false"></param>
+  <param name="toast.autovacuum_enabled" value="false"></param>
 </with>
 ```
 
-Used in `<table>`, `<partition>`, `<materialized-view>`, and `<index>`.
+Used in `<table>`, `<partition>`, `<materialized-view>`, and `<index>`. Parameters of the table's TOAST table have the `toast.` prefix.
 
 ---
 
