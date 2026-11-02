@@ -1,6 +1,7 @@
 package lint
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"sort"
@@ -110,6 +111,7 @@ type validator struct {
 	columns     map[string]map[string]*pgd.Column // "schema.table" → colName → *pgd.Column
 	indexes     map[string][]*pgd.Index           // "schema.table" → []*pgd.Index
 	userTypes   map[string]bool                   // user-defined type names
+	typeSchemas map[string][]string               // user-defined type name → schemas defining it
 	naming      string                            // convention from settings
 	pgVersion   int                               // project PG target version (e.g. 18)
 	ignoreRules map[string]bool                   // global codes to skip
@@ -204,6 +206,7 @@ func (v *validator) buildIndex() {
 	v.columns = make(map[string]map[string]*pgd.Column)
 	v.indexes = make(map[string][]*pgd.Index)
 	v.userTypes = make(map[string]bool)
+	v.typeSchemas = make(map[string][]string)
 
 	for i := range v.p.Schemas {
 		s := &v.p.Schemas[i]
@@ -262,6 +265,19 @@ func (v *validator) addUserType(schema, name string) {
 	if schema != "" {
 		v.userTypes[strings.ToLower(schema+"."+name)] = true
 	}
+	v.typeSchemas[strings.ToLower(name)] = append(v.typeSchemas[strings.ToLower(name)], cmp.Or(schema, "public"))
+}
+
+// typeSchema returns the schema of a user-defined type written without one, when the type
+// is defined only in non-public schemas: PostgreSQL looks an unqualified type up in
+// search_path, so it is not found there. "" if typ is qualified or found in public.
+func (v *validator) typeSchema(typ string) string {
+	t := pgd.StripTypeParams(typ)
+	schemas := v.typeSchemas[t]
+	if strings.Contains(t, ".") || len(schemas) == 0 || slices.Contains(schemas, "public") {
+		return ""
+	}
+	return schemas[0]
 }
 
 func (v *validator) run() {
@@ -967,6 +983,9 @@ func checkColumns(v *validator, schema string, t *pgd.Table) {
 
 		if c.Type != "" && !v.isKnownType(c.Type) {
 			v.errorf(RuleUnknownType, cp, "unknown type %q", c.Type)
+		}
+		if s := v.typeSchema(c.Type); s != "" {
+			v.warnf(RuleUnqualifiedType, cp, "type %q is defined in schema %q: write %q, an unqualified type is looked up in search_path", c.Type, s, s+"."+c.Type)
 		}
 
 		if c.Identity != nil && c.Default != "" {

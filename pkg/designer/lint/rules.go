@@ -60,6 +60,7 @@ const (
 	RuleVersionFeature   = "W021" // feature requires newer PG version
 	RulePartBoundOverlap = "W022" // partition bound overlaps with sibling
 	RuleIdxExprMultiKey  = "W023" // index <expression> holds several comma-separated keys
+	RuleUnqualifiedType  = "W024" // column type is defined only in a non-public schema
 
 	// I — Info (suggestions)
 	RulePreferText     = "I001"
@@ -171,6 +172,7 @@ var Rules = map[string]RuleDef{
 	RuleVersionFeature:   rule(RuleVersionFeature, Warning, ScopeTable, "PG Version Feature", "feature requires newer PostgreSQL version"),
 	RulePartBoundOverlap: rule(RulePartBoundOverlap, Warning, ScopeTable, "Partition Bound Overlap", "partition bound overlaps with sibling"),
 	RuleIdxExprMultiKey:  rule(RuleIdxExprMultiKey, Warning, ScopeIndex, "Index Expression With Several Keys", "index expression holds several comma-separated keys"),
+	RuleUnqualifiedType:  rule(RuleUnqualifiedType, Warning, ScopeColumn, "Unqualified Type", "column type is defined only in a non-public schema and is written without it"),
 
 	// Info
 	RulePreferText:        fixableRule(RulePreferText, Info, ScopeColumn, "Prefer Text", "prefer text over char(n)"),

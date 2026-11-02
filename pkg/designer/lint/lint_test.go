@@ -715,3 +715,28 @@ func TestValidate_W005_W017_NotDuplicates(t *testing.T) {
 		})
 	}
 }
+
+func TestValidate_W024_UnqualifiedType(t *testing.T) {
+	tests := []struct {
+		typ  string
+		want bool
+	}{
+		{"fulfillmentType", true},
+		{"fulfillmentType[]", true},
+		{"mp.fulfillmentType", false},
+		{"status", false}, // also defined in public
+		{"text", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.typ, func(t *testing.T) {
+			p := minProject()
+			p.Types = &pgd.Types{Enums: []pgd.Enum{
+				{Name: "fulfillmentType", Schema: "mp", Labels: []string{"a"}},
+				{Name: "status", Schema: "mp", Labels: []string{"a"}},
+				{Name: "status", Labels: []string{"a"}},
+			}}
+			p.Schemas[0].Tables[0].Columns = append(p.Schemas[0].Tables[0].Columns, pgd.Column{Name: "x", Type: tt.typ})
+			assert.Equal(t, tt.want, hasCode(Validate(p), RuleUnqualifiedType))
+		})
+	}
+}
