@@ -27,6 +27,12 @@ func (i *introspector) convertTable(pt pgTable) (*pgd.Table, []pgd.Index, error)
 	if pt.Tablespace != "" {
 		t.Tablespace = pt.Tablespace
 	}
+	if pt.AccessMethod != "" && pt.AccessMethod != "heap" {
+		t.Using = pt.AccessMethod
+	}
+	if params := parseRelOptions(pt.RelOptions); len(params) > 0 {
+		t.With = &pgd.With{Params: params}
+	}
 
 	// Columns
 	cols, err := i.queryColumns(pt.OID)
@@ -108,6 +114,17 @@ func (i *introspector) convertTable(pt pgTable) (*pgd.Table, []pgd.Index, error)
 	}
 
 	return t, indexes, nil
+}
+
+// parseRelOptions converts pg_class.reloptions ("fillfactor=80") to storage parameters.
+func parseRelOptions(opts []string) []pgd.WithParam {
+	var params []pgd.WithParam
+	for _, o := range opts {
+		if name, value, ok := strings.Cut(o, "="); ok {
+			params = append(params, pgd.WithParam{Name: name, Value: value})
+		}
+	}
+	return params
 }
 
 func convertColumn(c pgColumn) pgd.Column {

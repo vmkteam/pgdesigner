@@ -299,12 +299,73 @@ func (b *diffBuilder) createTables(old, updated *pgd.Schema) {
 		}
 	}
 
-	// alter columns of existing tables
-	for _, nt := range updated.Tables {
+	// alter columns and options of existing tables
+	for i := range updated.Tables {
+		nt := &updated.Tables[i]
 		if ot, exists := oldTables[nt.Name]; exists {
 			b.diffColumns(nt.Name, ot.Columns, nt.Columns)
+			b.diffTableOptions(ot, nt)
 		}
 	}
+}
+
+// diffTableOptions alters storage parameters, persistence, access method and tablespace.
+func (b *diffBuilder) diffTableOptions(old, updated *pgd.Table) {
+	t := b.qt(updated.Name)
+	alter := func(sql string, hazards ...Hazard) {
+		b.add(Change{Object: "table", Action: "alter", Table: updated.Name, Name: updated.Name, SQL: sql, Hazards: hazards})
+	}
+	rewrite := func(what string) Hazard {
+		return Hazard{Level: "warning", Code: "TABLE_REWRITE", Message: fmt.Sprintf("%s rewrites table %s", what, updated.Name)}
+	}
+
+	oldParams, newParams := withMap(old.With), withMap(updated.With)
+	var set []pgd.WithParam
+	var reset []string
+	if updated.With != nil {
+		for _, p := range updated.With.Params {
+			if v, exists := oldParams[p.Name]; !exists || v != p.Value {
+				set = append(set, p)
+			}
+		}
+	}
+	if old.With != nil {
+		for _, p := range old.With.Params {
+			if _, exists := newParams[p.Name]; !exists {
+				reset = append(reset, p.Name)
+			}
+		}
+	}
+	if len(set) > 0 {
+		alter(fmt.Sprintf("ALTER TABLE %s SET (%s);", t, pgd.WithParams(set)))
+	}
+	if len(reset) > 0 {
+		alter(fmt.Sprintf("ALTER TABLE %s RESET (%s);", t, strings.Join(reset, ", ")))
+	}
+
+	if (old.Unlogged == "true") != (updated.Unlogged == "true") {
+		persistence := "LOGGED"
+		if updated.Unlogged == "true" {
+			persistence = "UNLOGGED"
+		}
+		alter(fmt.Sprintf("ALTER TABLE %s SET %s;", t, persistence), rewrite("SET "+persistence))
+	}
+	if cmp.Or(old.Using, "heap") != cmp.Or(updated.Using, "heap") {
+		alter(fmt.Sprintf("ALTER TABLE %s SET ACCESS METHOD %s;", t, b.q(cmp.Or(updated.Using, "heap"))), rewrite("SET ACCESS METHOD"))
+	}
+	if old.Tablespace != updated.Tablespace {
+		alter(fmt.Sprintf("ALTER TABLE %s SET TABLESPACE %s;", t, b.q(cmp.Or(updated.Tablespace, "pg_default"))), rewrite("SET TABLESPACE"))
+	}
+}
+
+func withMap(w *pgd.With) map[string]string {
+	m := make(map[string]string)
+	if w != nil {
+		for _, p := range w.Params {
+			m[p.Name] = p.Value
+		}
+	}
+	return m
 }
 
 func (b *diffBuilder) createConstraints(old, updated *pgd.Schema) {

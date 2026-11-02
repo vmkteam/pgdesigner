@@ -612,9 +612,17 @@ func (d *ddlWriter) writeTable(q string, t *Table) {
 			strings.ToUpper(t.PartitionBy.Type),
 			QuotedColList(t.PartitionBy.Columns))
 	}
+	if t.Using != "" {
+		suffix += "\nUSING " + QuoteIdent(t.Using)
+	}
+	suffix += storageClauses("\n", t.With, t.Tablespace)
 
-	d.P("CREATE TABLE %s%s (\n%s\n)%s;\n\n",
-		q, QuoteIdent(t.Name),
+	unlogged := ""
+	if t.Unlogged == "true" {
+		unlogged = "UNLOGGED "
+	}
+	d.P("CREATE %sTABLE %s%s (\n%s\n)%s;\n\n",
+		unlogged, q, QuoteIdent(t.Name),
 		strings.Join(parts, ",\n"),
 		suffix)
 
@@ -632,11 +640,33 @@ func (d *ddlWriter) writePartitionChild(q, parent string, p *Partition) {
 			strings.ToUpper(p.PartitionBy.Type),
 			QuotedColList(p.PartitionBy.Columns))
 	}
+	d.S(storageClauses("\n    ", p.With, p.Tablespace))
 	d.S(";\n\n")
 
 	for i := range p.Partitions {
 		d.writePartitionChild(q, p.Name, &p.Partitions[i])
 	}
+}
+
+// storageClauses returns the WITH and TABLESPACE clauses of a table, each after sep.
+func storageClauses(sep string, with *With, tablespace string) string {
+	var s string
+	if with != nil && len(with.Params) > 0 {
+		s += sep + "WITH (" + WithParams(with.Params) + ")"
+	}
+	if tablespace != "" {
+		s += sep + "TABLESPACE " + QuoteIdent(tablespace)
+	}
+	return s
+}
+
+// WithParams returns storage parameters as name='value' pairs for WITH and SET.
+func WithParams(params []WithParam) string {
+	parts := make([]string, len(params))
+	for i, p := range params {
+		parts[i] = p.Name + "=" + QuoteLiteral(p.Value)
+	}
+	return strings.Join(parts, ", ")
 }
 
 // WriteTable writes CREATE TABLE DDL for a single table.
@@ -1123,11 +1153,7 @@ func (d *ddlWriter) writeIndex(q string, idx *Index) {
 	}
 	d.If(idx.NullsDistinct == "false", "\n\tNULLS NOT DISTINCT")
 	if idx.With != nil && len(idx.With.Params) > 0 {
-		var params []string
-		for _, p := range idx.With.Params {
-			params = append(params, fmt.Sprintf("%s='%s'", p.Name, p.Value))
-		}
-		d.P("\n\tWITH (%s)", strings.Join(params, ", "))
+		d.P("\n\tWITH (%s)", WithParams(idx.With.Params))
 	}
 	d.If(idx.Tablespace != "", "\n\tTABLESPACE %s", QuoteIdent(idx.Tablespace))
 	if idx.Where != nil && idx.Where.Value != "" {

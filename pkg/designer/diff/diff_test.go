@@ -1041,3 +1041,39 @@ func TestDiff_DefaultFormatting(t *testing.T) {
 	assert.Len(t, Diff(table("'open'::character varying"), table("'closed'")).Changes, 1)
 	assert.Len(t, Diff(table("'open'"), table("")).Changes, 1)
 }
+
+func TestDiff_TableOptions(t *testing.T) {
+	table := func(f func(*pgd.Table)) *pgd.Project {
+		tbl := pgd.Table{Name: "t", Columns: []pgd.Column{col("id", "int")},
+			With: &pgd.With{Params: []pgd.WithParam{{Name: "fillfactor", Value: "80"}, {Name: "autovacuum_enabled", Value: "false"}}}}
+		f(&tbl)
+		return project(schema("public", []pgd.Table{tbl}, nil))
+	}
+	old := table(func(*pgd.Table) {})
+	tests := []struct {
+		name    string
+		updated *pgd.Project
+		want    []string
+	}{
+		{"same", table(func(*pgd.Table) {}), nil},
+		{"changed and removed params", table(func(t *pgd.Table) {
+			t.With = &pgd.With{Params: []pgd.WithParam{{Name: "fillfactor", Value: "50"}, {Name: "toast.autovacuum_enabled", Value: "true"}}}
+		}), []string{
+			`ALTER TABLE "t" SET (fillfactor='50', toast.autovacuum_enabled='true');`,
+			`ALTER TABLE "t" RESET (autovacuum_enabled);`,
+		}},
+		{"no params", table(func(t *pgd.Table) { t.With = nil }), []string{`ALTER TABLE "t" RESET (fillfactor, autovacuum_enabled);`}},
+		{"unlogged", table(func(t *pgd.Table) { t.Unlogged = "true" }), []string{`ALTER TABLE "t" SET UNLOGGED;`}},
+		{"tablespace", table(func(t *pgd.Table) { t.Tablespace = "fast" }), []string{`ALTER TABLE "t" SET TABLESPACE "fast";`}},
+		{"default access method", table(func(t *pgd.Table) { t.Using = "heap" }), nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, changeSQLs(Diff(old, tt.updated)))
+		})
+	}
+
+	// back to default tablespace
+	assert.Equal(t, []string{`ALTER TABLE "t" SET TABLESPACE "pg_default";`},
+		changeSQLs(Diff(table(func(t *pgd.Table) { t.Tablespace = "fast" }), old)))
+}

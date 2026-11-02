@@ -186,6 +186,12 @@ func TestConvertColumn_Generated(t *testing.T) {
 	}
 }
 
+func TestParseRelOptions(t *testing.T) {
+	assert.Equal(t, []pgd.WithParam{{Name: "fillfactor", Value: "80"}, {Name: "toast.autovacuum_enabled", Value: "false"}},
+		parseRelOptions([]string{"fillfactor=80", "toast.autovacuum_enabled=false"}))
+	assert.Empty(t, parseRelOptions(nil))
+}
+
 func TestConvertIndex_ExpressionOptions(t *testing.T) {
 	idx := convertIndex("t", pgIndex{
 		IndexName: "ix_t_mnn_trgm",

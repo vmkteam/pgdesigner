@@ -579,3 +579,26 @@ func TestExprKey(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSQL_TableStorageOptions(t *testing.T) {
+	// #19: WITH was parsed but dropped by generate
+	sql := `CREATE UNLOGGED TABLE "public"."t" (
+		"id" integer NOT NULL,
+		CONSTRAINT "PK_t" PRIMARY KEY("id")
+	) USING heap WITH (fillfactor = 80);`
+
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+	tbl := p.Schemas[0].Tables[0]
+	assert.Equal(t, "true", tbl.Unlogged)
+	assert.Equal(t, "heap", tbl.Using)
+	assert.Equal(t, &pgd.With{Params: []pgd.WithParam{{Name: "fillfactor", Value: "80"}}}, tbl.With)
+
+	ddl := pgd.GenerateDDL(p)
+	assert.Contains(t, ddl, "CREATE UNLOGGED TABLE \"t\"")
+	assert.Contains(t, ddl, "WITH (fillfactor='80')")
+
+	p2, err := ParseSQL(ddl, "test")
+	require.NoError(t, err)
+	assert.Equal(t, tbl.With, p2.Schemas[0].Tables[0].With)
+}

@@ -1162,3 +1162,27 @@ func TestQuoteIdent(t *testing.T) {
 	assert.Equal(t, `"a""b"`, QuoteIdent(`a"b`))
 	assert.Equal(t, `"s"."t"`, QuoteIdentQualified("s.t"))
 }
+
+func TestWriteTable_StorageOptions(t *testing.T) {
+	table := &Table{
+		Name: "t", Unlogged: "true", Using: "heap", Tablespace: "fast",
+		Columns:    []Column{{Name: "id", Type: "integer"}},
+		With:       &With{Params: []WithParam{{Name: "fillfactor", Value: "80"}, {Name: "autovacuum_enabled", Value: "false"}}},
+		Partitions: []Partition{{Name: "t_1", Bound: "DEFAULT", Tablespace: "slow", With: &With{Params: []WithParam{{Name: "fillfactor", Value: "70"}}}}},
+	}
+	var buf bytes.Buffer
+	require.NoError(t, WriteTable(&buf, "", table))
+	assert.Equal(t, `CREATE UNLOGGED TABLE "t" (
+	"id" integer
+)
+USING "heap"
+WITH (fillfactor='80', autovacuum_enabled='false')
+TABLESPACE "fast";
+
+CREATE TABLE "t_1" PARTITION OF "t"
+    DEFAULT
+    WITH (fillfactor='70')
+    TABLESPACE "slow";
+
+`, buf.String())
+}

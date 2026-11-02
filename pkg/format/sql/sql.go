@@ -347,6 +347,12 @@ func (c *sqlConverter) convertCreateTable(stmt *pg.CreateStmt) {
 	if stmt.Tablespacename != "" {
 		tbl.Tablespace = stmt.Tablespacename
 	}
+	if stmt.Relation.Relpersistence == "u" {
+		tbl.Unlogged = "true"
+	}
+	if stmt.AccessMethod != "" {
+		tbl.Using = stmt.AccessMethod
+	}
 
 	// inherits (#12) / inline PARTITION OF (#13)
 	applyInheritance(&tbl, stmt)

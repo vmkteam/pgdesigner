@@ -24,6 +24,8 @@ type pgTable struct {
 	RelKind        string
 	RelPersistence string
 	Tablespace     string
+	RelOptions     []string `pg:",array"` // fillfactor=80
+	AccessMethod   string
 	Comment        string
 }
 
@@ -227,10 +229,13 @@ func (i *introspector) queryTables() ([]pgTable, error) {
 		SELECT c.oid, n.nspname AS schema_name, c.relname AS table_name,
 		       c.relkind AS rel_kind, c.relpersistence AS rel_persistence,
 		       COALESCE(t.spcname, '') AS tablespace,
+		       c.reloptions AS rel_options,
+		       COALESCE(am.amname, '') AS access_method,
 		       COALESCE(obj_description(c.oid), '') AS comment
 		FROM pg_class c
 		JOIN pg_namespace n ON n.oid = c.relnamespace
 		LEFT JOIN pg_tablespace t ON t.oid = c.reltablespace
+		LEFT JOIN pg_am am ON am.oid = c.relam
 		WHERE c.relkind IN ('r', 'p')
 		  %s
 		ORDER BY n.nspname, c.relname
