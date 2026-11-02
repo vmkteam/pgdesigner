@@ -11,6 +11,7 @@ import (
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	pgquery "github.com/wasilibs/go-pgquery"
 
 	"github.com/vmkteam/pgdesigner/pkg/pgd"
 )
@@ -348,4 +349,19 @@ func TestTruncate(t *testing.T) {
 	assert.Equal(t, "abc", truncate("abcdef", 3))
 	assert.Equal(t, "ab", truncate("ab", 5))
 	assert.Equal(t, "abc", truncate("abc", 0))
+}
+
+func TestGenerate_NameCantBreakOutOfComment(t *testing.T) {
+	p := &pgd.Project{Schemas: []pgd.Schema{{Name: "public", Tables: []pgd.Table{{
+		Name:    "t\nDROP TABLE users; --",
+		Columns: []pgd.Column{{Name: "id", Type: "integer"}},
+	}}}}}
+
+	var buf bytes.Buffer
+	require.NoError(t, Generate(&buf, p, Options{Seed: 1, Rows: 1}))
+	tree, err := pgquery.Parse(buf.String())
+	require.NoError(t, err)
+	for _, s := range tree.Stmts {
+		assert.Nil(t, s.Stmt.GetDropStmt(), "statement outside the comment")
+	}
 }

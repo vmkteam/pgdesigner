@@ -314,7 +314,7 @@ func Generate(w io.Writer, p *pgd.Project, opts Options) error {
 		// unique constraint tracker
 		uTracker := newUniqueTracker(t)
 
-		fmt.Fprintf(w, "-- Table: %s (%d rows)\n", tk.Qualified(), rowCount)
+		fmt.Fprintln(w, pgd.SQLComment("Table: %s (%d rows)", tk.Qualified(), rowCount))
 
 		hasIdentity := hasIdentityColumn(t)
 

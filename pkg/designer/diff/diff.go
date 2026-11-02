@@ -26,18 +26,12 @@ func (r *DiffResult) SQL() string {
 	var b strings.Builder
 	for _, c := range r.Changes {
 		for _, h := range c.Hazards {
-			b.WriteString(sqlComment("[%s] %s: %s", h.Level, h.Code, h.Message) + "\n")
+			b.WriteString(pgd.SQLComment("[%s] %s: %s", h.Level, h.Code, h.Message) + "\n")
 		}
 		b.WriteString(c.SQL)
 		b.WriteString("\n\n")
 	}
 	return b.String()
-}
-
-// sqlComment returns an SQL line comment. Line breaks, which object names may contain,
-// are replaced so the comment can't end early and leave the rest as SQL.
-func sqlComment(format string, args ...any) string {
-	return "-- " + strings.NewReplacer("\r", " ", "\n", " ").Replace(fmt.Sprintf(format, args...))
 }
 
 // HasHazards reports whether any change has hazards.
@@ -215,12 +209,16 @@ type droppedTable struct {
 	*pgd.Table
 }
 
-// fkTarget returns the schema-qualified table referenced by an FK of a table in schema.
-func fkTarget(schema string, fk *pgd.ForeignKey) string {
+// fkTarget returns the schema-qualified table referenced by an FK of a table in schema:
+// an unqualified table is looked up in the same schema, then in the default schema.
+func fkTarget(p *pgd.Project, schema string, fk *pgd.ForeignKey) string {
 	if strings.Contains(fk.ToTable, ".") {
 		return fk.ToTable
 	}
-	return schema + "." + fk.ToTable
+	if s := findSchema(p.Schemas, schema); s != nil && slices.ContainsFunc(s.Tables, func(t pgd.Table) bool { return t.Name == fk.ToTable }) {
+		return schema + "." + fk.ToTable
+	}
+	return cmp.Or(p.DefaultSchema, "public") + "." + fk.ToTable
 }
 
 // dropTables drops removed tables of all schemas so that a table goes before the tables
@@ -237,7 +235,7 @@ func (b *diffBuilder) dropTables(old, updated *pgd.Project) {
 			}
 			d := droppedTable{schema: os.Name, key: os.Name + "." + t.Name, Table: t}
 			for k := range t.FKs {
-				d.targets = append(d.targets, fkTarget(os.Name, &t.FKs[k]))
+				d.targets = append(d.targets, fkTarget(old, os.Name, &t.FKs[k]))
 			}
 			tables = append(tables, d)
 		}
@@ -306,7 +304,7 @@ func (b *diffBuilder) createTables(old, updated *pgd.Schema) {
 	for i := range updated.Tables {
 		nt := &updated.Tables[i]
 		if ot, exists := oldTables[nt.Name]; exists {
-			b.diffColumns(nt.Name, ot.Columns, nt.Columns)
+			b.diffColumns(ot, nt)
 			b.diffTableOptions(ot, nt)
 		}
 	}
@@ -447,17 +445,27 @@ func (b *diffBuilder) dropTable(name string) {
 
 // --- Columns ---
 
-func (b *diffBuilder) diffColumns(table string, old, updated []pgd.Column) {
-	oldCols := columnMap(old)
+func (b *diffBuilder) diffColumns(old, updated *pgd.Table) {
+	oldCols := columnMap(old.Columns)
 
-	for _, nc := range updated {
+	for i := range updated.Columns {
+		nc := &updated.Columns[i]
 		oc, exists := oldCols[nc.Name]
 		if !exists {
-			b.addColumn(table, &nc)
+			b.addColumn(updated.Name, nc)
 			continue
 		}
-		b.diffColumn(table, oc, &nc)
+		b.diffColumn(updated.Name, oc, nc, notNull(old, oc), notNull(updated, nc))
 	}
+}
+
+// notNull reports whether a column is NOT NULL: PostgreSQL makes primary key and identity
+// columns NOT NULL, and the model doesn't always say so.
+func notNull(t *pgd.Table, c *pgd.Column) bool {
+	if c.Nullable == "false" || c.Identity != nil {
+		return true
+	}
+	return t.PK != nil && slices.ContainsFunc(t.PK.Columns, func(r pgd.ColRef) bool { return r.Name == c.Name })
 }
 
 func (b *diffBuilder) dropRemovedColumns(table string, old, updated []pgd.Column) {
@@ -510,7 +518,8 @@ func (b *diffBuilder) dropColumn(table, col string) {
 	})
 }
 
-func (b *diffBuilder) diffColumn(table string, old, updated *pgd.Column) {
+// diffColumn alters a column; oldNotNull and newNotNull are the effective NOT NULL, see notNull.
+func (b *diffBuilder) diffColumn(table string, old, updated *pgd.Column, oldNotNull, newNotNull bool) {
 	if needsRecreate(old, updated) {
 		b.recreateColumn(table, updated)
 		return
@@ -521,9 +530,15 @@ func (b *diffBuilder) diffColumn(table string, old, updated *pgd.Column) {
 
 	b.diffColumnType(table, t, col, old, updated)
 	b.diffColumnGenerated(table, t, col, old, updated) // before DEFAULT: a generated column can't have one
-	b.diffColumnNullable(table, t, col, old, updated)
+	// before ADD IDENTITY, which needs NOT NULL; a column joining the PK gets it from ADD PRIMARY KEY
+	if newNotNull && !oldNotNull && (updated.Nullable == "false" || updated.Identity != nil) {
+		b.alterColumn(table, updated.Name, fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET NOT NULL;", t, col))
+	}
 	b.diffColumnDefault(table, t, col, old, updated)
 	b.diffColumnIdentity(table, t, col, old, updated)
+	if oldNotNull && !newNotNull { // after DROP IDENTITY: an identity column can't be nullable
+		b.alterColumn(table, updated.Name, fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s DROP NOT NULL;", t, col))
+	}
 	b.diffColumnCompression(table, t, col, old, updated)
 	b.diffColumnStorage(table, t, col, old, updated)
 }
@@ -616,21 +631,8 @@ func (b *diffBuilder) diffColumnType(table, t, col string, old, updated *pgd.Col
 	})
 }
 
-func (b *diffBuilder) diffColumnNullable(table, t, col string, old, updated *pgd.Column) {
-	if old.Nullable == updated.Nullable {
-		return
-	}
-	if updated.Nullable == "false" {
-		b.add(Change{
-			Object: "column", Action: "alter", Table: table, Name: updated.Name,
-			SQL: fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET NOT NULL;", t, col),
-		})
-	} else {
-		b.add(Change{
-			Object: "column", Action: "alter", Table: table, Name: updated.Name,
-			SQL: fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s DROP NOT NULL;", t, col),
-		})
-	}
+func (b *diffBuilder) alterColumn(table, col, sql string) {
+	b.add(Change{Object: "column", Action: "alter", Table: table, Name: col, SQL: sql})
 }
 
 func (b *diffBuilder) diffColumnDefault(table, t, col string, old, updated *pgd.Column) {
@@ -769,19 +771,19 @@ func (b *diffBuilder) diffPartitionBy(table string, old, updated *pgd.PartitionB
 	case old == nil && updated != nil:
 		b.add(Change{
 			Object: "table", Action: "alter", Table: table, Name: table,
-			SQL:     sqlComment("Cannot add PARTITION BY to existing table %s; requires table recreation", t),
+			SQL:     pgd.SQLComment("Cannot add PARTITION BY to existing table %s; requires table recreation", t),
 			Hazards: []Hazard{{Level: "dangerous", Code: "TABLE_RECREATE", Message: "adding PARTITION BY requires table recreation"}},
 		})
 	case old != nil && updated == nil:
 		b.add(Change{
 			Object: "table", Action: "alter", Table: table, Name: table,
-			SQL:     sqlComment("Cannot remove PARTITION BY from table %s; requires table recreation", t),
+			SQL:     pgd.SQLComment("Cannot remove PARTITION BY from table %s; requires table recreation", t),
 			Hazards: []Hazard{{Level: "dangerous", Code: "TABLE_RECREATE", Message: "removing PARTITION BY requires table recreation"}},
 		})
 	default:
 		b.add(Change{
 			Object: "table", Action: "alter", Table: table, Name: table,
-			SQL:     sqlComment("Cannot change PARTITION BY strategy on table %s; requires table recreation", t),
+			SQL:     pgd.SQLComment("Cannot change PARTITION BY strategy on table %s; requires table recreation", t),
 			Hazards: []Hazard{{Level: "dangerous", Code: "TABLE_RECREATE", Message: "changing PARTITION BY strategy requires table recreation"}},
 		})
 	}
@@ -946,7 +948,7 @@ func (b *diffBuilder) dropConstraint(object, table, name, def string) {
 	if name == "" {
 		b.add(Change{
 			Object: object, Action: "drop", Table: table,
-			SQL:     sqlComment("Cannot drop unnamed %s on %s: name it in the old model", def, b.qt(table)),
+			SQL:     pgd.SQLComment("Cannot drop unnamed %s on %s: name it in the old model", def, b.qt(table)),
 			Hazards: []Hazard{{Level: "warning", Code: "UNNAMED_CONSTRAINT", Message: fmt.Sprintf("unnamed %s on %s is not dropped", def, table)}},
 		})
 		return
@@ -1138,7 +1140,7 @@ func (b *diffBuilder) diffEnums(old, updated []pgd.Enum) {
 func (b *diffBuilder) diffEnumLabels(old, updated *pgd.Enum) {
 	name := pgd.QualifiedName(updated.Schema, updated.Name)
 	unsupported := func(what string) {
-		b.addEnum(updated, "alter", sqlComment("Cannot %s of enum %s; requires type recreation", what, name),
+		b.addEnum(updated, "alter", pgd.SQLComment("Cannot %s of enum %s; requires type recreation", what, name),
 			Hazard{Level: "dangerous", Code: "TYPE_RECREATE", Message: what + " requires type recreation"})
 	}
 
@@ -1566,7 +1568,8 @@ func indexOptions(idx *pgd.Index) string {
 }
 
 func fkChanged(old, updated *pgd.ForeignKey) bool {
-	return fkIdentity(old) != fkIdentity(updated) || old.OnDelete != updated.OnDelete || old.OnUpdate != updated.OnUpdate
+	return fkIdentity(old) != fkIdentity(updated) ||
+		pgd.RefAction(old.OnDelete) != pgd.RefAction(updated.OnDelete) || pgd.RefAction(old.OnUpdate) != pgd.RefAction(updated.OnUpdate)
 }
 
 func pkChanged(old, updated *pgd.PrimaryKey) bool {

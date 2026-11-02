@@ -301,6 +301,12 @@ func TestDiff_ModifyFK(t *testing.T) {
 	require.Len(t, r.Changes, 2)
 	assert.Equal(t, "drop", r.Changes[0].Action)
 	assert.Equal(t, "add", r.Changes[1].Action)
+
+	// actions written in another case or omitted are the same
+	spelled := fk("fk1", "a", "RESTRICT", "id", "id")
+	spelled.OnUpdate = ""
+	updated.Schemas[0].Tables[0].FKs = []pgd.ForeignKey{spelled}
+	assert.Empty(t, Diff(old, updated).Changes)
 }
 
 func TestDiff_AddPK(t *testing.T) {
@@ -316,9 +322,45 @@ func TestDiff_DropPK(t *testing.T) {
 	old := project(schema("public", []pgd.Table{{Name: "t", Columns: []pgd.Column{col("id", "integer")}, PK: pk("pk_t", "id")}}, nil))
 	updated := project(schema("public", []pgd.Table{{Name: "t", Columns: []pgd.Column{col("id", "integer")}}}, nil))
 
-	r := Diff(old, updated)
-	require.Len(t, r.Changes, 1)
-	assert.Contains(t, r.Changes[0].SQL, `DROP CONSTRAINT "pk_t"`)
+	// PostgreSQL keeps NOT NULL after dropping the PK, generate doesn't write it
+	assert.Equal(t, []string{`ALTER TABLE "t" DROP CONSTRAINT "pk_t";`, `ALTER TABLE "t" ALTER COLUMN "id" DROP NOT NULL;`}, changeSQLs(Diff(old, updated)))
+}
+
+func TestDiff_NotNull(t *testing.T) {
+	table := func(c pgd.Column, withPK bool) *pgd.Project {
+		tbl := pgd.Table{Name: "t", Columns: []pgd.Column{c}}
+		if withPK {
+			tbl.PK = pk("pk_t", "id")
+		}
+		return project(schema("public", []pgd.Table{tbl}, nil))
+	}
+	id := col("id", "integer")
+	notNullID := pgd.Column{Name: "id", Type: "integer", Nullable: "false"}
+	nullableID := pgd.Column{Name: "id", Type: "integer", Nullable: "true"}
+	identityID := pgd.Column{Name: "id", Type: "integer", Identity: &pgd.Identity{Generated: "always"}}
+	tests := []struct {
+		name         string
+		old, updated *pgd.Project
+		want         []string
+	}{
+		{"PK column from a database vs model without nullable", table(notNullID, true), table(id, true), nil},
+		{"nullable written or not", table(nullableID, false), table(id, false), nil},
+		{"identity column from a database vs model without nullable", table(pgd.Column{Name: "id", Type: "integer", Nullable: "false", Identity: identityID.Identity}, false), table(identityID, false), nil},
+		{"add identity to a nullable column", table(id, false), table(identityID, false), []string{
+			`ALTER TABLE "t" ALTER COLUMN "id" SET NOT NULL;`,
+			`ALTER TABLE "t" ALTER COLUMN "id" ADD GENERATED ALWAYS AS IDENTITY;`,
+		}},
+		{"drop identity of a nullable column", table(identityID, false), table(id, false), []string{
+			`ALTER TABLE "t" ALTER COLUMN "id" DROP IDENTITY;`,
+			`ALTER TABLE "t" ALTER COLUMN "id" DROP NOT NULL;`,
+		}},
+		{"set NOT NULL", table(id, false), table(notNullID, false), []string{`ALTER TABLE "t" ALTER COLUMN "id" SET NOT NULL;`}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, changeSQLs(Diff(tt.old, tt.updated)))
+		})
+	}
 }
 
 func TestDiff_ModifyPK(t *testing.T) {
@@ -995,6 +1037,12 @@ func TestDiff_DropOrder(t *testing.T) {
 	old := project(schema("a", []pgd.Table{t1}, nil), schema("b", []pgd.Table{t2}, nil))
 	r = Diff(old, project(schema("a", nil, nil), schema("b", nil, nil)))
 	assert.Equal(t, []string{`DROP TABLE "b"."t2";`, `DROP TABLE "a"."t1";`}, changeSQLs(r))
+
+	// an unqualified FK target that isn't in the same schema is in the default schema
+	t2.FKs[0].ToTable = "t1"
+	old = project(schema("public", []pgd.Table{t1}, nil), schema("b", []pgd.Table{t2}, nil))
+	r = Diff(old, project(schema("public", nil, nil), schema("b", nil, nil)))
+	assert.Equal(t, []string{`DROP TABLE "b"."t2";`, `DROP TABLE "t1";`}, changeSQLs(r))
 }
 
 func TestDiff_NewSchema(t *testing.T) {

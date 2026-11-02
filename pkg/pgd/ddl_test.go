@@ -1199,4 +1199,8 @@ func TestGenerateDDL_SchemaBeforeTypes(t *testing.T) {
 	}
 	assert.Less(t, strings.Index(ddl, `CREATE SCHEMA IF NOT EXISTS "ext"`), strings.Index(ddl, "CREATE EXTENSION"))
 	assert.Less(t, strings.Index(ddl, `CREATE SCHEMA IF NOT EXISTS "mp"`), strings.Index(ddl, `CREATE TYPE "mp"."st"`))
+
+	// system schemas exist and can't be created
+	p.Extensions = append(p.Extensions, Extension{Name: "plpgsql", Schema: "pg_catalog"}, Extension{Name: "x", Schema: "information_schema"})
+	assert.Equal(t, []string{"ext", "mp"}, NonPublicSchemas(p))
 }

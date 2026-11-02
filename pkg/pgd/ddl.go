@@ -261,12 +261,13 @@ func (d *ddlWriter) writeMatViewIndexes(p *Project, mvNames map[string]bool) {
 	}
 }
 
-// NonPublicSchemas returns the sorted names of non-public schemas the project uses:
-// schemas of tables, sequences, views, types, extensions and functions.
+// NonPublicSchemas returns the sorted names of the schemas the project uses that CREATE SCHEMA
+// can create: schemas of tables, sequences, views, types, extensions and functions except
+// public and the system schemas (pg_catalog, information_schema).
 func NonPublicSchemas(p *Project) []string {
 	seen := make(map[string]bool)
 	add := func(name string) {
-		if name != "" && name != "public" {
+		if name != "" && name != "public" && name != "information_schema" && !strings.HasPrefix(name, "pg_") {
 			seen[name] = true
 		}
 	}
@@ -878,6 +879,12 @@ func hasColumnStorage(t *Table) bool {
 	return false
 }
 
+// SQLComment returns an SQL line comment. Line breaks, which object names may contain,
+// are replaced so the comment can't end early and leave the rest as SQL.
+func SQLComment(format string, args ...any) string {
+	return "-- " + strings.NewReplacer("\r", " ", "\n", " ").Replace(fmt.Sprintf(format, args...))
+}
+
 // QuoteLiteral returns s as an SQL string literal.
 func QuoteLiteral(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
@@ -1237,8 +1244,8 @@ func (d *ddlWriter) writeFK(q string, table string, fk *ForeignKey) {
 		d.P("ALTER TABLE %s%s ADD FOREIGN KEY (%s)\n", q, QuoteIdent(table), localCols)
 	}
 	d.P("\tREFERENCES %s(%s)\n", QuoteIdentQualified(fk.ToTable), refCols)
-	d.P("\tON DELETE %s\n", refAction(fk.OnDelete))
-	d.P("\tON UPDATE %s", refAction(fk.OnUpdate))
+	d.P("\tON DELETE %s\n", RefAction(fk.OnDelete))
+	d.P("\tON UPDATE %s", RefAction(fk.OnUpdate))
 
 	if fk.Deferrable == "true" {
 		d.S("\n\tDEFERRABLE")
@@ -1385,7 +1392,9 @@ func hasLength(c *Column) bool {
 	return false
 }
 
-func refAction(a string) string {
+// RefAction returns an FK action of the model as SQL: restrict → RESTRICT, set-null → SET NULL;
+// an empty or unknown action is NO ACTION.
+func RefAction(a string) string {
 	switch strings.ToLower(strings.TrimSpace(a)) {
 	case "restrict":
 		return "RESTRICT"
