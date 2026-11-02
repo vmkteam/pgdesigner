@@ -117,47 +117,71 @@ func TestDatabaseName(t *testing.T) {
 	assert.Empty(t, DatabaseName("postgres://u@localhost"))
 }
 
-func TestParseIndexColumns(t *testing.T) {
+func TestParseIndexKeys(t *testing.T) {
 	tests := []struct {
 		name string
 		def  string
-		want []pgd.ColRef
+		want []pgd.IndexKey
 	}{
 		{
 			name: "plain column",
 			def:  `CREATE INDEX foo ON t ("name")`,
-			want: []pgd.ColRef{{Name: "name"}},
+			want: []pgd.IndexKey{{Name: "name"}},
 		},
 		{
 			name: "desc nulls last",
 			def:  `CREATE INDEX foo ON t ("name" DESC NULLS LAST)`,
-			want: []pgd.ColRef{{Name: "name", Order: "desc", Nulls: "last"}},
+			want: []pgd.IndexKey{{Name: "name", Order: "desc", Nulls: "last"}},
 		},
 		{
 			name: "gin with opclass",
 			def:  `CREATE INDEX foo ON t USING gin ("query" gin_trgm_ops)`,
-			want: []pgd.ColRef{{Name: "query", Opclass: "gin_trgm_ops"}},
+			want: []pgd.IndexKey{{Name: "query", Opclass: "gin_trgm_ops"}},
 		},
 		{
 			name: "btree opclass with desc",
 			def:  `CREATE INDEX foo ON t ("email" text_pattern_ops DESC)`,
-			want: []pgd.ColRef{{Name: "email", Order: "desc", Opclass: "text_pattern_ops"}},
+			want: []pgd.IndexKey{{Name: "email", Order: "desc", Opclass: "text_pattern_ops"}},
 		},
 		{
 			name: "multi-column with mixed opclass",
 			def:  `CREATE INDEX foo ON t ("a" int4_ops, "b" DESC)`,
-			want: []pgd.ColRef{{Name: "a", Opclass: "int4_ops"}, {Name: "b", Order: "desc"}},
+			want: []pgd.IndexKey{{Name: "a", Opclass: "int4_ops"}, {Name: "b", Order: "desc"}},
 		},
 		{
 			name: "expression index",
 			def:  `CREATE INDEX foo ON t ((lower("name")))`,
-			want: []pgd.ColRef{{Name: `(lower(name))`}},
+			want: []pgd.IndexKey{{Expression: `(lower(name))`}},
+		},
+		{
+			name: "columns and expressions interleaved",
+			def:  `CREATE INDEX foo ON t USING btree ("shopId", COALESCE("updatedAt", "createdAt") DESC, "statusId")`,
+			want: []pgd.IndexKey{{Name: "shopId"}, {Expression: `(COALESCE("updatedAt", "createdAt"))`, Order: "desc"}, {Name: "statusId"}},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := parseIndexColumns(tt.def)
+			got := parseIndexKeys(tt.def)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestConvertColumn_Generated(t *testing.T) {
+	tests := []struct {
+		attGenerated string
+		want         *pgd.Generated
+	}{
+		{"s", &pgd.Generated{Expression: "(first_name || ' '::text) || last_name", Stored: "true"}},
+		{"v", &pgd.Generated{Expression: "(first_name || ' '::text) || last_name", Stored: "false"}},
+		{"", nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.attGenerated, func(t *testing.T) {
+			// pg_get_expr output, normalized like the SQL converter stores it
+			col := convertColumn(pgColumn{Name: "full_name", Type: "text", AttGenerated: tt.attGenerated,
+				DefaultValue: "((first_name || ' '::text) || last_name)"})
+			assert.Equal(t, tt.want, col.Generated)
 		})
 	}
 }
@@ -168,14 +192,14 @@ func TestConvertIndex_ExpressionOptions(t *testing.T) {
 		Method:    "gin",
 		Def:       `CREATE INDEX ix_t_mnn_trgm ON public.t USING gin (((params ->> 'mnn'::text)) gin_trgm_ops)`,
 	})
-	assert.Equal(t, []pgd.Expression{{Value: "(params ->> 'mnn'::text)", Opclass: "gin_trgm_ops"}}, idx.Expressions)
+	assert.Equal(t, []pgd.IndexKey{{Expression: "(params ->> 'mnn'::text)", Opclass: "gin_trgm_ops"}}, idx.Keys)
 
 	idx = convertIndex("t", pgIndex{
 		IndexName: "ix_t_lower_desc",
 		Method:    "btree",
 		Def:       `CREATE INDEX ix_t_lower_desc ON public.t USING btree (lower(title) DESC NULLS LAST)`,
 	})
-	assert.Equal(t, []pgd.Expression{{Value: "(lower(title))", Order: "desc", Nulls: "last"}}, idx.Expressions)
+	assert.Equal(t, []pgd.IndexKey{{Expression: "(lower(title))", Order: "desc", Nulls: "last"}}, idx.Keys)
 }
 
 func TestParseIndexExtras(t *testing.T) {

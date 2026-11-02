@@ -775,16 +775,19 @@
 
   <xs:complexType name="IndexType">
     <xs:sequence>
-      <!-- Regular column references in the index key -->
-      <xs:element name="column"     type="ColumnRefType"  minOccurs="0" maxOccurs="unbounded"/>
-      <!-- Expression index key (raw SQL, typically CDATA) -->
-      <xs:element name="expression" minOccurs="0" maxOccurs="unbounded">
-        <xs:complexType mixed="true">
-          <xs:attribute name="opclass" type="xs:string" use="optional"/>
-          <xs:attribute name="order"   type="SortOrderType" use="optional"/>
-          <xs:attribute name="nulls"   type="NullsPlacementType" use="optional"/>
-        </xs:complexType>
-      </xs:element>
+      <!-- Index keys in key order: columns and expressions may interleave -->
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <!-- Column key -->
+        <xs:element name="column"     type="ColumnRefType"/>
+        <!-- Expression key (raw SQL, typically CDATA) -->
+        <xs:element name="expression">
+          <xs:complexType mixed="true">
+            <xs:attribute name="opclass" type="xs:string" use="optional"/>
+            <xs:attribute name="order"   type="SortOrderType" use="optional"/>
+            <xs:attribute name="nulls"   type="NullsPlacementType" use="optional"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
       <!-- WHERE predicate for partial index (raw SQL, typically CDATA) -->
       <xs:element name="where" minOccurs="0" maxOccurs="1">
         <xs:complexType mixed="true"/>

@@ -310,44 +310,15 @@ export interface IIgnoredRule {
   scope: string // "project" or table name
 }
 
-export interface IIndexColDetail {
-  name: string,
-  order: string, // asc|desc
-  nulls: string, // first|last
-  opclass: string
-}
-
-export interface IIndexColInput {
-  name: string,
-  order: string,
-  nulls: string,
-  opclass: string
-}
-
 export interface IIndexDetail {
   name: string,
   unique: boolean,
   nullsDistinct: boolean,
   using: string,
-  columns: Array<IIndexColDetail>,
-  expressions: Array<IIndexExprDetail>,
+  keys: Array<IIndexKeyDetail>,
   with: Array<IWithParamDetail>,
   where: string,
   include: Array<string>
-}
-
-export interface IIndexExprDetail {
-  expression: string,
-  order: string, // asc|desc
-  nulls: string, // first|last
-  opclass: string
-}
-
-export interface IIndexExprInput {
-  expression: string,
-  order: string,
-  nulls: string,
-  opclass: string
 }
 
 export interface IIndexInput {
@@ -356,11 +327,28 @@ export interface IIndexInput {
   unique: boolean,
   nullsDistinct: boolean,
   using: string,
-  columns: Array<IIndexColInput>,
-  expressions: Array<IIndexExprInput>,
+  keys: Array<IIndexKeyInput>,
   with: Array<IWithParamInput>,
   where: string,
   include: Array<string>
+}
+
+export interface IIndexKeyDetail {
+  kind: string, // column|expression
+  name: string, // column name
+  expression: string, // SQL expression
+  order: string, // asc|desc
+  nulls: string, // first|last
+  opclass: string
+}
+
+export interface IIndexKeyInput {
+  kind: string, // column|expression
+  name: string,
+  expression: string,
+  order: string,
+  nulls: string,
+  opclass: string
 }
 
 export interface ILayoutPosition {

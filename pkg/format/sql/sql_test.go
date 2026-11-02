@@ -296,13 +296,13 @@ func TestParseSQL_Indexes(t *testing.T) {
 
 	// expression index
 	ei := idxs[idxMap["idx_lower"]]
-	assert.True(t, len(ei.Expressions) > 0 || len(ei.Columns) > 0, "should parse expression index")
+	assert.NotEmpty(t, ei.Keys, "should parse expression index")
 
 	// DESC NULLS LAST
 	di := idxs[idxMap["idx_desc"]]
-	if len(di.Columns) > 0 {
-		assert.Equal(t, "desc", di.Columns[0].Order)
-		assert.Equal(t, "last", di.Columns[0].Nulls)
+	if len(di.Keys) > 0 {
+		assert.Equal(t, "desc", di.Keys[0].Order)
+		assert.Equal(t, "last", di.Keys[0].Nulls)
 	}
 }
 
@@ -465,12 +465,12 @@ func TestParseSQL_IndexOpclass(t *testing.T) {
 	}
 
 	gin := idxs[idxMap["ix_query_trgm"]]
-	require.Len(t, gin.Columns, 1)
-	assert.Equal(t, "gin_trgm_ops", gin.Columns[0].Opclass, "GIN opclass must be preserved")
+	require.Len(t, gin.Keys, 1)
+	assert.Equal(t, "gin_trgm_ops", gin.Keys[0].Opclass, "GIN opclass must be preserved")
 
 	btree := idxs[idxMap["ix_email_pat"]]
-	require.Len(t, btree.Columns, 1)
-	assert.Equal(t, "text_pattern_ops", btree.Columns[0].Opclass, "btree opclass must be preserved")
+	require.Len(t, btree.Keys, 1)
+	assert.Equal(t, "text_pattern_ops", btree.Keys[0].Opclass, "btree opclass must be preserved")
 
 	// Round-trip: opclass survives DDL regeneration.
 	ddl := pgd.GenerateDDL(p)
@@ -508,8 +508,8 @@ func TestParseSQL_IndexExpressionOptions(t *testing.T) {
 		idxs[idx.Name] = idx
 	}
 	require.Len(t, idxs, 2)
-	assert.Equal(t, []pgd.Expression{{Value: "params ->> 'mnn'", Opclass: "gin_trgm_ops"}}, idxs["ix_t_mnn_trgm"].Expressions)
-	assert.Equal(t, []pgd.Expression{{Value: "lower(title)", Order: "desc", Nulls: "last"}}, idxs["ix_t_lower_desc"].Expressions)
+	assert.Equal(t, []pgd.IndexKey{{Expression: "params ->> 'mnn'", Opclass: "gin_trgm_ops"}}, idxs["ix_t_mnn_trgm"].Keys)
+	assert.Equal(t, []pgd.IndexKey{{Expression: "lower(title)", Order: "desc", Nulls: "last"}}, idxs["ix_t_lower_desc"].Keys)
 
 	ddl := pgd.GenerateDDL(p)
 	assert.Contains(t, ddl, "(params ->> 'mnn') gin_trgm_ops")
@@ -517,8 +517,65 @@ func TestParseSQL_IndexExpressionOptions(t *testing.T) {
 
 	// distinct opclass or order keeps indexes apart when deduplicating
 	asc := idxs["ix_t_lower_desc"]
-	asc.Name, asc.Expressions = "ix_t_lower_asc", []pgd.Expression{{Value: "lower(title)"}}
+	asc.Name, asc.Keys = "ix_t_lower_asc", []pgd.IndexKey{{Expression: "lower(title)"}}
 	p.Schemas[0].Indexes = append(p.Schemas[0].Indexes, asc)
 	deduplicateIndexes(p)
 	assert.Len(t, p.Schemas[0].Indexes, 3)
+}
+
+func TestParseSQL_IndexKeyOrder(t *testing.T) {
+	sql := `
+	CREATE TABLE shipments ("shopId" integer, "statusId" integer, "updatedAt" timestamptz, "createdAt" timestamptz);
+	CREATE INDEX "IX_shipments_last_activity" ON shipments ("shopId", COALESCE("updatedAt", "createdAt") DESC, "statusId");
+	`
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+
+	require.Len(t, p.Schemas[0].Indexes, 1)
+	assert.Equal(t, []pgd.IndexKey{
+		{Name: "shopId"},
+		{Expression: `COALESCE("updatedAt", "createdAt")`, Order: "desc"},
+		{Name: "statusId"},
+	}, p.Schemas[0].Indexes[0].Keys)
+	assert.Contains(t, pgd.GenerateDDL(p), "\t\"shopId\",\n\t(COALESCE(\"updatedAt\", \"createdAt\")) DESC,\n\t\"statusId\"\n")
+}
+
+func TestNormalizeExpr(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		// pg_get_expr form → the converter's form
+		{"(range > 0)", "range > 0"},
+		{"((birthdate >= '1930-01-01'::date) AND (birthdate <= (now() - '18 years'::interval)))",
+			"birthdate >= '1930-01-01'::date AND birthdate <= (now() - '18 years'::interval)"},
+		{"to_tsvector('russian'::regconfig, text)", "to_tsvector('russian'::regconfig, text)"},
+		{"not an ( expression", "not an ( expression"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			assert.Equal(t, tt.want, NormalizeExpr(tt.in))
+		})
+	}
+}
+
+func TestExprKey(t *testing.T) {
+	tests := []struct {
+		name     string
+		db, ddl  string
+		sameKeys bool
+	}{
+		{"parentheses and casts", "((price > (0)::numeric) AND (qty > 0))", "price > 0 AND qty > 0", true},
+		{"IN list", "((layer)::text = ANY ((ARRAY['ocr'::character varying, 'sheet'::character varying])::text[]))", `"layer" IN ('ocr', 'sheet')`, true},
+		{"quoted column IN list", `("madeBy")::text = ANY (ARRAY['code'::text, 'llm'::text])`, `"madeBy" IN ('code', 'llm')`, true},
+		{"NOT IN list", "((kind)::text <> ALL ((ARRAY['a'::character varying])::text[]))", "kind NOT IN ('a')", true},
+		{"function with regconfig", "to_tsvector('russian'::regconfig, text)", "to_tsvector('russian', text)", true},
+		{"changed list", "((layer)::text = ANY ((ARRAY['ocr'::character varying])::text[]))", `"layer" IN ('ocr', 'manual')`, false},
+		{"changed operator", "(price > (0)::numeric)", "price >= 0", false},
+		{"regrouped", "(a AND (b OR c))", "(a AND b) OR c", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.sameKeys, ExprKey(tt.db) == ExprKey(tt.ddl), "%q vs %q", ExprKey(tt.db), ExprKey(tt.ddl))
+		})
+	}
 }

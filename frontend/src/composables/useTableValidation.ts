@@ -120,8 +120,10 @@ function validateIndexes(draft: ITableDetail): ValidationError[] {
   for (let i = 0; i < draft.indexes.length; i++) {
     const idx = draft.indexes[i]!
     errs.push(...identErrors(idx.name, 'indexes', `idx.${i}.name`, 'Index name'))
-    if ((!idx.columns || idx.columns.length === 0) && (!idx.expressions || idx.expressions.length === 0))
-      errs.push({ tab: 'indexes', field: `idx.${i}.columns`, code: 'E011', message: 'Index must have at least one column or expression' })
+    if (!idx.keys || idx.keys.length === 0)
+      errs.push({ tab: 'indexes', field: `idx.${i}.keys`, code: 'E011', message: 'Index must have at least one column or expression' })
+    else if (idx.keys.some(k => k.kind === 'expression' ? !k.expression?.trim() : !k.name))
+      errs.push({ tab: 'indexes', field: `idx.${i}.keys`, code: 'E011', message: 'Index column or expression is empty' })
     if (idx.name.trim()) {
       if (!iNames.has(idx.name)) iNames.set(idx.name, [])
       iNames.get(idx.name)!.push(i)

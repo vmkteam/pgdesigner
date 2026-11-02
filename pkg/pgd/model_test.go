@@ -3,6 +3,7 @@ package pgd
 import (
 	"encoding/xml"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,6 +20,7 @@ func TestRoundTrip(t *testing.T) {
 		{"pagila", "../format/sql/testdata/pagila.pgd"},
 		{"airlines", "../format/sql/testdata/airlines.pgd"},
 		{"adventureworks", "../format/sql/testdata/adventureworks.pgd"},
+		{"synthetic", "../../docs/pgd-format/examples/synthetic.pgd"}, // index <expression> keys
 	}
 
 	for _, tt := range tests {
@@ -122,4 +124,39 @@ func findTable(tables []Table, name string) int {
 		}
 	}
 	return -1
+}
+
+func TestIndexKeys_XMLOrder(t *testing.T) {
+	const pgdXML = `<index name="uq_personAwards" table="personAwards" unique="true">
+  <column name="personId"></column>
+  <expression><![CDATA[COALESCE("awardId", 0)]]></expression>
+  <column name="isWinner" order="desc"></column>
+  <expression opclass="text_pattern_ops"><![CDATA[lower(title)]]></expression>
+</index>`
+	var idx Index
+	require.NoError(t, xml.Unmarshal([]byte(pgdXML), &idx))
+	assert.Equal(t, []IndexKey{
+		{Name: "personId"},
+		{Expression: `COALESCE("awardId", 0)`},
+		{Name: "isWinner", Order: "desc"},
+		{Expression: "lower(title)", Opclass: "text_pattern_ops"},
+	}, idx.Keys)
+	assert.Equal(t, []string{"personId", "isWinner"}, idx.KeyColumns())
+
+	// saved in the same order
+	var out strings.Builder
+	enc := xml.NewEncoder(&out)
+	enc.Indent("", "  ")
+	require.NoError(t, enc.EncodeElement(&idx, xml.StartElement{Name: xml.Name{Local: "index"}}))
+	assert.Equal(t, pgdXML, out.String())
+
+	// and generated in key order
+	assert.Equal(t, "\t\"personId\",\n\t(COALESCE(\"awardId\", 0)),\n\t\"isWinner\" DESC,\n\t(lower(title)) text_pattern_ops", indexElements(&idx))
+}
+
+func TestIndexKeys_UnknownElement(t *testing.T) {
+	var idx Index
+	err := xml.Unmarshal([]byte(`<index name="ix" table="t"><colum name="a"></colum></index>`), &idx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unexpected <colum> in <index>")
 }

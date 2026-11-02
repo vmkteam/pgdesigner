@@ -701,9 +701,22 @@ Indexes are stored at the **schema level**, not inside tables.
 | `nulls` | enum | `first`, `last` |
 | `opclass` | string | Operator class (e.g. `jsonb_path_ops`, `text_pattern_ops`) |
 
+### Index keys: `<column>` and `<expression>`
+
+Index keys are `<column>` and `<expression>` children in key order; they may interleave,
+e.g. `("shopId", COALESCE("updatedAt", "createdAt") DESC, "statusId")`:
+
+```xml
+<index name="IX_shipments_last_activity" table="shipments">
+  <column name="shopId"></column>
+  <expression order="desc"><![CDATA[COALESCE("updatedAt", "createdAt")]]></expression>
+  <column name="statusId"></column>
+</index>
+```
+
 ### `<expression>` — expression index key (CDATA)
 
-Text content is the expression. Attributes are the same as for an index `<column>`:
+Text content is one expression. Attributes are the same as for an index `<column>`:
 
 | Attribute | Type | Description |
 |-----------|------|-------------|

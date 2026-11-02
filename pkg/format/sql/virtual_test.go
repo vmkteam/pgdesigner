@@ -46,6 +46,16 @@ func TestMarkVirtualGenerated(t *testing.T) {
 			want: "$f$ GENERATED ALWAYS AS (1) $f$ /* GENERATED ALWAYS AS (2) */ -- GENERATED ALWAYS AS (3)\n",
 		},
 		{
+			name: "escape string and nested comment are untouched",
+			in:   "E'it\\'s GENERATED ALWAYS AS (1)' /* a /* GENERATED ALWAYS AS (2) */ b */ x",
+			want: "E'it\\'s GENERATED ALWAYS AS (1)' /* a /* GENERATED ALWAYS AS (2) */ b */ x",
+		},
+		{
+			name: "comment before STORED",
+			in:   `d int GENERATED ALWAYS AS (a) /* c */ STORED`,
+			want: `d int GENERATED ALWAYS AS (a) /* c */ STORED`,
+		},
+		{
 			name: "part of identifier",
 			in:   `xGENERATED ALWAYS AS (1)`,
 			want: `xGENERATED ALWAYS AS (1)`,

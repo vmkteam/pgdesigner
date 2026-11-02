@@ -59,6 +59,7 @@ const (
 	RuleReservedWord     = "W020"
 	RuleVersionFeature   = "W021" // feature requires newer PG version
 	RulePartBoundOverlap = "W022" // partition bound overlaps with sibling
+	RuleIdxExprMultiKey  = "W023" // index <expression> holds several comma-separated keys
 
 	// I — Info (suggestions)
 	RulePreferText     = "I001"
@@ -169,6 +170,7 @@ var Rules = map[string]RuleDef{
 	RuleReservedWord:     rule(RuleReservedWord, Warning, ScopeTable, "Reserved Word", "reserved word as identifier"),
 	RuleVersionFeature:   rule(RuleVersionFeature, Warning, ScopeTable, "PG Version Feature", "feature requires newer PostgreSQL version"),
 	RulePartBoundOverlap: rule(RulePartBoundOverlap, Warning, ScopeTable, "Partition Bound Overlap", "partition bound overlaps with sibling"),
+	RuleIdxExprMultiKey:  rule(RuleIdxExprMultiKey, Warning, ScopeIndex, "Index Expression With Several Keys", "index expression holds several comma-separated keys"),
 
 	// Info
 	RulePreferText:        fixableRule(RulePreferText, Info, ScopeColumn, "Prefer Text", "prefer text over char(n)"),

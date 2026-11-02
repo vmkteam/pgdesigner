@@ -454,24 +454,23 @@ func convertIndex(tableName string, idx *PDDIndex) *pgd.Index {
 		if col == "" {
 			continue
 		}
-		ref := pgd.ColRef{Name: strings.Trim(col, `"`)}
+		key := pgd.IndexKey{Name: strings.Trim(col, `"`)}
+		if pgd.IsExpression(col) {
+			key = pgd.IndexKey{Expression: col}
+		}
 		if i < len(sorts) && strings.ToLower(sorts[i]) == "desc" {
-			ref.Order = "desc"
+			key.Order = "desc"
 		}
 		if i < len(nulls) {
 			n := strings.ToLower(nulls[i])
 			switch {
 			case strings.Contains(n, "first"):
-				ref.Nulls = "first"
+				key.Nulls = "first"
 			case strings.Contains(n, "last"):
-				ref.Nulls = "last"
+				key.Nulls = "last"
 			}
 		}
-		if pgd.IsExpression(col) {
-			out.Expressions = append(out.Expressions, pgd.Expression{Value: col, Order: ref.Order, Nulls: ref.Nulls})
-			continue
-		}
-		out.Columns = append(out.Columns, ref)
+		out.Keys = append(out.Keys, key)
 	}
 
 	if pred := decodeEscape(idx.Predicate); pred != "" {

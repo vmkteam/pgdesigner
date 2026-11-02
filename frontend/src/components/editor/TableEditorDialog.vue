@@ -119,7 +119,7 @@ function onColumnPropUpdate(index: number, field: string, value: string | number
     }
     if (editor.draft.indexes) {
       for (const ix of editor.draft.indexes) {
-        ix.columns = (ix.columns || []).map(c => c.name === oldName ? { ...c, name: newName } : c)
+        ix.keys = (ix.keys || []).map(k => k.kind === 'column' && k.name === oldName ? { ...k, name: newName } : k)
       }
     }
     if (editor.draft.fks) {
@@ -165,7 +165,7 @@ function onDeleteColumn(idx: number) {
     }
     // Indexes
     if (editor.draft.indexes) {
-      for (const ix of editor.draft.indexes) ix.columns = (ix.columns || []).filter(c => c.name !== colName)
+      for (const ix of editor.draft.indexes) ix.keys = (ix.keys || []).filter(k => k.kind !== 'column' || k.name !== colName)
     }
     // FK column mappings
     if (editor.draft.fks) {
@@ -231,7 +231,7 @@ function onCreateIndex(columnName: string) {
   }
   const newIndex = {
     name, unique: false, nullsDistinct: false, using: 'btree',
-    columns: [{ name: columnName, order: '', nulls: '', opclass: '' }], expressions: [], with: [], where: '', include: [],
+    keys: [{ kind: 'column', name: columnName, expression: '', order: '', nulls: '', opclass: '' }], with: [], where: '', include: [],
   }
   editor.draft.indexes = [...(editor.draft.indexes || []), newIndex]
   activeTab.value = 'indexes'

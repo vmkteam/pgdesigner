@@ -71,7 +71,7 @@ export const useEditorStore = defineStore('editor', () => {
       for (const u of data.uniques) u.columns = u.columns.filter(c => colNames.has(c))
     }
     if (data.indexes) {
-      for (const ix of data.indexes) ix.columns = (ix.columns || []).filter(c => colNames.has(c.name))
+      for (const ix of data.indexes) ix.keys = (ix.keys || []).filter(k => k.kind === 'expression' || colNames.has(k.name))
     }
     if (data.fks) {
       for (const fk of data.fks) fk.columns = fk.columns.filter(c => colNames.has(c.name))

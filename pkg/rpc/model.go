@@ -344,8 +344,7 @@ type IndexDetail struct {
 	Unique        bool              `json:"unique,omitempty"`
 	NullsDistinct bool              `json:"nullsDistinct,omitempty"`
 	Using         string            `json:"using,omitempty"`
-	Columns       []IndexColDetail  `json:"columns"`
-	Expressions   []IndexExprDetail `json:"expressions,omitempty"`
+	Keys          []IndexKeyDetail  `json:"keys"`
 	With          []WithParamDetail `json:"with,omitempty"`
 	Where         string            `json:"where,omitempty"`
 	Include       []string          `json:"include,omitempty"`
@@ -357,21 +356,21 @@ type WithParamDetail struct {
 	Value string `json:"value"`
 }
 
-// IndexColDetail holds index column with ordering metadata.
-type IndexColDetail struct {
-	Name    string `json:"name"`
-	Order   string `json:"order,omitempty"` // asc|desc
-	Nulls   string `json:"nulls,omitempty"` // first|last
-	Opclass string `json:"opclass,omitempty"`
-}
-
-// IndexExprDetail holds index expression with ordering metadata.
-type IndexExprDetail struct {
-	Expression string `json:"expression"`
-	Order      string `json:"order,omitempty"` // asc|desc
-	Nulls      string `json:"nulls,omitempty"` // first|last
+// IndexKeyDetail holds an index key, a column or an expression, with ordering metadata.
+type IndexKeyDetail struct {
+	Kind       string `json:"kind"`                 // column|expression
+	Name       string `json:"name,omitempty"`       // column name
+	Expression string `json:"expression,omitempty"` // SQL expression
+	Order      string `json:"order,omitempty"`      // asc|desc
+	Nulls      string `json:"nulls,omitempty"`      // first|last
 	Opclass    string `json:"opclass,omitempty"`
 }
+
+// Index key kinds.
+const (
+	IndexKeyColumn     = "column"
+	IndexKeyExpression = "expression"
+)
 
 // DirEntry represents a file or directory in a directory listing.
 type DirEntry struct {

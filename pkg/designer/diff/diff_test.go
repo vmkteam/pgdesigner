@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	pgquery "github.com/wasilibs/go-pgquery"
+
 	"github.com/vmkteam/pgdesigner/pkg/pgd"
 
 	"github.com/stretchr/testify/assert"
@@ -53,10 +55,19 @@ func fk(name, toTable, onDel string, pairs ...string) pgd.ForeignKey {
 	return f
 }
 
+// changeSQLs returns the SQL of each change.
+func changeSQLs(r *DiffResult) []string {
+	var out []string
+	for _, c := range r.Changes {
+		out = append(out, c.SQL)
+	}
+	return out
+}
+
 func idx(name, table string, cols ...string) pgd.Index {
 	i := pgd.Index{Name: name, Table: table}
 	for _, c := range cols {
-		i.Columns = append(i.Columns, pgd.ColRef{Name: c})
+		i.Keys = append(i.Keys, pgd.IndexKey{Name: c})
 	}
 	return i
 }
@@ -330,7 +341,7 @@ func TestDiff_AddUnique(t *testing.T) {
 
 	r := Diff(old, updated)
 	require.Len(t, r.Changes, 1)
-	assert.Contains(t, r.Changes[0].SQL, `ADD CONSTRAINT "uq_email" UNIQUE ("email")`)
+	assert.Contains(t, r.Changes[0].SQL, `ADD CONSTRAINT "uq_email" UNIQUE("email")`)
 }
 
 func TestDiff_AddCheck(t *testing.T) {
@@ -386,8 +397,8 @@ func TestDiff_SQL(t *testing.T) {
 }
 
 func TestDiff_IndexWhereChanged(t *testing.T) {
-	oldIdx := pgd.Index{Name: "idx_x", Table: "t", Unique: "true", Columns: []pgd.ColRef{{Name: "workspaceId"}, {Name: "statusId"}}}
-	newIdx := pgd.Index{Name: "idx_x", Table: "t", Unique: "true", Columns: []pgd.ColRef{{Name: "workspaceId"}}, Where: &pgd.WhereClause{Value: `"statusId" IN (1, 2)`}}
+	oldIdx := pgd.Index{Name: "idx_x", Table: "t", Unique: "true", Keys: []pgd.IndexKey{{Name: "workspaceId"}, {Name: "statusId"}}}
+	newIdx := pgd.Index{Name: "idx_x", Table: "t", Unique: "true", Keys: []pgd.IndexKey{{Name: "workspaceId"}}, Where: &pgd.WhereClause{Value: `"statusId" IN (1, 2)`}}
 
 	old := project(schema("public", nil, []pgd.Index{oldIdx}))
 	updated := project(schema("public", nil, []pgd.Index{newIdx}))
@@ -606,10 +617,7 @@ func TestDiff_CommentsSection(t *testing.T) {
 	}
 
 	r := Diff(old, updated)
-	var sqls []string
-	for _, c := range r.Changes {
-		sqls = append(sqls, c.SQL)
-	}
+	sqls := changeSQLs(r)
 	assert.Equal(t, []string{
 		`COMMENT ON TABLE "notes" IS 'new';`,
 		`COMMENT ON COLUMN "notes"."body" IS 'it''s text';`,
@@ -663,10 +671,7 @@ func TestDiff_Generated(t *testing.T) {
 			updated := project(schema("public", []pgd.Table{{Name: "t", Columns: []pgd.Column{col("a", "text"), col("b", "text"), tt.new}}}, nil))
 
 			r := Diff(old, updated)
-			var sqls []string
-			for _, c := range r.Changes {
-				sqls = append(sqls, c.SQL)
-			}
+			sqls := changeSQLs(r)
 			assert.Equal(t, tt.want, sqls)
 			assert.Equal(t, tt.recreated, len(r.Errors()) > 0)
 		})
@@ -685,9 +690,9 @@ func TestDiff_RecreatedColumnDependents(t *testing.T) {
 		}
 	}
 	indexes := []pgd.Index{
-		{Name: "ix_docs_tsv", Table: "docs", Using: "gin", Columns: []pgd.ColRef{{Name: "tsv"}}},
-		{Name: "ix_docs_len", Table: "docs", Expressions: []pgd.Expression{{Value: "length(tsv)"}}},
-		{Name: "ix_docs_id", Table: "docs", Columns: []pgd.ColRef{{Name: "id"}}, Where: &pgd.WhereClause{Value: "tsvector_ok(id)"}},
+		{Name: "ix_docs_tsv", Table: "docs", Using: "gin", Keys: []pgd.IndexKey{{Name: "tsv"}}},
+		{Name: "ix_docs_len", Table: "docs", Keys: []pgd.IndexKey{{Expression: "length(tsv)"}}},
+		{Name: "ix_docs_id", Table: "docs", Keys: []pgd.IndexKey{{Name: "id"}}, Where: &pgd.WhereClause{Value: "tsvector_ok(id)"}},
 	}
 	old := project(schema("public", []pgd.Table{table(plain)}, indexes))
 	updated := project(schema("public", []pgd.Table{table(gen)}, indexes))
@@ -715,6 +720,8 @@ func TestMentionsColumn(t *testing.T) {
 		{"names", false},
 		{"name(x)", false},
 		{`"Name"`, false},
+		{"kind <> 'name'", false},
+		{"kind <> 'it''s name' AND name > 0", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.expr, func(t *testing.T) {
@@ -754,12 +761,15 @@ func TestDiff_Enums(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := Diff(tt.old, tt.updated)
-			var sqls []string
-			for _, c := range r.Changes {
-				sqls = append(sqls, c.SQL)
-			}
+			sqls := changeSQLs(r)
 			assert.Equal(t, tt.want, sqls)
-			assert.Equal(t, tt.hazard, r.HasHazards())
+			assert.Equal(t, tt.hazard, len(r.Errors()) > 0)
+			for _, c := range r.Changes {
+				if strings.Contains(c.SQL, "ADD VALUE") {
+					require.Len(t, c.Hazards, 1)
+					assert.Equal(t, "ENUM_ADD_VALUE", c.Hazards[0].Code)
+				}
+			}
 		})
 	}
 }
@@ -776,10 +786,10 @@ func TestDiff_EnumBeforeTable(t *testing.T) {
 }
 
 func TestDiff_IndexChanges(t *testing.T) {
-	base := pgd.Index{Name: "ix", Table: "t", Using: "gin", Expressions: []pgd.Expression{{Value: "(params ->> 'mnn')", Opclass: "gin_trgm_ops"}}}
+	base := pgd.Index{Name: "ix", Table: "t", Using: "gin", Keys: []pgd.IndexKey{{Expression: "(params ->> 'mnn')", Opclass: "gin_trgm_ops"}}}
 	with := func(f func(*pgd.Index)) pgd.Index {
 		i := base
-		i.Expressions = slices.Clone(base.Expressions)
+		i.Keys = slices.Clone(base.Keys)
 		f(&i)
 		return i
 	}
@@ -789,10 +799,10 @@ func TestDiff_IndexChanges(t *testing.T) {
 		changed bool
 	}{
 		{"same", with(func(*pgd.Index) {}), false},
-		{"expression", with(func(i *pgd.Index) { i.Expressions[0].Value = "(params ->> 'inn')" }), true},
-		{"expression opclass", with(func(i *pgd.Index) { i.Expressions[0].Opclass = "gin_trgm_ops2" }), true},
-		{"expression order", with(func(i *pgd.Index) { i.Expressions[0].Order = "desc" }), true},
-		{"expression nulls", with(func(i *pgd.Index) { i.Expressions[0].Nulls = "last" }), true},
+		{"expression", with(func(i *pgd.Index) { i.Keys[0].Expression = "(params ->> 'inn')" }), true},
+		{"expression opclass", with(func(i *pgd.Index) { i.Keys[0].Opclass = "gin_trgm_ops2" }), true},
+		{"expression order", with(func(i *pgd.Index) { i.Keys[0].Order = "desc" }), true},
+		{"expression nulls", with(func(i *pgd.Index) { i.Keys[0].Nulls = "last" }), true},
 		{"include", with(func(i *pgd.Index) { i.Include = &pgd.Include{Columns: []pgd.ColRef{{Name: "id"}}} }), true},
 		{"nulls not distinct", with(func(i *pgd.Index) { i.NullsDistinct = "false" }), true},
 		{"with", with(func(i *pgd.Index) { i.With = &pgd.With{Params: []pgd.WithParam{{Name: "fastupdate", Value: "off"}}} }), true},
@@ -814,14 +824,16 @@ func TestDiff_IndexChanges(t *testing.T) {
 }
 
 func TestDiff_IndexDefaultsAreEqual(t *testing.T) {
-	old := pgd.Index{Name: "ix", Table: "t", Columns: []pgd.ColRef{{Name: "a"}}}
-	updated := pgd.Index{Name: "ix", Table: "t", Using: "btree", Unique: "false", NullsDistinct: "true", Columns: []pgd.ColRef{{Name: "a", Order: "asc"}}}
+	old := pgd.Index{Name: "ix", Table: "t", Keys: []pgd.IndexKey{{Name: "a"}, {Expression: "lower(b)"}}}
+	// pg_get_indexdef wraps expressions in parentheses, the SQL converter doesn't
+	updated := pgd.Index{Name: "ix", Table: "t", Using: "btree", Unique: "false", NullsDistinct: "true",
+		Keys: []pgd.IndexKey{{Name: "a", Order: "asc"}, {Expression: "(lower(b))"}}}
 	assert.Empty(t, Diff(project(schema("public", nil, []pgd.Index{old})), project(schema("public", nil, []pgd.Index{updated}))).Changes)
 }
 
 func TestDiff_IndexRename(t *testing.T) {
 	expr := func(name, value string) pgd.Index {
-		return pgd.Index{Name: name, Table: "t", Expressions: []pgd.Expression{{Value: value}}}
+		return pgd.Index{Name: name, Table: "t", Keys: []pgd.IndexKey{{Expression: value}}}
 	}
 
 	// renamed index: same definition under a new name is not re-created
@@ -864,4 +876,168 @@ func TestDiff_SchemaQualifiedIndexDrop(t *testing.T) {
 	r := Diff(project(schema("app", nil, []pgd.Index{idx("ix", "t", "a")})), project(schema("app", nil, nil)))
 	require.Len(t, r.Changes, 1)
 	assert.Equal(t, `DROP INDEX "app"."ix";`, r.Changes[0].SQL)
+}
+
+func TestDiff_DropTablesInDependencyOrder(t *testing.T) {
+	keep := pgd.Table{Name: "users", Columns: []pgd.Column{col("id", "integer")}}
+	parent := pgd.Table{Name: "albums", Columns: []pgd.Column{col("id", "integer")}}
+	child := pgd.Table{Name: "photos", Columns: []pgd.Column{col("albumId", "integer")},
+		FKs: []pgd.ForeignKey{fk("fk_photos_albumId", "public.albums", "restrict", "albumId", "id")}}
+	a := pgd.Table{Name: "a", Columns: []pgd.Column{col("bId", "integer")}, FKs: []pgd.ForeignKey{fk("fk_a_bId", "b", "restrict", "bId", "id")}}
+	b := pgd.Table{Name: "b", Columns: []pgd.Column{col("aId", "integer")}, FKs: []pgd.ForeignKey{fk("fk_b_aId", "a", "restrict", "aId", "id"), fk("fk_b_self", "b", "restrict", "aId", "id")}}
+
+	r := Diff(project(schema("public", []pgd.Table{keep, parent, child}, nil)), project(schema("public", []pgd.Table{keep}, nil)))
+	assert.Equal(t, []string{`DROP TABLE "photos";`, `DROP TABLE "albums";`}, changeSQLs(r))
+
+	// FK cycle: drop the FKs between the tables first
+	r = Diff(project(schema("public", []pgd.Table{keep, a, b}, nil)), project(schema("public", []pgd.Table{keep}, nil)))
+	assert.Equal(t, []string{
+		`ALTER TABLE "a" DROP CONSTRAINT "fk_a_bId";`,
+		`ALTER TABLE "b" DROP CONSTRAINT "fk_b_aId";`,
+		`DROP TABLE "a";`,
+		`DROP TABLE "b";`,
+	}, changeSQLs(r))
+}
+
+func TestDiff_ChangedCheckAndUnique(t *testing.T) {
+	table := func(check string, uq pgd.Unique) []pgd.Table {
+		return []pgd.Table{{
+			Name:    "t",
+			Columns: []pgd.Column{col("a", "text"), col("b", "text")},
+			Checks:  []pgd.Check{{Name: "chk_t_a", Expression: check}},
+			Uniques: []pgd.Unique{uq},
+		}}
+	}
+	old := project(schema("public", table("a IN ('x', 'y')", pgd.Unique{Name: "uq_t", Columns: []pgd.ColRef{{Name: "a"}}}), nil))
+	updated := project(schema("public", table("a IN ('x', 'y', 'z')", pgd.Unique{Name: "uq_t", NullsDistinct: "false", Columns: []pgd.ColRef{{Name: "a"}, {Name: "b"}}}), nil))
+
+	sqls := changeSQLs(Diff(old, updated))
+	assert.Equal(t, []string{
+		`ALTER TABLE "t" DROP CONSTRAINT "chk_t_a";`,
+		`ALTER TABLE "t" DROP CONSTRAINT "uq_t";`,
+		`ALTER TABLE "t" ADD CONSTRAINT "uq_t" UNIQUE NULLS NOT DISTINCT("a", "b");`,
+		`ALTER TABLE "t" ADD CONSTRAINT "chk_t_a" CHECK (a IN ('x', 'y', 'z'));`,
+	}, sqls)
+
+	assert.Empty(t, Diff(old, old).Changes)
+}
+
+func TestDiff_IndexKeyOrder(t *testing.T) {
+	keys := func(k ...pgd.IndexKey) []pgd.Index {
+		return []pgd.Index{{Name: "ix", Table: "t", Keys: k}}
+	}
+	col, expr := pgd.IndexKey{Name: "a"}, pgd.IndexKey{Expression: "lower(b)"}
+
+	r := Diff(project(schema("public", nil, keys(col, expr))), project(schema("public", nil, keys(expr, col))))
+	require.Len(t, r.Changes, 2)
+	assert.Equal(t, `DROP INDEX "ix";`, r.Changes[0].SQL)
+	assert.Contains(t, r.Changes[1].SQL, "(lower(b)),\n\t\"a\"")
+
+	assert.Empty(t, Diff(project(schema("public", nil, keys(col, expr))), project(schema("public", nil, keys(col, expr)))).Changes)
+}
+
+func TestDiff_UnnamedConstraints(t *testing.T) {
+	// inline CHECK, UNIQUE and REFERENCES parsed from SQL have no names
+	table := func(checks []pgd.Check, uniques []pgd.Unique, fks []pgd.ForeignKey) pgd.Table {
+		return pgd.Table{Name: "c", Columns: []pgd.Column{col("age", "int"), col("email", "text"), col("pid", "int")},
+			Checks: checks, Uniques: uniques, FKs: fks}
+	}
+	checks := []pgd.Check{{Expression: "age > 0"}, {Expression: "email <> ''"}}
+	uniques := []pgd.Unique{{Columns: []pgd.ColRef{{Name: "email"}}}, {Columns: []pgd.ColRef{{Name: "pid"}}}}
+	fks := []pgd.ForeignKey{fk("", "p", "restrict", "pid", "id"), fk("", "q", "restrict", "pid", "id")}
+	same := project(schema("public", []pgd.Table{table(checks, uniques, fks)}, nil))
+	assert.Empty(t, Diff(same, same).Changes)
+
+	// added unnamed constraints are added without a name, removed ones are reported
+	updated := project(schema("public", []pgd.Table{table(
+		[]pgd.Check{checks[0], {Expression: "age < 200"}}, uniques[:1], fks[:1],
+	)}, nil))
+	r := Diff(same, updated)
+	assert.Equal(t, []string{
+		`-- Cannot drop unnamed FOREIGN KEY (pid) to q on "c": name it in the old model`,
+		`-- Cannot drop unnamed CHECK (email <> '') on "c": name it in the old model`,
+		`-- Cannot drop unnamed UNIQUE ("pid") on "c": name it in the old model`,
+		`ALTER TABLE "c" ADD CHECK (age < 200);`,
+	}, changeSQLs(r))
+	assert.Empty(t, r.Errors(), "unnamed constraints are warnings")
+}
+
+func TestDiff_DropOrder(t *testing.T) {
+	// FKs of all tables are dropped before the keys they reference
+	a := func(uqCols ...string) pgd.Table {
+		u := pgd.Unique{Name: "uq_a"}
+		for _, c := range uqCols {
+			u.Columns = append(u.Columns, pgd.ColRef{Name: c})
+		}
+		return pgd.Table{Name: "a", Columns: []pgd.Column{col("x", "int"), col("y", "int")}, Uniques: []pgd.Unique{u}}
+	}
+	b := func(cols ...string) pgd.Table {
+		f := fk("fk_b_a", "a", "restrict")
+		for _, c := range cols {
+			f.Columns = append(f.Columns, pgd.FKCol{Name: c, References: c})
+		}
+		return pgd.Table{Name: "b", Columns: []pgd.Column{col("x", "int"), col("y", "int")}, FKs: []pgd.ForeignKey{f}}
+	}
+	r := Diff(project(schema("public", []pgd.Table{a("x"), b("x")}, nil)), project(schema("public", []pgd.Table{a("x", "y"), b("x", "y")}, nil)))
+	sqls := changeSQLs(r)
+	require.GreaterOrEqual(t, len(sqls), 2)
+	assert.Equal(t, `ALTER TABLE "b" DROP CONSTRAINT "fk_b_a";`, sqls[0])
+	assert.Equal(t, `ALTER TABLE "a" DROP CONSTRAINT "uq_a";`, sqls[1])
+
+	// tables of different schemas: the referencing table goes first
+	t1 := pgd.Table{Name: "t1", Columns: []pgd.Column{col("id", "int")}}
+	t2 := pgd.Table{Name: "t2", Columns: []pgd.Column{col("id", "int")}, FKs: []pgd.ForeignKey{fk("fk_t2_t1", "a.t1", "restrict", "id", "id")}}
+	old := project(schema("a", []pgd.Table{t1}, nil), schema("b", []pgd.Table{t2}, nil))
+	r = Diff(old, project(schema("a", nil, nil), schema("b", nil, nil)))
+	assert.Equal(t, []string{`DROP TABLE "b"."t2";`, `DROP TABLE "a"."t1";`}, changeSQLs(r))
+}
+
+func TestDiff_NewSchema(t *testing.T) {
+	r := Diff(project(schema("public", nil, nil)),
+		project(schema("public", nil, nil), schema("app", []pgd.Table{{Name: "t", Columns: []pgd.Column{col("id", "int")}}}, nil)))
+	sqls := changeSQLs(r)
+	require.Len(t, sqls, 2)
+	assert.Equal(t, `CREATE SCHEMA IF NOT EXISTS "app";`, sqls[0])
+	assert.Contains(t, sqls[1], `CREATE TABLE "app"."t"`)
+}
+
+func TestDiff_NamesCantBreakOutOfComments(t *testing.T) {
+	// a label or name with a line break must not turn the rest of a comment into SQL
+	old := &pgd.Project{Types: &pgd.Types{Enums: []pgd.Enum{{Name: "st", Labels: []string{"a", "x\nDROP TABLE victims; --"}}}}}
+	updated := &pgd.Project{Types: &pgd.Types{Enums: []pgd.Enum{{Name: "st", Labels: []string{"a"}}}}}
+	updated.Schemas = []pgd.Schema{{Name: "public"}}
+	old.Schemas = []pgd.Schema{{Name: "public", Tables: []pgd.Table{{Name: "t\nDROP TABLE victims2; --", Columns: []pgd.Column{col("id", "int")}}}}}
+
+	sql := Diff(old, updated).SQL()
+	tree, err := pgquery.Parse(sql)
+	require.NoError(t, err, sql)
+	require.Len(t, tree.Stmts, 1, sql) // only DROP TABLE "t…"; the enum change is a comment
+	assert.Equal(t, "t\nDROP TABLE victims2; --", tree.Stmts[0].Stmt.GetDropStmt().Objects[0].GetList().Items[0].GetString_().Sval)
+}
+
+func TestDiff_ExpressionFormatting(t *testing.T) {
+	// the same schema as introspected from a database (pg_get_expr) and as written in DDL
+	table := func(check, generated, index, where string) *pgd.Project {
+		return project(schema("public", []pgd.Table{{
+			Name: "t",
+			Columns: []pgd.Column{col("price", "numeric"), col("qty", "int"), col("code", "text"),
+				{Name: "total", Type: "numeric", Generated: &pgd.Generated{Expression: generated, Stored: "true"}}},
+			Checks: []pgd.Check{{Name: "chk_t_price", Expression: check}},
+		}}, []pgd.Index{{Name: "ix_t_code", Table: "t", Keys: []pgd.IndexKey{{Expression: index}}, Where: &pgd.WhereClause{Value: where}}}))
+	}
+	db := table("(price > (0)::numeric)", "(price * (qty)::numeric)", "(lower(code))", "(code <> 'x'::text)")
+	ddl := table("price > 0::numeric", "price*qty::numeric", "lower(code)", "code <> 'x'")
+	assert.Empty(t, changeSQLs(Diff(db, ddl)))
+
+	changed := table("price >= 0::numeric", "price*qty::numeric", "upper(code)", "code <> 'x'")
+	assert.Len(t, Diff(db, changed).Changes, 4) // CHECK and index: drop + add
+}
+
+func TestDiff_DefaultFormatting(t *testing.T) {
+	table := func(def string) *pgd.Project {
+		return project(schema("public", []pgd.Table{{Name: "t", Columns: []pgd.Column{colDefault("status", "varchar", def)}}}, nil))
+	}
+	assert.Empty(t, Diff(table("'open'::character varying"), table("'open'")).Changes)
+	assert.Len(t, Diff(table("'open'::character varying"), table("'closed'")).Changes, 1)
+	assert.Len(t, Diff(table("'open'"), table("")).Changes, 1)
 }

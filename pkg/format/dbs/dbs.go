@@ -138,7 +138,7 @@ func convertTable(t *DBSTable) (pgd.Table, []pgd.Index) {
 		case "UNIQUE_INDEX":
 			tbl.Uniques = append(tbl.Uniques, pgd.Unique{Name: idx.Name, Columns: colRefs(idx.Columns)})
 		default:
-			idxs = append(idxs, pgd.Index{Name: idx.Name, Table: t.Name, Columns: colRefs(idx.Columns)})
+			idxs = append(idxs, pgd.Index{Name: idx.Name, Table: t.Name, Keys: indexKeys(idx.Columns)})
 		}
 	}
 	for _, fk := range t.FKs {
@@ -217,6 +217,14 @@ func colRefs(cols []DBSIndexCol) []pgd.ColRef {
 	out := make([]pgd.ColRef, len(cols))
 	for i, c := range cols {
 		out[i] = pgd.ColRef{Name: c.Name}
+	}
+	return out
+}
+
+func indexKeys(cols []DBSIndexCol) []pgd.IndexKey {
+	out := make([]pgd.IndexKey, len(cols))
+	for i, c := range cols {
+		out[i] = pgd.IndexKey{Name: c.Name}
 	}
 	return out
 }

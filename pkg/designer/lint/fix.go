@@ -173,10 +173,10 @@ func fixMissingFKIndex(p *pgd.Project, issue Issue) (FixResult, bool) {
 
 	// Build index
 	colNames := make([]string, len(fk.Columns))
-	colRefs := make([]pgd.ColRef, len(fk.Columns))
+	keys := make([]pgd.IndexKey, len(fk.Columns))
 	for i, fc := range fk.Columns {
 		colNames[i] = fc.Name
-		colRefs[i] = pgd.ColRef{Name: fc.Name}
+		keys[i] = pgd.IndexKey{Name: fc.Name}
 	}
 	idxName := "ix_" + table.Name + "_" + strings.Join(colNames, "_")
 
@@ -188,10 +188,10 @@ func fixMissingFKIndex(p *pgd.Project, issue Issue) (FixResult, bool) {
 	}
 
 	schema.Indexes = append(schema.Indexes, pgd.Index{
-		Name:    idxName,
-		Table:   table.Name,
-		Using:   "btree",
-		Columns: colRefs,
+		Name:  idxName,
+		Table: table.Name,
+		Using: "btree",
+		Keys:  keys,
 	})
 
 	return FixResult{

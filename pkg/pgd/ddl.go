@@ -597,7 +597,7 @@ func (d *ddlWriter) writeTable(q string, t *Table) {
 		parts = append(parts, "\t"+pkDef(t.PK))
 	}
 	for i := range t.Uniques {
-		parts = append(parts, "\t"+uniqueDef(&t.Uniques[i]))
+		parts = append(parts, "\t"+UniqueDef(&t.Uniques[i]))
 	}
 	for i := range t.Checks {
 		parts = append(parts, "\t"+checkDef(&t.Checks[i]))
@@ -778,12 +778,12 @@ func writeDefault(b *strings.Builder, def string) {
 
 func (d *ddlWriter) writeTableComments(q string, t *Table) {
 	if t.Comment != "" {
-		d.P("COMMENT ON TABLE %s%s IS %s;\n", q, QuoteIdent(t.Name), EscapeComment(t.Comment))
+		d.P("COMMENT ON TABLE %s%s IS %s;\n", q, QuoteIdent(t.Name), QuoteLiteral(t.Comment))
 	}
 	for i := range t.Columns {
 		c := &t.Columns[i]
 		if c.Comment != "" {
-			d.P("COMMENT ON COLUMN %s%s.%s IS %s;\n", q, QuoteIdent(t.Name), QuoteIdent(c.Name), EscapeComment(c.Comment))
+			d.P("COMMENT ON COLUMN %s%s.%s IS %s;\n", q, QuoteIdent(t.Name), QuoteIdent(c.Name), QuoteLiteral(c.Comment))
 		}
 	}
 	if t.Comment != "" || hasColumnComments(t) {
@@ -822,11 +822,6 @@ func hasColumnStorage(t *Table) bool {
 	return false
 }
 
-// EscapeComment wraps s in single quotes and escapes embedded quotes for SQL.
-func EscapeComment(s string) string {
-	return QuoteLiteral(s)
-}
-
 // QuoteLiteral returns s as an SQL string literal.
 func QuoteLiteral(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
@@ -851,7 +846,8 @@ func pkDef(pk *PrimaryKey) string {
 	return fmt.Sprintf("PRIMARY KEY(%s)", QuotedColList(pk.Columns))
 }
 
-func uniqueDef(u *Unique) string {
+// UniqueDef returns the UNIQUE constraint definition: CONSTRAINT name UNIQUE [NULLS NOT DISTINCT](cols).
+func UniqueDef(u *Unique) string {
 	nullsDistinct := ""
 	if u.NullsDistinct == "false" {
 		nullsDistinct = " NULLS NOT DISTINCT"
@@ -1010,14 +1006,15 @@ func (d *ddlWriter) writePolicy(p *Policy) {
 // --- comment ---
 
 func (d *ddlWriter) writeComment(c *Comment) {
-	target := commentTarget(c)
+	target := CommentTarget(c)
 	if target == "" {
 		return
 	}
-	d.P("COMMENT ON %s IS %s;\n", target, EscapeComment(c.Value))
+	d.P("COMMENT ON %s IS %s;\n", target, QuoteLiteral(c.Value))
 }
 
-func commentTarget(c *Comment) string {
+// CommentTarget returns the COMMENT ON target of c, e.g. TABLE "t" or COLUMN "t"."c"; "" if unsupported.
+func CommentTarget(c *Comment) string {
 	switch strings.ToLower(c.On) {
 	case "schema":
 		return "SCHEMA " + QuoteIdent(c.Name)
@@ -1148,30 +1145,29 @@ func WriteIndex(w io.Writer, q string, idx *Index) error {
 }
 
 func indexElements(idx *Index) string {
-	var parts []string
-	for _, col := range idx.Columns {
-		parts = append(parts, "\t"+QuoteIdent(col.Name)+indexElemOptions(col.Opclass, col.Order, col.Nulls))
-	}
-	for _, expr := range idx.Expressions {
-		v := expr.Value
-		if !strings.HasPrefix(v, "(") {
-			v = "(" + v + ")"
-		}
-		parts = append(parts, "\t"+v+indexElemOptions(expr.Opclass, expr.Order, expr.Nulls))
+	parts := make([]string, len(idx.Keys))
+	for i, k := range idx.Keys {
+		parts[i] = "\t" + IndexKeyDef(k)
 	}
 	return strings.Join(parts, ",\n")
 }
 
-// indexElemOptions returns the opclass, ordering and NULLS placement of an index key element.
-func indexElemOptions(opclass, order, nulls string) string {
-	var s string
-	if opclass != "" {
-		s += " " + opclass
+// IndexKeyDef returns the SQL of an index key: column or expression with opclass, ordering and NULLS placement.
+func IndexKeyDef(k IndexKey) string {
+	s := QuoteIdent(k.Name)
+	if k.IsExpression() {
+		s = k.Expression
+		if !strings.HasPrefix(s, "(") {
+			s = "(" + s + ")"
+		}
 	}
-	if order == "desc" {
+	if k.Opclass != "" {
+		s += " " + k.Opclass
+	}
+	if k.Order == "desc" {
 		s += " DESC"
 	}
-	switch nulls {
+	switch k.Nulls {
 	case "first":
 		s += " NULLS FIRST"
 	case "last":
@@ -1287,8 +1283,9 @@ func skipSet(s *Schema) map[string]bool {
 	return m
 }
 
+// QuoteIdent returns name as a quoted SQL identifier.
 func QuoteIdent(name string) string {
-	return `"` + name + `"`
+	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
 
 // QuoteIdentQualified handles "schema.table" → "schema"."table".

@@ -54,7 +54,7 @@ const hasGenerated = computed(() => !!props.column.generated)
 const hasIdentity = computed(() => !!props.column.identity)
 
 const columnIndexes = computed(() =>
-  (props.indexes || []).filter(ix => ix.columns?.some(c => c.name === props.column.name))
+  (props.indexes || []).filter(ix => ix.keys?.some(k => k.kind === 'column' && k.name === props.column.name))
 )
 </script>
 

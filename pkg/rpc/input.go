@@ -183,8 +183,7 @@ type IndexInput struct {
 	Unique        bool             `json:"unique,omitempty"`
 	NullsDistinct bool             `json:"nullsDistinct,omitempty"`
 	Using         string           `json:"using,omitempty"`
-	Columns       []IndexColInput  `json:"columns"`
-	Expressions   []IndexExprInput `json:"expressions,omitempty"`
+	Keys          []IndexKeyInput  `json:"keys"`
 	With          []WithParamInput `json:"with,omitempty"`
 	Where         string           `json:"where,omitempty"`
 	Include       []string         `json:"include,omitempty"`
@@ -196,20 +195,22 @@ type WithParamInput struct {
 	Value string `json:"value"`
 }
 
-// IndexColInput is an index column with ordering.
-type IndexColInput struct {
-	Name    string `json:"name"`
-	Order   string `json:"order,omitempty"`
-	Nulls   string `json:"nulls,omitempty"`
-	Opclass string `json:"opclass,omitempty"`
-}
-
-// IndexExprInput is an index expression with ordering.
-type IndexExprInput struct {
-	Expression string `json:"expression"`
+// IndexKeyInput is an index key, a column or an expression, with ordering.
+type IndexKeyInput struct {
+	Kind       string `json:"kind"` // column|expression
+	Name       string `json:"name,omitempty"`
+	Expression string `json:"expression,omitempty"`
 	Order      string `json:"order,omitempty"`
 	Nulls      string `json:"nulls,omitempty"`
 	Opclass    string `json:"opclass,omitempty"`
+}
+
+func (k IndexKeyInput) toPGD() pgd.IndexKey {
+	key := pgd.IndexKey{Name: k.Name, Order: k.Order, Nulls: k.Nulls, Opclass: k.Opclass}
+	if k.Kind == IndexKeyExpression {
+		key.Name, key.Expression = "", k.Expression
+	}
+	return key
 }
 
 func (idx IndexInput) toPGD() pgd.Index {
@@ -224,12 +225,7 @@ func (idx IndexInput) toPGD() pgd.Index {
 	if idx.NullsDistinct {
 		ix.NullsDistinct = "true"
 	}
-	for _, c := range idx.Columns {
-		ix.Columns = append(ix.Columns, pgd.ColRef{Name: c.Name, Order: c.Order, Nulls: c.Nulls, Opclass: c.Opclass})
-	}
-	for _, e := range idx.Expressions {
-		ix.Expressions = append(ix.Expressions, pgd.Expression{Value: e.Expression, Order: e.Order, Nulls: e.Nulls, Opclass: e.Opclass})
-	}
+	ix.Keys = MapV(idx.Keys, IndexKeyInput.toPGD)
 	if len(idx.With) > 0 {
 		w := &pgd.With{}
 		for _, p := range idx.With {

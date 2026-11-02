@@ -220,10 +220,10 @@ func TestGenerateDDL_Index(t *testing.T) {
 				},
 			}},
 			Indexes: []Index{
-				{Name: "idx_users_email", Table: "users", Unique: "true", Columns: []ColRef{{Name: "email"}}},
-				{Name: "idx_users_data", Table: "users", Using: "gin", Expressions: []Expression{{Value: `"data" jsonb_path_ops`}}},
-				{Name: "idx_users_active", Table: "users", Columns: []ColRef{{Name: "email"}}, Where: &WhereClause{Value: `"active" = true`}},
-				{Name: "idx_users_created", Table: "users", Columns: []ColRef{{Name: "email", Order: "desc", Nulls: "last"}}},
+				{Name: "idx_users_email", Table: "users", Unique: "true", Keys: []IndexKey{{Name: "email"}}},
+				{Name: "idx_users_data", Table: "users", Using: "gin", Keys: []IndexKey{{Expression: `"data" jsonb_path_ops`}}},
+				{Name: "idx_users_active", Table: "users", Keys: []IndexKey{{Name: "email"}}, Where: &WhereClause{Value: `"active" = true`}},
+				{Name: "idx_users_created", Table: "users", Keys: []IndexKey{{Name: "email", Order: "desc", Nulls: "last"}}},
 			},
 		}},
 	}
@@ -553,10 +553,8 @@ func TestWriteIndex(t *testing.T) {
 		Name:   "idx_users_name",
 		Table:  "users",
 		Unique: "true",
-		Columns: []ColRef{
-			{Name: "name", Order: "asc"},
-		},
-		Where: &WhereClause{Value: `"active" = true`},
+		Keys:   []IndexKey{{Name: "name", Order: "asc"}},
+		Where:  &WhereClause{Value: `"active" = true`},
 	}
 	var buf bytes.Buffer
 	err := WriteIndex(&buf, "", idx)
@@ -576,7 +574,7 @@ func TestWriteIndex_FullOptions(t *testing.T) {
 		Concurrently:  "true",
 		NullsDistinct: "false",
 		Tablespace:    "fastssd",
-		Columns:       []ColRef{{Name: "customerId"}},
+		Keys:          []IndexKey{{Name: "customerId"}},
 		Include:       &Include{Columns: []ColRef{{Name: "totalAmount"}, {Name: "createdAt"}}},
 		With:          &With{Params: []WithParam{{Name: "fillfactor", Value: "80"}}},
 		Where:         &WhereClause{Value: `"statusId" = 1`},
@@ -635,7 +633,7 @@ func TestGenerateTableDDL(t *testing.T) {
 			}},
 			Indexes: []Index{{
 				Name: "idx_items_title", Table: "items",
-				Columns: []ColRef{{Name: "title"}},
+				Keys: []IndexKey{{Name: "title"}},
 			}},
 		}},
 	}
@@ -1138,10 +1136,10 @@ func TestWriteIndex_ExpressionOptions(t *testing.T) {
 </index>`
 	var idx Index
 	require.NoError(t, xml.Unmarshal([]byte(pgdXML), &idx))
-	assert.Equal(t, []Expression{
-		{Value: "params ->> 'mnn'", Opclass: "gin_trgm_ops"},
-		{Value: "(lower(title))", Order: "desc", Nulls: "last"},
-	}, idx.Expressions)
+	assert.Equal(t, []IndexKey{
+		{Expression: "params ->> 'mnn'", Opclass: "gin_trgm_ops"},
+		{Expression: "(lower(title))", Order: "desc", Nulls: "last"},
+	}, idx.Keys)
 
 	var buf bytes.Buffer
 	require.NoError(t, WriteIndex(&buf, "", &idx))
@@ -1157,4 +1155,10 @@ func TestWriteIndex_ExpressionOptions(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(out), `<expression opclass="gin_trgm_ops"><![CDATA[params ->> 'mnn']]></expression>`)
 	assert.Contains(t, string(out), `<expression order="desc" nulls="last"><![CDATA[(lower(title))]]></expression>`)
+}
+
+func TestQuoteIdent(t *testing.T) {
+	assert.Equal(t, `"users"`, QuoteIdent("users"))
+	assert.Equal(t, `"a""b"`, QuoteIdent(`a"b`))
+	assert.Equal(t, `"s"."t"`, QuoteIdentQualified("s.t"))
 }

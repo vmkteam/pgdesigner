@@ -53,6 +53,15 @@ func ColRefsFromNames(names []string) []ColRef {
 	return refs
 }
 
+// ColRefNames returns the column names of refs.
+func ColRefNames(refs []ColRef) []string {
+	names := make([]string, len(refs))
+	for i, r := range refs {
+		names[i] = r.Name
+	}
+	return names
+}
+
 // IsExpression reports whether s looks like an SQL expression rather than a plain column name.
 func IsExpression(s string) bool {
 	c := strings.TrimSpace(s)

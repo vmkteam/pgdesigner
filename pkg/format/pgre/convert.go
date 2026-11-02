@@ -3,11 +3,13 @@ package pgre
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	pg "github.com/pganalyze/pg_query_go/v6"
 	pgquery "github.com/wasilibs/go-pgquery"
 
+	sqlconv "github.com/vmkteam/pgdesigner/pkg/format/sql"
 	"github.com/vmkteam/pgdesigner/pkg/pgd"
 )
 
@@ -59,7 +61,7 @@ func (i *introspector) convertTable(pt pgTable) (*pgd.Table, []pgd.Index, error)
 		case "c": // CHECK
 			t.Checks = append(t.Checks, pgd.Check{
 				Name:       c.Name,
-				Expression: c.CheckExpr,
+				Expression: sqlconv.NormalizeExpr(c.CheckExpr),
 			})
 		case "x": // EXCLUDE
 			if ex := parseExcludeConstraintDef(c.Name, c.Def); ex != nil {
@@ -142,13 +144,9 @@ func convertColumn(c pgColumn) pgd.Column {
 	}
 
 	if c.AttGenerated == "s" || c.AttGenerated == "v" { // stored | virtual (PG18)
-		stored := "true"
-		if c.AttGenerated == "v" {
-			stored = "false"
-		}
 		col.Generated = &pgd.Generated{
-			Expression: c.DefaultValue,
-			Stored:     stored,
+			Expression: sqlconv.NormalizeExpr(c.DefaultValue),
+			Stored:     strconv.FormatBool(c.AttGenerated == "s"),
 		}
 		col.Default = "" // generated columns don't have separate default
 	}
@@ -276,16 +274,7 @@ func convertIndex(tableName string, idx pgIndex) *pgd.Index {
 	if len(withParams) > 0 {
 		out.With = &pgd.With{Params: withParams}
 	}
-	for _, elem := range parseIndexColumns(def) {
-		if pgd.IsExpression(elem.Name) {
-			out.Expressions = append(out.Expressions, pgd.Expression{
-				Value: elem.Name, Order: elem.Order, Nulls: elem.Nulls, Opclass: elem.Opclass,
-			})
-		} else {
-			elem.Name = strings.Trim(elem.Name, `"`)
-			out.Columns = append(out.Columns, elem)
-		}
-	}
+	out.Keys = parseIndexKeys(def)
 
 	include, nullsNotDistinct, tablespace := parseIndexExtras(idx.Def)
 	if len(include) > 0 {
@@ -428,11 +417,10 @@ func splitIndexWith(def string) (string, []pgd.WithParam) {
 	return def[:idx+1] + rest, params
 }
 
-// parseIndexColumns extracts columns and expressions (with sort direction and
-// operator class) from pg_get_indexdef output by parsing it via pg_query.
-// Expressions are returned with surrounding parens so callers can route them
-// through pgd.IsExpression.
-func parseIndexColumns(def string) []pgd.ColRef {
+// parseIndexKeys extracts index keys in order: columns and expressions with sort
+// direction and operator class, from pg_get_indexdef output parsed via pg_query.
+// Expressions are kept with surrounding parens, as pg_get_indexdef writes them.
+func parseIndexKeys(def string) []pgd.IndexKey {
 	tree, err := pgquery.Parse(def)
 	if err != nil || len(tree.Stmts) == 0 {
 		return nil
@@ -441,36 +429,34 @@ func parseIndexColumns(def string) []pgd.ColRef {
 	if is == nil {
 		return nil
 	}
-	var cols []pgd.ColRef
+	var keys []pgd.IndexKey
 	for _, p := range is.IndexParams {
 		ie := p.GetIndexElem()
 		if ie == nil {
 			continue
 		}
-		var ref pgd.ColRef
+		var key pgd.IndexKey
 		switch {
 		case ie.Name != "":
-			ref.Name = ie.Name
+			key.Name = ie.Name
 		case ie.Expr != nil:
-			ref.Name = "(" + nodeToSQL(ie.Expr) + ")"
+			key.Expression = "(" + nodeToSQL(ie.Expr) + ")"
 		default:
 			continue
 		}
 		if ie.Ordering == pg.SortByDir_SORTBY_DESC {
-			ref.Order = "desc"
+			key.Order = "desc"
 		}
 		switch ie.NullsOrdering {
 		case pg.SortByNulls_SORTBY_NULLS_FIRST:
-			ref.Nulls = "first"
+			key.Nulls = "first"
 		case pg.SortByNulls_SORTBY_NULLS_LAST:
-			ref.Nulls = "last"
+			key.Nulls = "last"
 		}
-		if op := lastQualName(ie.Opclass); op != "" {
-			ref.Opclass = op
-		}
-		cols = append(cols, ref)
+		key.Opclass = lastQualName(ie.Opclass)
+		keys = append(keys, key)
 	}
-	return cols
+	return keys
 }
 
 // lastQualName returns the last string component of a qualified name node

@@ -3,6 +3,7 @@ package sql
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -170,25 +171,11 @@ func indexKey(idx *pgd.Index) string {
 	b.WriteByte(':')
 	b.WriteString(idx.Unique)
 	b.WriteByte(':')
-	for i, c := range idx.Columns {
+	for i, k := range idx.Keys {
 		if i > 0 {
 			b.WriteByte(',')
 		}
-		b.WriteString(c.Name)
-		b.WriteByte('|')
-		b.WriteString(c.Order)
-		b.WriteByte('|')
-		b.WriteString(c.Opclass)
-	}
-	for i, e := range idx.Expressions {
-		if i > 0 || len(idx.Columns) > 0 {
-			b.WriteByte(',')
-		}
-		b.WriteString(e.Value)
-		b.WriteByte('|')
-		b.WriteString(e.Order)
-		b.WriteByte('|')
-		b.WriteString(e.Opclass)
+		b.WriteString(pgd.IndexKeyDef(k))
 	}
 	b.WriteByte(':')
 	if idx.Include != nil {
@@ -687,23 +674,24 @@ func (c *sqlConverter) convertCreateIndex(stmt *pg.IndexStmt) { //nolint:gocogni
 				}
 			}
 
-			ref := pgd.ColRef{Name: colName, Opclass: funcName(elem.Opclass)}
+			key := pgd.IndexKey{Name: colName, Opclass: funcName(elem.Opclass)}
+			switch {
+			case colName != "":
+			case elem.Expr != nil:
+				key.Expression = nodeToSQL(elem.Expr)
+			default:
+				continue
+			}
 			if elem.Ordering == pg.SortByDir_SORTBY_DESC {
-				ref.Order = "desc"
+				key.Order = "desc"
 			}
 			switch elem.NullsOrdering {
 			case pg.SortByNulls_SORTBY_NULLS_FIRST:
-				ref.Nulls = "first"
+				key.Nulls = "first"
 			case pg.SortByNulls_SORTBY_NULLS_LAST:
-				ref.Nulls = "last"
+				key.Nulls = "last"
 			}
-			if colName != "" {
-				idx.Columns = append(idx.Columns, ref)
-			} else if elem.Expr != nil {
-				idx.Expressions = append(idx.Expressions, pgd.Expression{
-					Value: nodeToSQL(elem.Expr), Order: ref.Order, Nulls: ref.Nulls, Opclass: ref.Opclass,
-				})
-			}
+			idx.Keys = append(idx.Keys, key)
 		}
 	}
 
@@ -1354,6 +1342,48 @@ func nodeToSQL(n *pg.Node) string {
 	}
 	result = strings.TrimPrefix(result, "SELECT ")
 	return cleanOperators(result)
+}
+
+// NormalizeExpr parses an SQL expression and deparses it the way the converter stores
+// expressions, so that an expression from the database (pg_get_expr adds parentheses
+// around every operation and cast) compares equal to the same one parsed from DDL.
+// On a parse error expr is returned as is.
+func NormalizeExpr(expr string) string {
+	tree, err := pgquery.Parse("SELECT " + expr)
+	if err != nil || len(tree.Stmts) != 1 {
+		return expr
+	}
+	sel := tree.Stmts[0].Stmt.GetSelectStmt()
+	if sel == nil || len(sel.TargetList) != 1 {
+		return expr
+	}
+	rt := sel.TargetList[0].GetResTarget()
+	if rt == nil || rt.Val == nil {
+		return expr
+	}
+	if s := nodeToSQL(rt.Val); s != "" {
+		return s
+	}
+	return expr
+}
+
+var (
+	// castRe matches a type cast in deparsed SQL: ::text, ::varchar(10), ::text[], ::"Type".
+	castRe = regexp.MustCompile(`::(?:"[^"]+"|[a-z_][a-z0-9_.]*(?: (?:varying|precision|with(?:out)? time zone))*)(?:\(\d+(?:,\s*\d+)?\))?(?:\[\])*`)
+	// anyArrayRe and allArrayRe match how PostgreSQL stores IN and NOT IN lists.
+	anyArrayRe = regexp.MustCompile(`\s*=\s*ANY\s*\(\s*ARRAY\[([^\[\]]*)\]\s*\)`)
+	allArrayRe = regexp.MustCompile(`\s*<>\s*ALL\s*\(\s*ARRAY\[([^\[\]]*)\]\s*\)`)
+)
+
+// ExprKey returns a key for comparing SQL expressions that differ only in how they are
+// written: an expression from the database (pg_get_expr) has extra parentheses and casts,
+// and IN lists are stored as = ANY (ARRAY[...]). The key is for comparison only: it drops
+// all casts, so expressions that differ only in a cast get the same key.
+func ExprKey(expr string) string {
+	s := castRe.ReplaceAllString(NormalizeExpr(strings.TrimSpace(expr)), "")
+	s = anyArrayRe.ReplaceAllString(s, " IN ($1)")
+	s = allArrayRe.ReplaceAllString(s, " NOT IN ($1)")
+	return NormalizeExpr(s)
 }
 
 // stripDefaultTypeCast removes redundant type casts from default values.

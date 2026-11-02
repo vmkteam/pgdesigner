@@ -2,6 +2,7 @@ package lint
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -93,6 +94,7 @@ var (
 	indexChecks = []indexCheck{
 		checkIndexTable,
 		checkIndexColumns,
+		checkIndexExpressions,
 		checkIndexOnBoolean,
 		checkIndexVersionFeatures,
 	}
@@ -440,17 +442,12 @@ func checkDuplicateIndexNames(v *validator) {
 
 func checkDuplicateIndexCols(v *validator) {
 	for _, s := range v.p.Schemas {
-		type sig struct{ table, cols string }
-		seen := make(map[sig]string) // sig → first index name
+		seen := make(map[string]string) // signature → first index name
 		for _, idx := range s.Indexes {
-			names := make([]string, len(idx.Columns))
-			for i, c := range idx.Columns {
-				names[i] = c.Name
-			}
-			if len(names) == 0 {
+			if len(idx.Keys) == 0 {
 				continue
 			}
-			k := sig{idx.Table, strings.Join(names, ",")}
+			k := indexSig(&idx)
 			if first, ok := seen[k]; ok {
 				v.warnf(RuleDupIndexCols, tpath(s.Name, idx.Name),
 					"index has same columns as %q on table %q", first, idx.Table)
@@ -787,18 +784,18 @@ func (v *validator) checkFKIndex(schema string, t *pgd.Table, fk *pgd.ForeignKey
 	}
 
 	// PK covers?
-	if t.PK != nil && prefixMatch(t.PK.Columns, fkCols) {
+	if t.PK != nil && prefixMatch(pgd.ColRefNames(t.PK.Columns), fkCols) {
 		return
 	}
 	// Any UNIQUE covers?
 	for _, u := range t.Uniques {
-		if prefixMatch(u.Columns, fkCols) {
+		if prefixMatch(pgd.ColRefNames(u.Columns), fkCols) {
 			return
 		}
 	}
 	// Any index covers?
 	for _, idx := range v.indexes[tpath(schema, t.Name)] {
-		if prefixMatch(idx.Columns, fkCols) {
+		if prefixMatch(keyIDs(idx), fkCols) {
 			return
 		}
 	}
@@ -806,17 +803,53 @@ func (v *validator) checkFKIndex(schema string, t *pgd.Table, fk *pgd.ForeignKey
 	v.warnf(RuleMissingFKIndex, tpath(schema, t.Name), "FK %q columns have no matching index", fk.Name)
 }
 
-// prefixMatch reports whether refs starts with the given names.
-func prefixMatch(refs []pgd.ColRef, names []string) bool {
-	if len(refs) < len(names) {
-		return false
+// prefixMatch reports whether ids starts with the given names.
+func prefixMatch(ids, names []string) bool {
+	return len(ids) >= len(names) && slices.Equal(ids[:len(names)], names)
+}
+
+// indexSig describes what an index does apart from its name: duplicate indexes have
+// equal signatures. Indexes that differ in method, uniqueness, predicate, INCLUDE or key
+// opclass and ordering are not duplicates.
+func indexSig(idx *pgd.Index) string {
+	var include []string
+	if idx.Include != nil {
+		include = pgd.ColRefNames(idx.Include.Columns)
 	}
-	for i, n := range names {
-		if refs[i].Name != n {
-			return false
-		}
+	return strings.Join([]string{idx.Table, indexMethod(idx), strconv.FormatBool(idx.Unique == "true"),
+		indexWhere(idx), strings.Join(keyDefs(idx), ","), strings.Join(include, ",")}, "|")
+}
+
+func indexMethod(idx *pgd.Index) string {
+	if idx.Using == "" {
+		return "btree"
 	}
-	return true
+	return strings.ToLower(idx.Using)
+}
+
+func indexWhere(idx *pgd.Index) string {
+	if idx.Where == nil {
+		return ""
+	}
+	return strings.TrimSpace(idx.Where.Value)
+}
+
+// keyDefs describes index keys in order: what each key indexes, its opclass and ordering.
+func keyDefs(idx *pgd.Index) []string {
+	defs := make([]string, len(idx.Keys))
+	for i, k := range idx.Keys {
+		defs[i] = strings.Join([]string{k.ID(), k.Opclass, k.Order, k.Nulls}, " ")
+	}
+	return defs
+}
+
+// keyIDs identifies index keys in order, see pgd.IndexKey.ID.
+func keyIDs(idx *pgd.Index) []string {
+	ids := make([]string, len(idx.Keys))
+	for i, k := range idx.Keys {
+		ids[i] = k.ID()
+	}
+	return ids
 }
 
 func checkUniqueRefs(v *validator, schema string, t *pgd.Table) {
@@ -1174,10 +1207,10 @@ func checkIndexColumns(v *validator, schema string, idx *pgd.Index) {
 	if cols == nil {
 		return // table doesn't exist, E012 already reported
 	}
-	for _, ref := range idx.Columns {
-		if _, ok := cols[ref.Name]; !ok {
+	for _, name := range idx.KeyColumns() {
+		if _, ok := cols[name]; !ok {
 			v.errorf(RuleIdxColNotFound, tpath(schema, idx.Name),
-				"index references unknown column %q in table %q", ref.Name, idx.Table)
+				"index references unknown column %q in table %q", name, idx.Table)
 		}
 	}
 	if idx.Include != nil {
@@ -1190,17 +1223,51 @@ func checkIndexColumns(v *validator, schema string, idx *pgd.Index) {
 	}
 }
 
+// checkIndexExpressions warns about several keys put into one <expression>, e.g.
+// `"shopId", COALESCE(...) DESC`: generated DDL wraps it in parentheses into one row value.
+func checkIndexExpressions(v *validator, schema string, idx *pgd.Index) {
+	for _, k := range idx.Keys {
+		if k.IsExpression() && hasTopLevelComma(k.Expression) {
+			v.warnf(RuleIdxExprMultiKey, tpath(schema, idx.Name),
+				"expression %q holds several keys: put each into its own <column> or <expression>", k.Expression)
+		}
+	}
+}
+
+// hasTopLevelComma reports whether expr has a comma outside parentheses, brackets and quotes.
+func hasTopLevelComma(expr string) bool {
+	depth := 0
+	var quote rune
+	for _, r := range expr {
+		switch {
+		case quote != 0:
+			if r == quote {
+				quote = 0
+			}
+		case r == '\'' || r == '"':
+			quote = r
+		case r == '(' || r == '[':
+			depth++
+		case r == ')' || r == ']':
+			depth--
+		case r == ',' && depth == 0:
+			return true
+		}
+	}
+	return false
+}
+
 func checkIndexOnBoolean(v *validator, schema string, idx *pgd.Index) {
 	cols := v.columns[tpath(schema, idx.Table)]
 	if cols == nil {
 		return
 	}
-	for _, ref := range idx.Columns {
-		if c, ok := cols[ref.Name]; ok {
+	for _, name := range idx.KeyColumns() {
+		if c, ok := cols[name]; ok {
 			lt := strings.ToLower(c.Type)
 			if lt == "boolean" || lt == "bool" {
 				v.infof(RuleIndexOnBool, tpath(schema, idx.Name),
-					"index on boolean column %q — partial index is more efficient", ref.Name)
+					"index on boolean column %q — partial index is more efficient", name)
 			}
 		}
 	}
@@ -1216,13 +1283,19 @@ func checkOverlappingIndexes(v *validator) {
 			byTable[idx.Table] = append(byTable[idx.Table], idx)
 		}
 		for _, idxs := range byTable {
+			keys := make([][]string, len(idxs))
+			for i := range idxs {
+				keys[i] = keyDefs(&idxs[i])
+			}
 			for i, a := range idxs {
 				for j, b := range idxs {
-					if i == j || len(a.Columns) == 0 || len(b.Columns) == 0 {
+					ak, bk := keys[i], keys[j]
+					if i == j || len(ak) == 0 || a.Unique == "true" ||
+						indexMethod(&a) != "btree" || indexMethod(&b) != "btree" || indexWhere(&a) != indexWhere(&b) {
 						continue
 					}
-					// a is redundant if a.Columns is a strict prefix of b.Columns
-					if len(a.Columns) < len(b.Columns) && colRefsPrefix(a.Columns, b.Columns) {
+					// a non-unique btree is redundant if its keys are a strict prefix of b's keys
+					if len(ak) < len(bk) && prefixMatch(bk, ak) {
 						v.warnf(RuleOverlapIndex, tpath(s.Name, a.Name),
 							"index is a prefix of %q on table %q — redundant", b.Name, a.Table)
 					}
@@ -1230,15 +1303,6 @@ func checkOverlappingIndexes(v *validator) {
 			}
 		}
 	}
-}
-
-func colRefsPrefix(short, long []pgd.ColRef) bool {
-	for i, c := range short {
-		if c.Name != long[i].Name {
-			return false
-		}
-	}
-	return true
 }
 
 func checkTooManyIndexes(v *validator) {
@@ -1280,7 +1344,7 @@ func (v *validator) checkFKTargetUnique(schema string, t *pgd.Table, fk *pgd.For
 }
 
 func colNamesMatch(refs []pgd.ColRef, names []string) bool {
-	return len(refs) == len(names) && prefixMatch(refs, names)
+	return slices.Equal(pgd.ColRefNames(refs), names)
 }
 
 func checkDuplicateFKs(v *validator, schema string, t *pgd.Table) {
