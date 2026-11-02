@@ -979,8 +979,14 @@ func (b *diffBuilder) addNewPK(table string, old, updated *pgd.PrimaryKey) {
 
 func (b *diffBuilder) dropRemovedUniques(table string, old, updated []pgd.Unique) {
 	newU := uniqueMap(updated)
-	for _, ou := range old {
-		if nu, exists := newU[uniqueKey(&ou)]; !exists || uniqueChanged(&ou, nu) {
+	renamed := newRenameCandidates(updated, uniqueMap(old), uniqueKey, uniqueIdentity)
+	for i := range old {
+		ou := &old[i]
+		nu, exists := newU[uniqueKey(ou)]
+		if !exists {
+			nu = renamed.take(uniqueIdentity(ou)) // the constraint may be renamed
+		}
+		if nu == nil || uniqueChanged(ou, nu) {
 			b.dropConstraint("unique", table, ou.Name, "UNIQUE ("+pgd.QuotedColList(ou.Columns)+")")
 		}
 	}
@@ -988,27 +994,46 @@ func (b *diffBuilder) dropRemovedUniques(table string, old, updated []pgd.Unique
 
 func (b *diffBuilder) addNewUniques(table string, old, updated []pgd.Unique) {
 	oldU := uniqueMap(old)
-	for _, nu := range updated {
-		if ou, exists := oldU[uniqueKey(&nu)]; !exists || uniqueChanged(ou, &nu) || b.touchesRecreated(table, pgd.ColRefNames(nu.Columns)) {
+	renamed := newRenameCandidates(old, uniqueMap(updated), uniqueKey, uniqueIdentity)
+	for i := range updated {
+		nu := &updated[i]
+		ou, exists := oldU[uniqueKey(nu)]
+		if !exists {
+			ou = renamed.take(uniqueIdentity(nu)) // the constraint may be renamed
+		}
+		switch {
+		case ou == nil || uniqueChanged(ou, nu) || b.touchesRecreated(table, pgd.ColRefNames(nu.Columns)):
 			b.add(Change{
 				Object: "unique", Action: "add", Table: table, Name: nu.Name,
-				SQL: fmt.Sprintf("ALTER TABLE %s ADD %s;", b.qt(table), pgd.UniqueDef(&nu)),
+				SQL: fmt.Sprintf("ALTER TABLE %s ADD %s;", b.qt(table), pgd.UniqueDef(nu)),
 			})
+		default:
+			b.renameConstraint("unique", table, ou.Name, nu.Name)
 		}
 	}
 }
 
 func uniqueChanged(old, updated *pgd.Unique) bool {
-	return !slices.Equal(pgd.ColRefNames(old.Columns), pgd.ColRefNames(updated.Columns)) ||
-		(old.NullsDistinct == "false") != (updated.NullsDistinct == "false")
+	return uniqueIdentity(old) != uniqueIdentity(updated)
+}
+
+// uniqueIdentity identifies a UNIQUE constraint by its columns and NULLS NOT DISTINCT.
+func uniqueIdentity(u *pgd.Unique) string {
+	return strings.Join(pgd.ColRefNames(u.Columns), ",") + "|" + strconv.FormatBool(u.NullsDistinct == "false")
 }
 
 // --- CHECK ---
 
 func (b *diffBuilder) dropRemovedChecks(table string, old, updated []pgd.Check) {
 	newC := checkMap(updated)
-	for _, oc := range old {
-		if nc, exists := newC[checkKey(&oc)]; !exists || checkChanged(&oc, nc) {
+	renamed := newRenameCandidates(updated, checkMap(old), checkKey, checkIdentity)
+	for i := range old {
+		oc := &old[i]
+		nc, exists := newC[checkKey(oc)]
+		if !exists {
+			nc = renamed.take(checkIdentity(oc)) // the constraint may be renamed
+		}
+		if nc == nil || checkChanged(oc, nc) {
 			b.dropConstraint("check", table, oc.Name, "CHECK ("+oc.Expression+")")
 		}
 	}
@@ -1016,8 +1041,15 @@ func (b *diffBuilder) dropRemovedChecks(table string, old, updated []pgd.Check) 
 
 func (b *diffBuilder) addNewChecks(table string, old, updated []pgd.Check) {
 	oldC := checkMap(old)
-	for _, nc := range updated {
-		if oc, exists := oldC[checkKey(&nc)]; !exists || checkChanged(oc, &nc) || b.touchesRecreated(table, nil, nc.Expression) {
+	renamed := newRenameCandidates(old, checkMap(updated), checkKey, checkIdentity)
+	for i := range updated {
+		nc := &updated[i]
+		oc, exists := oldC[checkKey(nc)]
+		if !exists {
+			oc = renamed.take(checkIdentity(nc)) // the constraint may be renamed
+		}
+		switch {
+		case oc == nil || checkChanged(oc, nc) || b.touchesRecreated(table, nil, nc.Expression):
 			constraint := ""
 			if nc.Name != "" {
 				constraint = "CONSTRAINT " + b.q(nc.Name) + " "
@@ -1026,8 +1058,15 @@ func (b *diffBuilder) addNewChecks(table string, old, updated []pgd.Check) {
 				Object: "check", Action: "add", Table: table, Name: nc.Name,
 				SQL: fmt.Sprintf("ALTER TABLE %s ADD %sCHECK (%s);", b.qt(table), constraint, nc.Expression),
 			})
+		default:
+			b.renameConstraint("check", table, oc.Name, nc.Name)
 		}
 	}
+}
+
+// checkIdentity identifies a CHECK constraint by its expression, ignoring formatting.
+func checkIdentity(c *pgd.Check) string {
+	return sqlconv.ExprKey(c.Expression)
 }
 
 func checkChanged(old, updated *pgd.Check) bool {
@@ -1380,15 +1419,24 @@ func fkIdentity(fk *pgd.ForeignKey) string {
 // so an unnamed constraint is keyed by its definition.
 
 func fkKey(fk *pgd.ForeignKey) string {
-	return cmp.Or(fk.Name, "\x00"+fkIdentity(fk))
+	if fk.Name != "" {
+		return fk.Name
+	}
+	return "\x00" + fkIdentity(fk)
 }
 
 func uniqueKey(u *pgd.Unique) string {
-	return cmp.Or(u.Name, "\x00"+strings.Join(pgd.ColRefNames(u.Columns), ",")+"|"+strconv.FormatBool(u.NullsDistinct == "false"))
+	if u.Name != "" {
+		return u.Name
+	}
+	return "\x00" + uniqueIdentity(u)
 }
 
 func checkKey(c *pgd.Check) string {
-	return cmp.Or(c.Name, "\x00"+strings.TrimSpace(c.Expression))
+	if c.Name != "" {
+		return c.Name
+	}
+	return "\x00" + strings.TrimSpace(c.Expression)
 }
 
 func fkMap(fks []pgd.ForeignKey) map[string]*pgd.ForeignKey {

@@ -1103,3 +1103,25 @@ func TestDiff_FKRename(t *testing.T) {
 		project(schema("public", tbl(fk("fk_new", "p", "restrict", "x", "id")), nil)))
 	assert.Empty(t, r.Changes)
 }
+
+func TestDiff_ConstraintRename(t *testing.T) {
+	table := func(uq pgd.Unique, ck pgd.Check) *pgd.Project {
+		return project(schema("public", []pgd.Table{{Name: "users",
+			Columns: []pgd.Column{col("email", "text"), col("age", "int")},
+			Uniques: []pgd.Unique{uq}, Checks: []pgd.Check{ck}}}, nil))
+	}
+	email := []pgd.ColRef{{Name: "email"}}
+
+	// renamed: same definition under a new name
+	r := Diff(table(pgd.Unique{Name: "uq_old", Columns: email}, pgd.Check{Name: "ck_old", Expression: "(age > 0)"}),
+		table(pgd.Unique{Name: "uq_users_email", Columns: email}, pgd.Check{Name: "ck_users_age", Expression: "age > 0"}))
+	assert.Equal(t, []string{
+		`ALTER TABLE "users" RENAME CONSTRAINT "uq_old" TO "uq_users_email";`,
+		`ALTER TABLE "users" RENAME CONSTRAINT "ck_old" TO "ck_users_age";`,
+	}, changeSQLs(r))
+
+	// a database (PostgreSQL names) against a model from SQL with inline unnamed constraints
+	db := table(pgd.Unique{Name: "users_email_key", Columns: email}, pgd.Check{Name: "users_age_check", Expression: "(age > 0)"})
+	model := table(pgd.Unique{Columns: email}, pgd.Check{Expression: "age > 0"})
+	assert.Empty(t, Diff(db, model).Changes)
+}
