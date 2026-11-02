@@ -19,6 +19,7 @@ How well each layer supports the [PGD format spec](pgd-format/spec.md) (22 secti
 | 10. Columns | + | + | + | + | + | + |
 | 10. Identity | + | + | + | + | + | + |
 | 10. Generated (stored) | + | + | + | + | + | + |
+| 10. Generated (virtual, PG18) | + | + | + | + | + | + |
 | 10. Collation | + | + | + | + | + | — |
 | 10. Compression | + | + | + | — | + | — |
 | 10. Storage | + | + | + | — | + | — |
@@ -27,12 +28,12 @@ How well each layer supports the [PGD format spec](pgd-format/spec.md) (22 secti
 | 11. Unique | + | + | + | + | + | + |
 | 11. Check | + | + | + | + | + | + |
 | 11. Exclude | + | + | + | + | + | + |
-| 12. Storage params (WITH) | + | + | + | — | — | — |
+| 12. Storage params (WITH) | + | + | + | + | + | — |
 | 13. Partitioning | + | + | + | + | + | + |
 | 14. Indexes | + | + | + | + | + | + |
-| 14. Expression indexes | + | + | + | + | + | — |
-| 14. Partial indexes (WHERE) | + | + | + | + | + | — |
-| 14. INCLUDE | + | + | + | + | + | — |
+| 14. Expression indexes | + | + | + | + | + | + |
+| 14. Partial indexes (WHERE) | + | + | + | + | + | + |
+| 14. INCLUDE | + | + | + | + | + | + |
 | 15. Views | + | + | + | + | + | + |
 | 15. Materialized views | + | + | + | + | + | + |
 | 16. Functions | + | + | + | + | + | + |

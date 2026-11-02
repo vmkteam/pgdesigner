@@ -123,15 +123,15 @@ func (f FKInput) toPGD() pgd.ForeignKey {
 
 // UniqueInput is a UNIQUE constraint from the editor.
 type UniqueInput struct {
-	Name          string   `json:"name"`
-	Columns       []string `json:"columns"`
-	NullsDistinct bool     `json:"nullsDistinct,omitempty"`
+	Name             string   `json:"name"`
+	Columns          []string `json:"columns"`
+	NullsNotDistinct bool     `json:"nullsNotDistinct,omitempty"`
 }
 
 func (u UniqueInput) toPGD() pgd.Unique {
 	uq := pgd.Unique{Name: u.Name}
-	if u.NullsDistinct {
-		uq.NullsDistinct = "true"
+	if u.NullsNotDistinct {
+		uq.NullsDistinct = "false"
 	}
 	for _, c := range u.Columns {
 		uq.Columns = append(uq.Columns, pgd.ColRef{Name: c})
@@ -178,16 +178,15 @@ func (e ExcludeInput) toPGD() pgd.Exclude {
 
 // IndexInput is an index from the editor.
 type IndexInput struct {
-	Name          string           `json:"name"`
-	Table         string           `json:"table"`
-	Unique        bool             `json:"unique,omitempty"`
-	NullsDistinct bool             `json:"nullsDistinct,omitempty"`
-	Using         string           `json:"using,omitempty"`
-	Columns       []IndexColInput  `json:"columns"`
-	Expressions   []string         `json:"expressions,omitempty"`
-	With          []WithParamInput `json:"with,omitempty"`
-	Where         string           `json:"where,omitempty"`
-	Include       []string         `json:"include,omitempty"`
+	Name             string           `json:"name"`
+	Table            string           `json:"table"`
+	Unique           bool             `json:"unique,omitempty"`
+	NullsNotDistinct bool             `json:"nullsNotDistinct,omitempty"`
+	Using            string           `json:"using,omitempty"`
+	Keys             []IndexKeyInput  `json:"keys"`
+	With             []WithParamInput `json:"with,omitempty"`
+	Where            string           `json:"where,omitempty"`
+	Include          []string         `json:"include,omitempty"`
 }
 
 // WithParamInput is a key-value storage parameter.
@@ -196,12 +195,22 @@ type WithParamInput struct {
 	Value string `json:"value"`
 }
 
-// IndexColInput is an index column with ordering.
-type IndexColInput struct {
-	Name    string `json:"name"`
-	Order   string `json:"order,omitempty"`
-	Nulls   string `json:"nulls,omitempty"`
-	Opclass string `json:"opclass,omitempty"`
+// IndexKeyInput is an index key, a column or an expression, with ordering.
+type IndexKeyInput struct {
+	Kind       string `json:"kind"` // column|expression
+	Name       string `json:"name,omitempty"`
+	Expression string `json:"expression,omitempty"`
+	Order      string `json:"order,omitempty"`
+	Nulls      string `json:"nulls,omitempty"`
+	Opclass    string `json:"opclass,omitempty"`
+}
+
+func (k IndexKeyInput) toPGD() pgd.IndexKey {
+	key := pgd.IndexKey{Name: k.Name, Order: k.Order, Nulls: k.Nulls, Opclass: k.Opclass}
+	if k.Kind == IndexKeyExpression {
+		key.Name, key.Expression = "", k.Expression
+	}
+	return key
 }
 
 func (idx IndexInput) toPGD() pgd.Index {
@@ -213,15 +222,10 @@ func (idx IndexInput) toPGD() pgd.Index {
 	if idx.Unique {
 		ix.Unique = "true"
 	}
-	if idx.NullsDistinct {
-		ix.NullsDistinct = "true"
+	if idx.NullsNotDistinct {
+		ix.NullsDistinct = "false"
 	}
-	for _, c := range idx.Columns {
-		ix.Columns = append(ix.Columns, pgd.ColRef{Name: c.Name, Order: c.Order, Nulls: c.Nulls, Opclass: c.Opclass})
-	}
-	for _, e := range idx.Expressions {
-		ix.Expressions = append(ix.Expressions, pgd.Expression{Value: e})
-	}
+	ix.Keys = MapV(idx.Keys, IndexKeyInput.toPGD)
 	if len(idx.With) > 0 {
 		w := &pgd.With{}
 		for _, p := range idx.With {

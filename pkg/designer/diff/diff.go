@@ -1,11 +1,15 @@
 package diff
 
 import (
+	"cmp"
 	"fmt"
 	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 
+	sqlconv "github.com/vmkteam/pgdesigner/pkg/format/sql"
 	"github.com/vmkteam/pgdesigner/pkg/pgd"
 )
 
@@ -22,7 +26,7 @@ func (r *DiffResult) SQL() string {
 	var b strings.Builder
 	for _, c := range r.Changes {
 		for _, h := range c.Hazards {
-			fmt.Fprintf(&b, "-- [%s] %s: %s\n", h.Level, h.Code, h.Message)
+			b.WriteString(pgd.SQLComment("[%s] %s: %s", h.Level, h.Code, h.Message) + "\n")
 		}
 		b.WriteString(c.SQL)
 		b.WriteString("\n\n")
@@ -74,45 +78,62 @@ type Hazard struct {
 
 // Diff compares two Projects and returns the changes needed to migrate old → updated.
 func Diff(old, updated *pgd.Project) *DiffResult {
-	b := &diffBuilder{}
+	b := &diffBuilder{recreated: make(map[string][]string)}
+	oldEnums, newEnums := projectEnums(old), projectEnums(updated)
 
-	oldSchemas := schemaMap(old.Schemas)
-	newSchemas := schemaMap(updated.Schemas)
+	// Phase 1: DROP in reverse dependency order, each step over all schemas: FKs before
+	// the keys and tables they reference, then keys and checks, indexes, columns, tables
+	b.eachOldSchema(old, updated, b.dropFKs)
+	b.eachOldSchema(old, updated, b.dropKeys)
+	b.eachOldSchema(old, updated, b.dropIndexes)
+	b.eachOldSchema(old, updated, b.dropColumns)
+	b.dropTables(old, updated)
 
-	// Phase 1: DROP (reverse dependency order)
-	// drop FK first, then indexes, then columns, then tables
-	for name, os := range oldSchemas {
-		ns := newSchemas[name]
-		b.schema = name
-		b.dropPhase(os, ns)
-	}
+	// Phase 2: new schemas and enums, before the tables and columns that use them
+	b.createSchemas(old, updated)
+	b.diffEnums(oldEnums, newEnums)
 
-	// Phase 2: CREATE/ALTER (forward dependency order)
-	for name, ns := range newSchemas {
-		os := oldSchemas[name]
-		b.schema = name
-		b.createPhase(os, ns)
-	}
+	// Phase 3: tables and columns
+	b.eachSchema(old, updated, b.createTables)
 
-	// Phase 3: Enums
-	if old.Types != nil || updated.Types != nil {
-		var oldEnums, newEnums []pgd.Enum
-		if old.Types != nil {
-			oldEnums = old.Types.Enums
-		}
-		if updated.Types != nil {
-			newEnums = updated.Types.Enums
-		}
-		b.diffEnums(oldEnums, newEnums)
-	}
+	// Phase 4: indexes, PK, UNIQUE, CHECK, partitions
+	b.eachSchema(old, updated, b.createConstraints)
+
+	// Phase 5: FK, once every referenced table and key exists
+	b.eachSchema(old, updated, b.createFKs)
+
+	// Phase 6: table and column comments
+	b.diffComments(old, updated)
+
+	// Phase 7: drop removed enums, after the columns using them are dropped or altered
+	b.dropEnums(oldEnums, newEnums)
 
 	return &DiffResult{Changes: b.changes}
 }
 
 // diffBuilder accumulates changes.
 type diffBuilder struct {
-	schema  string
-	changes []Change
+	schema    string
+	changes   []Change
+	recreated map[string][]string // "schema.table" → columns dropped and re-added
+}
+
+// eachOldSchema runs phase for each old schema and its updated version (nil for a dropped schema).
+func (b *diffBuilder) eachOldSchema(old, updated *pgd.Project, phase func(old, updated *pgd.Schema)) {
+	for i := range old.Schemas {
+		os := &old.Schemas[i]
+		b.schema = os.Name
+		phase(os, findSchema(updated.Schemas, os.Name))
+	}
+}
+
+// eachSchema runs phase for each updated schema and its old version (nil for a new schema).
+func (b *diffBuilder) eachSchema(old, updated *pgd.Project, phase func(old, updated *pgd.Schema)) {
+	for i := range updated.Schemas {
+		ns := &updated.Schemas[i]
+		b.schema = ns.Name
+		phase(findSchema(old.Schemas, ns.Name), ns)
+	}
 }
 
 func (b *diffBuilder) add(c Change) {
@@ -133,102 +154,242 @@ func (b *diffBuilder) qt(table string) string {
 
 // --- Phase 1: DROP ---
 
-func (b *diffBuilder) dropPhase(old, updated *pgd.Schema) {
-	if old == nil {
-		return
-	}
+// eachKeptTable runs f for each table of old that remains in updated.
+func eachKeptTable(old, updated *pgd.Schema, f func(ot, nt *pgd.Table)) {
 	newTables := tableMap(nilTables(updated))
-	oldTables := tableMap(old.Tables)
-
-	// drop FK on tables that still exist but lost FK
-	for _, ot := range old.Tables {
-		nt, exists := newTables[ot.Name]
-		if !exists {
-			continue
-		}
-		b.dropRemovedFK(ot.Name, ot.FKs, nt.FKs)
-		b.dropRemovedChecks(ot.Name, ot.Checks, nt.Checks)
-		b.dropRemovedUniques(ot.Name, ot.Uniques, nt.Uniques)
-		b.dropModifiedPK(ot.Name, ot.PK, nt.PK)
-	}
-
-	// drop indexes
-	newIndexes := indexMap(nilIndexes(updated))
-	updatedIndexes := nilIndexes(updated)
-	for _, oi := range old.Indexes {
-		if ni, exists := newIndexes[oi.Name]; exists {
-			if indexChanged(&oi, ni) {
-				b.dropIndex(oi.Name)
-			}
-			continue
-		}
-		// fallback: match by semantic key (table + columns + using + where)
-		if matchIndexBySemantic(&oi, updatedIndexes) != nil {
-			continue
-		}
-		b.dropIndex(oi.Name)
-	}
-
-	// drop columns on existing tables
-	for _, ot := range old.Tables {
-		nt, exists := newTables[ot.Name]
-		if !exists {
-			continue
-		}
-		b.dropRemovedColumns(ot.Name, ot.Columns, nt.Columns)
-	}
-
-	// drop tables
-	for name := range oldTables {
-		if _, exists := newTables[name]; !exists {
-			b.dropTable(name)
+	for i := range old.Tables {
+		if nt, exists := newTables[old.Tables[i].Name]; exists {
+			f(&old.Tables[i], nt)
 		}
 	}
 }
 
-// --- Phase 2: CREATE/ALTER ---
+// dropFKs drops removed and changed FKs of tables that remain.
+func (b *diffBuilder) dropFKs(old, updated *pgd.Schema) {
+	eachKeptTable(old, updated, func(ot, nt *pgd.Table) {
+		b.dropRemovedFK(ot.Name, ot.FKs, nt.FKs)
+	})
+}
 
-func (b *diffBuilder) createPhase(old, updated *pgd.Schema) {
-	if updated == nil {
-		return
+// dropKeys drops removed and changed CHECK, UNIQUE and PK constraints of tables that remain.
+func (b *diffBuilder) dropKeys(old, updated *pgd.Schema) {
+	eachKeptTable(old, updated, func(ot, nt *pgd.Table) {
+		b.dropRemovedChecks(ot.Name, ot.Checks, nt.Checks)
+		b.dropRemovedUniques(ot.Name, ot.Uniques, nt.Uniques)
+		b.dropModifiedPK(ot.Name, ot.PK, nt.PK)
+	})
+}
+
+func (b *diffBuilder) dropIndexes(old, updated *pgd.Schema) {
+	newIndexes := indexMap(nilIndexes(updated))
+	renamed := newRenameCandidates(nilIndexes(updated), indexMap(old.Indexes), indexName, indexIdentity)
+	for i := range old.Indexes {
+		oi := &old.Indexes[i]
+		ni, exists := newIndexes[oi.Name]
+		if !exists {
+			ni = renamed.take(indexIdentity(oi)) // the index may be renamed
+		}
+		if ni == nil || indexChanged(oi, ni) {
+			b.dropIndex(oi.Name)
+		}
 	}
+}
+
+func (b *diffBuilder) dropColumns(old, updated *pgd.Schema) {
+	eachKeptTable(old, updated, func(ot, nt *pgd.Table) {
+		b.dropRemovedColumns(ot.Name, ot.Columns, nt.Columns)
+	})
+}
+
+// droppedTable is a table of an old schema missing in the updated project.
+type droppedTable struct {
+	schema  string
+	key     string   // schema.table
+	targets []string // schema.table referenced by its FKs
+	*pgd.Table
+}
+
+// fkTarget returns the schema-qualified table referenced by an FK of a table in schema:
+// an unqualified table is looked up in the same schema, then in the default schema.
+func fkTarget(p *pgd.Project, schema string, fk *pgd.ForeignKey) string {
+	if strings.Contains(fk.ToTable, ".") {
+		return fk.ToTable
+	}
+	if s := findSchema(p.Schemas, schema); s != nil && slices.ContainsFunc(s.Tables, func(t pgd.Table) bool { return t.Name == fk.ToTable }) {
+		return schema + "." + fk.ToTable
+	}
+	return cmp.Or(p.DefaultSchema, "public") + "." + fk.ToTable
+}
+
+// dropTables drops removed tables of all schemas so that a table goes before the tables
+// its FKs reference. FKs within a reference cycle are dropped first.
+func (b *diffBuilder) dropTables(old, updated *pgd.Project) {
+	var tables []droppedTable
+	for i := range old.Schemas {
+		os := &old.Schemas[i]
+		newTables := tableMap(nilTables(findSchema(updated.Schemas, os.Name)))
+		for j := range os.Tables {
+			t := &os.Tables[j]
+			if _, exists := newTables[t.Name]; exists {
+				continue
+			}
+			d := droppedTable{schema: os.Name, key: os.Name + "." + t.Name, Table: t}
+			for k := range t.FKs {
+				d.targets = append(d.targets, fkTarget(old, os.Name, &t.FKs[k]))
+			}
+			tables = append(tables, d)
+		}
+	}
+
+	// refs counts the FKs of other remaining tables that reference a table
+	refs := make(map[string]int, len(tables))
+	for _, t := range tables {
+		refs[t.key] = 0
+	}
+	for _, t := range tables {
+		for _, target := range t.targets {
+			if n, remains := refs[target]; remains && target != t.key {
+				refs[target] = n + 1
+			}
+		}
+	}
+
+	for len(tables) > 0 {
+		var ready, referenced []droppedTable
+		for _, t := range tables {
+			if refs[t.key] > 0 {
+				referenced = append(referenced, t)
+			} else {
+				ready = append(ready, t)
+			}
+		}
+		if len(ready) == 0 { // a reference cycle
+			for _, t := range tables {
+				b.schema = t.schema
+				for k, target := range t.targets {
+					if _, remains := refs[target]; remains && target != t.key {
+						b.dropFK(t.Name, &t.FKs[k])
+					}
+				}
+			}
+			ready, referenced = tables, nil
+		}
+		for _, t := range ready {
+			b.schema = t.schema
+			b.dropTable(t.Name)
+			delete(refs, t.key)
+			for _, target := range t.targets {
+				if _, remains := refs[target]; remains && target != t.key {
+					refs[target]--
+				}
+			}
+		}
+		tables = referenced
+	}
+}
+
+// --- Phases 3–5: CREATE/ALTER ---
+
+func (b *diffBuilder) createTables(old, updated *pgd.Schema) {
 	oldTables := tableMap(nilTables(old))
 
 	// add new tables
-	for _, nt := range updated.Tables {
-		if _, exists := oldTables[nt.Name]; !exists {
-			b.addTable(&nt)
+	for i := range updated.Tables {
+		if _, exists := oldTables[updated.Tables[i].Name]; !exists {
+			b.addTable(&updated.Tables[i])
 		}
 	}
 
-	// alter existing tables (columns + table comment)
-	for _, nt := range updated.Tables {
-		ot, exists := oldTables[nt.Name]
-		if !exists {
-			continue
+	// alter columns and options of existing tables
+	for i := range updated.Tables {
+		nt := &updated.Tables[i]
+		if ot, exists := oldTables[nt.Name]; exists {
+			b.diffColumns(ot, nt)
+			b.diffTableOptions(ot, nt)
 		}
-		b.diffColumns(nt.Name, ot.Columns, nt.Columns)
-		b.diffTableComment(nt.Name, ot.Comment, nt.Comment)
 	}
+}
+
+// diffTableOptions alters storage parameters, persistence, access method and tablespace.
+func (b *diffBuilder) diffTableOptions(old, updated *pgd.Table) {
+	t := b.qt(updated.Name)
+	alter := func(sql string, hazards ...Hazard) {
+		b.add(Change{Object: "table", Action: "alter", Table: updated.Name, Name: updated.Name, SQL: sql, Hazards: hazards})
+	}
+	rewrite := func(what string) Hazard {
+		return Hazard{Level: "warning", Code: "TABLE_REWRITE", Message: fmt.Sprintf("%s rewrites table %s", what, updated.Name)}
+	}
+
+	oldParams, newParams := withMap(old.With), withMap(updated.With)
+	var set []pgd.WithParam
+	var reset []string
+	if updated.With != nil {
+		for _, p := range updated.With.Params {
+			if v, exists := oldParams[p.Name]; !exists || v != p.Value {
+				set = append(set, p)
+			}
+		}
+	}
+	if old.With != nil {
+		for _, p := range old.With.Params {
+			if _, exists := newParams[p.Name]; !exists {
+				reset = append(reset, p.Name)
+			}
+		}
+	}
+	if len(set) > 0 {
+		alter(fmt.Sprintf("ALTER TABLE %s SET (%s);", t, pgd.WithParams(set)))
+	}
+	if len(reset) > 0 {
+		alter(fmt.Sprintf("ALTER TABLE %s RESET (%s);", t, strings.Join(reset, ", ")))
+	}
+
+	if (old.Unlogged == "true") != (updated.Unlogged == "true") {
+		persistence := "LOGGED"
+		if updated.Unlogged == "true" {
+			persistence = "UNLOGGED"
+		}
+		alter(fmt.Sprintf("ALTER TABLE %s SET %s;", t, persistence), rewrite("SET "+persistence))
+	}
+	if cmp.Or(old.Using, "heap") != cmp.Or(updated.Using, "heap") {
+		alter(fmt.Sprintf("ALTER TABLE %s SET ACCESS METHOD %s;", t, b.q(cmp.Or(updated.Using, "heap"))), rewrite("SET ACCESS METHOD"))
+	}
+	if old.Tablespace != updated.Tablespace {
+		alter(fmt.Sprintf("ALTER TABLE %s SET TABLESPACE %s;", t, b.q(cmp.Or(updated.Tablespace, "pg_default"))), rewrite("SET TABLESPACE"))
+	}
+}
+
+func withMap(w *pgd.With) map[string]string {
+	m := make(map[string]string)
+	if w != nil {
+		for _, p := range w.Params {
+			m[p.Name] = p.Value
+		}
+	}
+	return m
+}
+
+func (b *diffBuilder) createConstraints(old, updated *pgd.Schema) {
+	oldTables := tableMap(nilTables(old))
 
 	// add/recreate indexes
 	oldIndexes := indexMap(nilIndexes(old))
-	oldIdxSlice := nilIndexes(old)
-	for _, ni := range updated.Indexes {
-		if oi, exists := oldIndexes[ni.Name]; exists {
-			if indexChanged(oi, &ni) {
-				b.addIndex(&ni)
-			}
-			continue
+	renamed := newRenameCandidates(nilIndexes(old), indexMap(updated.Indexes), indexName, indexIdentity)
+	for i := range updated.Indexes {
+		ni := &updated.Indexes[i]
+		oi, exists := oldIndexes[ni.Name]
+		if !exists {
+			oi = renamed.take(indexIdentity(ni)) // the index may be renamed
 		}
-		// fallback: match by semantic key
-		if match := matchIndexBySemantic(&ni, oldIdxSlice); match != nil {
-			if indexChanged(match, &ni) {
-				b.addIndex(&ni)
-			}
-			continue
+		switch {
+		case oi == nil || indexChanged(oi, ni) || b.indexRecreated(ni):
+			b.addIndex(ni)
+		case oi.Name != ni.Name:
+			b.add(Change{
+				Object: "index", Action: "alter", Name: ni.Name,
+				SQL: fmt.Sprintf("ALTER INDEX %s RENAME TO %s;", b.qt(oi.Name), b.q(ni.Name)),
+			})
 		}
-		b.addIndex(&ni)
 	}
 
 	// add constraints on existing tables
@@ -240,9 +401,23 @@ func (b *diffBuilder) createPhase(old, updated *pgd.Schema) {
 		b.addNewPK(nt.Name, ot.PK, nt.PK)
 		b.addNewUniques(nt.Name, ot.Uniques, nt.Uniques)
 		b.addNewChecks(nt.Name, ot.Checks, nt.Checks)
-		b.addNewFK(nt.Name, ot.FKs, nt.FKs)
 		b.diffPartitions(nt.Name, ot.Partitions, nt.Partitions)
 		b.diffPartitionBy(nt.Name, ot.PartitionBy, nt.PartitionBy)
+	}
+}
+
+func (b *diffBuilder) createFKs(old, updated *pgd.Schema) {
+	oldTables := tableMap(nilTables(old))
+	for _, nt := range updated.Tables {
+		ot, exists := oldTables[nt.Name]
+		switch {
+		case exists:
+			b.addNewFK(nt.Name, ot.FKs, nt.FKs)
+		case nt.PartitionOf == "": // FKs of a partition come from its parent
+			for i := range nt.FKs {
+				b.addFK(nt.Name, &nt.FKs[i])
+			}
+		}
 	}
 }
 
@@ -255,6 +430,9 @@ func (b *diffBuilder) addTable(t *pgd.Table) {
 		Object: "table", Action: "add", Name: t.Name,
 		SQL: strings.TrimSpace(sb.String()),
 	})
+	for i := range t.Columns {
+		b.addColumnStorage(t.Name, &t.Columns[i])
+	}
 }
 
 func (b *diffBuilder) dropTable(name string) {
@@ -267,35 +445,27 @@ func (b *diffBuilder) dropTable(name string) {
 
 // --- Columns ---
 
-func (b *diffBuilder) diffTableComment(table, oldComment, newComment string) {
-	if oldComment == newComment {
-		return
-	}
-	t := b.qt(table)
-	if newComment == "" {
-		b.add(Change{
-			Object: "table", Action: "alter", Table: table, Name: table,
-			SQL: fmt.Sprintf("COMMENT ON TABLE %s IS NULL;", t),
-		})
-	} else {
-		b.add(Change{
-			Object: "table", Action: "alter", Table: table, Name: table,
-			SQL: fmt.Sprintf("COMMENT ON TABLE %s IS %s;", t, pgd.EscapeComment(newComment)),
-		})
+func (b *diffBuilder) diffColumns(old, updated *pgd.Table) {
+	oldCols := columnMap(old.Columns)
+
+	for i := range updated.Columns {
+		nc := &updated.Columns[i]
+		oc, exists := oldCols[nc.Name]
+		if !exists {
+			b.addColumn(updated.Name, nc)
+			continue
+		}
+		b.diffColumn(updated.Name, oc, nc, notNull(old, oc), notNull(updated, nc))
 	}
 }
 
-func (b *diffBuilder) diffColumns(table string, old, updated []pgd.Column) {
-	oldCols := columnMap(old)
-
-	for _, nc := range updated {
-		oc, exists := oldCols[nc.Name]
-		if !exists {
-			b.addColumn(table, &nc)
-			continue
-		}
-		b.diffColumn(table, oc, &nc)
+// notNull reports whether a column is NOT NULL: PostgreSQL makes primary key and identity
+// columns NOT NULL, and the model doesn't always say so.
+func notNull(t *pgd.Table, c *pgd.Column) bool {
+	if c.Nullable == "false" || c.Identity != nil {
+		return true
 	}
+	return t.PK != nil && slices.ContainsFunc(t.PK.Columns, func(r pgd.ColRef) bool { return r.Name == c.Name })
 }
 
 func (b *diffBuilder) dropRemovedColumns(table string, old, updated []pgd.Column) {
@@ -312,17 +482,32 @@ func (b *diffBuilder) addColumn(table string, c *pgd.Column) {
 	sql := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s;", b.qt(table), def)
 
 	var hazards []Hazard
-	if c.Nullable == "false" && c.Default == "" && c.Identity == nil {
-		hazards = append(hazards, Hazard{
-			Level: "warning", Code: "BACKFILL_REQUIRED",
-			Message: fmt.Sprintf("column %s is NOT NULL without DEFAULT", c.Name),
-		})
+	if needsBackfill(c) {
+		hazards = append(hazards, backfillHazard(c))
 	}
 
 	b.add(Change{
 		Object: "column", Action: "add", Table: table, Name: c.Name,
 		SQL: sql, Hazards: hazards,
 	})
+	b.addColumnStorage(table, c)
+}
+
+// addColumnStorage emits SET STORAGE for a new column: ColumnDef doesn't include it.
+func (b *diffBuilder) addColumnStorage(table string, c *pgd.Column) {
+	b.diffColumnStorage(table, b.qt(table), b.q(c.Name), &pgd.Column{}, c)
+}
+
+// needsBackfill reports whether adding the column fails on a non-empty table.
+func needsBackfill(c *pgd.Column) bool {
+	return c.Nullable == "false" && c.Default == "" && c.Identity == nil && c.Generated == nil
+}
+
+func backfillHazard(c *pgd.Column) Hazard {
+	return Hazard{
+		Level: "warning", Code: "BACKFILL_REQUIRED",
+		Message: fmt.Sprintf("column %s is NOT NULL without DEFAULT", c.Name),
+	}
 }
 
 func (b *diffBuilder) dropColumn(table, col string) {
@@ -333,17 +518,97 @@ func (b *diffBuilder) dropColumn(table, col string) {
 	})
 }
 
-func (b *diffBuilder) diffColumn(table string, old, updated *pgd.Column) {
+// diffColumn alters a column; oldNotNull and newNotNull are the effective NOT NULL, see notNull.
+func (b *diffBuilder) diffColumn(table string, old, updated *pgd.Column, oldNotNull, newNotNull bool) {
+	if needsRecreate(old, updated) {
+		b.recreateColumn(table, updated)
+		return
+	}
+
 	t := b.qt(table)
 	col := b.q(updated.Name)
 
 	b.diffColumnType(table, t, col, old, updated)
-	b.diffColumnNullable(table, t, col, old, updated)
+	b.diffColumnGenerated(table, t, col, old, updated) // before DEFAULT: a generated column can't have one
+	// before ADD IDENTITY, which needs NOT NULL; a column joining the PK gets it from ADD PRIMARY KEY
+	if newNotNull && !oldNotNull && (updated.Nullable == "false" || updated.Identity != nil) {
+		b.alterColumn(table, updated.Name, fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET NOT NULL;", t, col))
+	}
 	b.diffColumnDefault(table, t, col, old, updated)
 	b.diffColumnIdentity(table, t, col, old, updated)
-	b.diffColumnComment(table, t, col, old, updated)
+	if oldNotNull && !newNotNull { // after DROP IDENTITY: an identity column can't be nullable
+		b.alterColumn(table, updated.Name, fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s DROP NOT NULL;", t, col))
+	}
 	b.diffColumnCompression(table, t, col, old, updated)
 	b.diffColumnStorage(table, t, col, old, updated)
+}
+
+// needsRecreate reports whether the column can't be altered in place: PostgreSQL can't
+// make a regular column generated, switch STORED ↔ VIRTUAL or drop a virtual expression.
+func needsRecreate(old, updated *pgd.Column) bool {
+	og, ng := old.Generated, updated.Generated
+	switch {
+	case og == nil && ng == nil:
+		return false
+	case og == nil:
+		return true
+	case ng == nil:
+		return isVirtual(og)
+	default:
+		return isVirtual(og) != isVirtual(ng)
+	}
+}
+
+func isVirtual(g *pgd.Generated) bool {
+	return g.Stored == "false"
+}
+
+// recreateColumn drops and re-adds the column. Indexes and constraints involving it are
+// dropped with it and re-created in createConstraints and createFKs.
+func (b *diffBuilder) recreateColumn(table string, c *pgd.Column) {
+	t := b.qt(table)
+	key := b.schema + "." + table
+	b.recreated[key] = append(b.recreated[key], c.Name)
+
+	hazards := []Hazard{{
+		Level: "dangerous", Code: "COLUMN_RECREATE",
+		Message: fmt.Sprintf("%s.%s is dropped and re-added: current values are replaced; "+
+			"dependent views and FKs from other tables block DROP", table, c.Name),
+	}}
+	if needsBackfill(c) {
+		hazards = append(hazards, backfillHazard(c))
+	}
+	b.add(Change{
+		Object: "column", Action: "alter", Table: table, Name: c.Name,
+		SQL:     fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s;\nALTER TABLE %s ADD COLUMN %s;", t, b.q(c.Name), t, pgd.ColumnDef(c)),
+		Hazards: hazards,
+	})
+	b.addColumnStorage(table, c)
+}
+
+// diffColumnGenerated alters a generated column in place; needsRecreate covers the rest.
+func (b *diffBuilder) diffColumnGenerated(table, t, col string, old, updated *pgd.Column) {
+	og, ng := old.Generated, updated.Generated
+	switch {
+	case og != nil && ng == nil: // stored → regular, values are kept
+		b.add(Change{
+			Object: "column", Action: "alter", Table: table, Name: updated.Name,
+			SQL: fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s DROP EXPRESSION;", t, col),
+		})
+	case og != nil && ng != nil && !sameExpr(og.Expression, ng.Expression):
+		var hazards []Hazard
+		if !isVirtual(ng) {
+			hazards = append(hazards, Hazard{
+				Level: "warning", Code: "TABLE_REWRITE",
+				Message: fmt.Sprintf("new expression of stored column %s.%s rewrites the table", table, updated.Name),
+			})
+		}
+		b.add(Change{
+			Object: "column", Action: "alter", Table: table, Name: updated.Name,
+			SQL:     fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET EXPRESSION AS (%s);", t, col, ng.Expression),
+			Hazards: hazards,
+		})
+	}
 }
 
 func (b *diffBuilder) diffColumnType(table, t, col string, old, updated *pgd.Column) {
@@ -366,25 +631,12 @@ func (b *diffBuilder) diffColumnType(table, t, col string, old, updated *pgd.Col
 	})
 }
 
-func (b *diffBuilder) diffColumnNullable(table, t, col string, old, updated *pgd.Column) {
-	if old.Nullable == updated.Nullable {
-		return
-	}
-	if updated.Nullable == "false" {
-		b.add(Change{
-			Object: "column", Action: "alter", Table: table, Name: updated.Name,
-			SQL: fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET NOT NULL;", t, col),
-		})
-	} else {
-		b.add(Change{
-			Object: "column", Action: "alter", Table: table, Name: updated.Name,
-			SQL: fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s DROP NOT NULL;", t, col),
-		})
-	}
+func (b *diffBuilder) alterColumn(table, col, sql string) {
+	b.add(Change{Object: "column", Action: "alter", Table: table, Name: col, SQL: sql})
 }
 
 func (b *diffBuilder) diffColumnDefault(table, t, col string, old, updated *pgd.Column) {
-	if old.Default == updated.Default {
+	if old.Default == updated.Default || (old.Default != "" && updated.Default != "" && sameExpr(old.Default, updated.Default)) {
 		return
 	}
 	if updated.Default == "" {
@@ -479,23 +731,6 @@ func (b *diffBuilder) diffIdentitySeqOpts(table, t, col string, old, updated *pg
 	}
 }
 
-func (b *diffBuilder) diffColumnComment(table, t, col string, old, updated *pgd.Column) {
-	if old.Comment == updated.Comment {
-		return
-	}
-	if updated.Comment == "" {
-		b.add(Change{
-			Object: "column", Action: "alter", Table: table, Name: updated.Name,
-			SQL: fmt.Sprintf("COMMENT ON COLUMN %s.%s IS NULL;", t, col),
-		})
-	} else {
-		b.add(Change{
-			Object: "column", Action: "alter", Table: table, Name: updated.Name,
-			SQL: fmt.Sprintf("COMMENT ON COLUMN %s.%s IS %s;", t, col, pgd.EscapeComment(updated.Comment)),
-		})
-	}
-}
-
 func (b *diffBuilder) diffColumnCompression(table, t, col string, old, updated *pgd.Column) {
 	if old.Compression == updated.Compression {
 		return
@@ -536,19 +771,19 @@ func (b *diffBuilder) diffPartitionBy(table string, old, updated *pgd.PartitionB
 	case old == nil && updated != nil:
 		b.add(Change{
 			Object: "table", Action: "alter", Table: table, Name: table,
-			SQL:     fmt.Sprintf("-- Cannot add PARTITION BY to existing table %s; requires table recreation", t),
+			SQL:     pgd.SQLComment("Cannot add PARTITION BY to existing table %s; requires table recreation", t),
 			Hazards: []Hazard{{Level: "dangerous", Code: "TABLE_RECREATE", Message: "adding PARTITION BY requires table recreation"}},
 		})
 	case old != nil && updated == nil:
 		b.add(Change{
 			Object: "table", Action: "alter", Table: table, Name: table,
-			SQL:     fmt.Sprintf("-- Cannot remove PARTITION BY from table %s; requires table recreation", t),
+			SQL:     pgd.SQLComment("Cannot remove PARTITION BY from table %s; requires table recreation", t),
 			Hazards: []Hazard{{Level: "dangerous", Code: "TABLE_RECREATE", Message: "removing PARTITION BY requires table recreation"}},
 		})
 	default:
 		b.add(Change{
 			Object: "table", Action: "alter", Table: table, Name: table,
-			SQL:     fmt.Sprintf("-- Cannot change PARTITION BY strategy on table %s; requires table recreation", t),
+			SQL:     pgd.SQLComment("Cannot change PARTITION BY strategy on table %s; requires table recreation", t),
 			Hazards: []Hazard{{Level: "dangerous", Code: "TABLE_RECREATE", Message: "changing PARTITION BY strategy requires table recreation"}},
 		})
 	}
@@ -571,19 +806,22 @@ func (b *diffBuilder) diffPartitions(table string, old, updated []pgd.Partition)
 		if _, exists := newMap[op.Name]; !exists {
 			b.add(Change{
 				Object: "partition", Action: "drop", Table: table, Name: op.Name,
-				SQL:     fmt.Sprintf("ALTER TABLE %s DETACH PARTITION %s;", t, b.q(op.Name)),
+				SQL:     fmt.Sprintf("ALTER TABLE %s DETACH PARTITION %s;", t, b.qt(op.Name)),
 				Hazards: []Hazard{{Level: "warning", Code: "DETACH_PARTITION", Message: fmt.Sprintf("detaches partition %s from %s", op.Name, table)}},
 			})
 		}
 	}
 
 	// Attach new partitions
-	for _, np := range updated {
+	for i := range updated {
+		np := &updated[i]
 		op, exists := oldMap[np.Name]
 		if !exists {
+			var sb strings.Builder
+			_ = pgd.WritePartition(&sb, pgd.SchemaQualifier(b.schema), table, np)
 			b.add(Change{
 				Object: "partition", Action: "add", Table: table, Name: np.Name,
-				SQL: fmt.Sprintf("CREATE TABLE %s PARTITION OF %s\n    %s;", b.q(np.Name), t, np.Bound),
+				SQL: strings.TrimSpace(sb.String()),
 			})
 			continue
 		}
@@ -592,10 +830,14 @@ func (b *diffBuilder) diffPartitions(table string, old, updated []pgd.Partition)
 			b.add(Change{
 				Object: "partition", Action: "alter", Table: table, Name: np.Name,
 				SQL: fmt.Sprintf("ALTER TABLE %s DETACH PARTITION %s;\nALTER TABLE %s ATTACH PARTITION %s %s;",
-					t, b.q(np.Name), t, b.q(np.Name), np.Bound),
+					t, b.qt(np.Name), t, b.qt(np.Name), np.Bound),
 				Hazards: []Hazard{{Level: "warning", Code: "REATTACH_PARTITION", Message: fmt.Sprintf("detach+attach partition %s with new bounds", np.Name)}},
 			})
 		}
+		// a partition is a table with its own storage options and sub-partitions
+		b.diffTableOptions(&pgd.Table{Name: op.Name, With: op.With, Tablespace: op.Tablespace},
+			&pgd.Table{Name: np.Name, With: np.With, Tablespace: np.Tablespace})
+		b.diffPartitions(np.Name, op.Partitions, np.Partitions)
 	}
 }
 
@@ -636,46 +878,42 @@ func (b *diffBuilder) addIndex(idx *pgd.Index) {
 func (b *diffBuilder) dropIndex(name string) {
 	b.add(Change{
 		Object: "index", Action: "drop", Name: name,
-		SQL: fmt.Sprintf("DROP INDEX %s;", b.q(name)),
+		SQL: fmt.Sprintf("DROP INDEX %s;", b.qt(name)),
 	})
 }
 
 // --- FK ---
 
 func (b *diffBuilder) dropRemovedFK(table string, old, updated []pgd.ForeignKey) {
-	newByName := fkMap(updated)
-	for _, ofk := range old {
-		if nfk, exists := newByName[ofk.Name]; exists {
-			if fkChanged(&ofk, nfk) {
-				b.dropFK(table, ofk.Name)
-			}
-			continue
+	newFKs := fkMap(updated)
+	renamed := newRenameCandidates(updated, fkMap(old), fkKey, fkIdentity)
+	for i := range old {
+		ofk := &old[i]
+		nfk, exists := newFKs[fkKey(ofk)]
+		if !exists {
+			nfk = renamed.take(fkIdentity(ofk)) // the FK may be renamed
 		}
-		// fallback: match by semantic key (columns + target table)
-		if matchFKBySemantic(&ofk, updated) != nil {
-			continue
+		if nfk == nil || fkChanged(ofk, nfk) {
+			b.dropFK(table, ofk)
 		}
-		b.dropFK(table, ofk.Name)
 	}
 }
 
 func (b *diffBuilder) addNewFK(table string, old, updated []pgd.ForeignKey) {
-	oldByName := fkMap(old)
-	for _, nfk := range updated {
-		if ofk, exists := oldByName[nfk.Name]; exists {
-			if fkChanged(ofk, &nfk) {
-				b.addFK(table, &nfk)
-			}
-			continue
+	oldFKs := fkMap(old)
+	renamed := newRenameCandidates(old, fkMap(updated), fkKey, fkIdentity)
+	for i := range updated {
+		nfk := &updated[i]
+		ofk, exists := oldFKs[fkKey(nfk)]
+		if !exists {
+			ofk = renamed.take(fkIdentity(nfk)) // the FK may be renamed
 		}
-		// fallback: match by semantic key (columns + target table)
-		if match := matchFKBySemantic(&nfk, old); match != nil {
-			if fkChanged(match, &nfk) {
-				b.addFK(table, &nfk)
-			}
-			continue
+		switch {
+		case ofk == nil || fkChanged(ofk, nfk) || b.touchesRecreated(table, pgd.FKColNames(nfk.Columns)):
+			b.addFK(table, nfk)
+		default:
+			b.renameConstraint("fk", table, ofk.Name, nfk.Name)
 		}
-		b.addFK(table, &nfk)
 	}
 }
 
@@ -688,9 +926,35 @@ func (b *diffBuilder) addFK(table string, fk *pgd.ForeignKey) {
 	})
 }
 
-func (b *diffBuilder) dropFK(table, name string) {
+// renameConstraint renames a constraint matched by definition; unnamed ones keep their names.
+func (b *diffBuilder) renameConstraint(object, table, from, to string) {
+	if from == to || from == "" || to == "" {
+		return
+	}
 	b.add(Change{
-		Object: "fk", Action: "drop", Table: table, Name: name,
+		Object: object, Action: "alter", Table: table, Name: to,
+		SQL: fmt.Sprintf("ALTER TABLE %s RENAME CONSTRAINT %s TO %s;", b.qt(table), b.q(from), b.q(to)),
+	})
+}
+
+func (b *diffBuilder) dropFK(table string, fk *pgd.ForeignKey) {
+	cols := strings.Join(pgd.FKColNames(fk.Columns), ", ")
+	b.dropConstraint("fk", table, fk.Name, fmt.Sprintf("FOREIGN KEY (%s) to %s", cols, fk.ToTable))
+}
+
+// dropConstraint drops a constraint by name. An unnamed one (inline constraints parsed
+// from SQL have no name) can't be addressed: it is reported instead.
+func (b *diffBuilder) dropConstraint(object, table, name, def string) {
+	if name == "" {
+		b.add(Change{
+			Object: object, Action: "drop", Table: table,
+			SQL:     pgd.SQLComment("Cannot drop unnamed %s on %s: name it in the old model", def, b.qt(table)),
+			Hazards: []Hazard{{Level: "warning", Code: "UNNAMED_CONSTRAINT", Message: fmt.Sprintf("unnamed %s on %s is not dropped", def, table)}},
+		})
+		return
+	}
+	b.add(Change{
+		Object: object, Action: "drop", Table: table, Name: name,
 		SQL: fmt.Sprintf("ALTER TABLE %s DROP CONSTRAINT %s;", b.qt(table), b.q(name)),
 	})
 }
@@ -702,10 +966,7 @@ func (b *diffBuilder) dropModifiedPK(table string, old, updated *pgd.PrimaryKey)
 		return
 	}
 	if updated == nil || pkChanged(old, updated) {
-		b.add(Change{
-			Object: "pk", Action: "drop", Table: table, Name: old.Name,
-			SQL: fmt.Sprintf("ALTER TABLE %s DROP CONSTRAINT %s;", b.qt(table), b.q(old.Name)),
-		})
+		b.dropConstraint("pk", table, cmp.Or(old.Name, table+"_pkey"), "PRIMARY KEY")
 	}
 }
 
@@ -713,12 +974,9 @@ func (b *diffBuilder) addNewPK(table string, old, updated *pgd.PrimaryKey) {
 	if updated == nil {
 		return
 	}
-	if old == nil || pkChanged(old, updated) {
+	if old == nil || pkChanged(old, updated) || b.touchesRecreated(table, pgd.ColRefNames(updated.Columns)) {
 		cols := pgd.QuotedColList(updated.Columns)
-		name := updated.Name
-		if name == "" {
-			name = table + "_pkey"
-		}
+		name := cmp.Or(updated.Name, table+"_pkey")
 		b.add(Change{
 			Object: "pk", Action: "add", Table: table, Name: name,
 			SQL: fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (%s);", b.qt(table), b.q(name), cols),
@@ -730,91 +988,378 @@ func (b *diffBuilder) addNewPK(table string, old, updated *pgd.PrimaryKey) {
 
 func (b *diffBuilder) dropRemovedUniques(table string, old, updated []pgd.Unique) {
 	newU := uniqueMap(updated)
-	for _, ou := range old {
-		if _, exists := newU[ou.Name]; !exists {
-			b.add(Change{
-				Object: "unique", Action: "drop", Table: table, Name: ou.Name,
-				SQL: fmt.Sprintf("ALTER TABLE %s DROP CONSTRAINT %s;", b.qt(table), b.q(ou.Name)),
-			})
+	renamed := newRenameCandidates(updated, uniqueMap(old), uniqueKey, uniqueIdentity)
+	for i := range old {
+		ou := &old[i]
+		nu, exists := newU[uniqueKey(ou)]
+		if !exists {
+			nu = renamed.take(uniqueIdentity(ou)) // the constraint may be renamed
+		}
+		if nu == nil || uniqueChanged(ou, nu) {
+			b.dropConstraint("unique", table, ou.Name, "UNIQUE ("+pgd.QuotedColList(ou.Columns)+")")
 		}
 	}
 }
 
 func (b *diffBuilder) addNewUniques(table string, old, updated []pgd.Unique) {
 	oldU := uniqueMap(old)
-	for _, nu := range updated {
-		if _, exists := oldU[nu.Name]; !exists {
-			cols := pgd.QuotedColList(nu.Columns)
+	renamed := newRenameCandidates(old, uniqueMap(updated), uniqueKey, uniqueIdentity)
+	for i := range updated {
+		nu := &updated[i]
+		ou, exists := oldU[uniqueKey(nu)]
+		if !exists {
+			ou = renamed.take(uniqueIdentity(nu)) // the constraint may be renamed
+		}
+		switch {
+		case ou == nil || uniqueChanged(ou, nu) || b.touchesRecreated(table, pgd.ColRefNames(nu.Columns)):
 			b.add(Change{
 				Object: "unique", Action: "add", Table: table, Name: nu.Name,
-				SQL: fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s UNIQUE (%s);", b.qt(table), b.q(nu.Name), cols),
+				SQL: fmt.Sprintf("ALTER TABLE %s ADD %s;", b.qt(table), pgd.UniqueDef(nu)),
 			})
+		default:
+			b.renameConstraint("unique", table, ou.Name, nu.Name)
 		}
 	}
+}
+
+func uniqueChanged(old, updated *pgd.Unique) bool {
+	return uniqueIdentity(old) != uniqueIdentity(updated)
+}
+
+// uniqueIdentity identifies a UNIQUE constraint by its columns and NULLS NOT DISTINCT.
+func uniqueIdentity(u *pgd.Unique) string {
+	return strings.Join(pgd.ColRefNames(u.Columns), ",") + "|" + strconv.FormatBool(u.NullsDistinct == "false")
 }
 
 // --- CHECK ---
 
 func (b *diffBuilder) dropRemovedChecks(table string, old, updated []pgd.Check) {
 	newC := checkMap(updated)
-	for _, oc := range old {
-		if _, exists := newC[oc.Name]; !exists {
-			b.add(Change{
-				Object: "check", Action: "drop", Table: table, Name: oc.Name,
-				SQL: fmt.Sprintf("ALTER TABLE %s DROP CONSTRAINT %s;", b.qt(table), b.q(oc.Name)),
-			})
+	renamed := newRenameCandidates(updated, checkMap(old), checkKey, checkIdentity)
+	for i := range old {
+		oc := &old[i]
+		nc, exists := newC[checkKey(oc)]
+		if !exists {
+			nc = renamed.take(checkIdentity(oc)) // the constraint may be renamed
+		}
+		if nc == nil || checkChanged(oc, nc) {
+			b.dropConstraint("check", table, oc.Name, "CHECK ("+oc.Expression+")")
 		}
 	}
 }
 
 func (b *diffBuilder) addNewChecks(table string, old, updated []pgd.Check) {
 	oldC := checkMap(old)
-	for _, nc := range updated {
-		if _, exists := oldC[nc.Name]; !exists {
+	renamed := newRenameCandidates(old, checkMap(updated), checkKey, checkIdentity)
+	for i := range updated {
+		nc := &updated[i]
+		oc, exists := oldC[checkKey(nc)]
+		if !exists {
+			oc = renamed.take(checkIdentity(nc)) // the constraint may be renamed
+		}
+		switch {
+		case oc == nil || checkChanged(oc, nc) || b.touchesRecreated(table, nil, nc.Expression):
+			constraint := ""
+			if nc.Name != "" {
+				constraint = "CONSTRAINT " + b.q(nc.Name) + " "
+			}
 			b.add(Change{
 				Object: "check", Action: "add", Table: table, Name: nc.Name,
-				SQL: fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s CHECK (%s);", b.qt(table), b.q(nc.Name), nc.Expression),
+				SQL: fmt.Sprintf("ALTER TABLE %s ADD %sCHECK (%s);", b.qt(table), constraint, nc.Expression),
 			})
+		default:
+			b.renameConstraint("check", table, oc.Name, nc.Name)
+		}
+	}
+}
+
+// checkIdentity identifies a CHECK constraint by its expression, ignoring formatting.
+func checkIdentity(c *pgd.Check) string {
+	return sqlconv.ExprKey(c.Expression)
+}
+
+func checkChanged(old, updated *pgd.Check) bool {
+	return !sameExpr(old.Expression, updated.Expression)
+}
+
+// sameExpr reports whether two SQL expressions are the same, ignoring formatting: a model
+// from the database (pg_get_expr) and one from DDL differ in parentheses, spacing and casts.
+func sameExpr(a, b string) bool {
+	a, b = strings.TrimSpace(a), strings.TrimSpace(b)
+	return a == b || sqlconv.ExprKey(a) == sqlconv.ExprKey(b)
+}
+
+// createSchemas creates the non-public schemas missing in old.
+func (b *diffBuilder) createSchemas(old, updated *pgd.Project) {
+	existing := pgd.NonPublicSchemas(old)
+	for _, name := range pgd.NonPublicSchemas(updated) {
+		if !slices.Contains(existing, name) {
+			b.add(Change{Schema: name, Object: "schema", Action: "add", Name: name,
+				SQL: fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s;", b.q(name))})
 		}
 	}
 }
 
 // --- Enums ---
 
+func projectEnums(p *pgd.Project) []pgd.Enum {
+	if p.Types == nil {
+		return nil
+	}
+	return p.Types.Enums
+}
+
+func enumKey(e *pgd.Enum) string {
+	return cmp.Or(e.Schema, "public") + "." + e.Name
+}
+
+func enumMap(enums []pgd.Enum) map[string]*pgd.Enum {
+	m := make(map[string]*pgd.Enum, len(enums))
+	for i := range enums {
+		m[enumKey(&enums[i])] = &enums[i]
+	}
+	return m
+}
+
 func (b *diffBuilder) diffEnums(old, updated []pgd.Enum) {
-	oldMap := make(map[string]*pgd.Enum, len(old))
-	for i := range old {
-		oldMap[old[i].Name] = &old[i]
+	oldMap := enumMap(old)
+	for i := range updated {
+		ne := &updated[i]
+		if oe, exists := oldMap[enumKey(ne)]; exists {
+			b.diffEnumLabels(oe, ne)
+			continue
+		}
+		var sb strings.Builder
+		_ = pgd.WriteEnum(&sb, ne)
+		b.addEnum(ne, "add", strings.TrimSpace(sb.String()))
+	}
+}
+
+// diffEnumLabels adds new labels at their positions. PostgreSQL can't drop or reorder
+// enum labels, so such changes are reported as hazards.
+func (b *diffBuilder) diffEnumLabels(old, updated *pgd.Enum) {
+	name := pgd.QualifiedName(updated.Schema, updated.Name)
+	unsupported := func(what string) {
+		b.addEnum(updated, "alter", pgd.SQLComment("Cannot %s of enum %s; requires type recreation", what, name),
+			Hazard{Level: "dangerous", Code: "TYPE_RECREATE", Message: what + " requires type recreation"})
 	}
 
-	for _, ne := range updated {
-		oe, exists := oldMap[ne.Name]
-		if !exists {
-			continue // new enum = handled by CREATE TYPE in DDL
+	oldSet, newSet := labelSet(old.Labels), labelSet(updated.Labels)
+	for _, l := range old.Labels {
+		if !newSet[l] {
+			unsupported("drop value " + pgd.QuoteLiteral(l))
 		}
-		oldLabels := make(map[string]bool, len(oe.Labels))
-		for _, l := range oe.Labels {
-			oldLabels[l] = true
+	}
+	if !slices.Equal(keepLabels(old.Labels, newSet), keepLabels(updated.Labels, oldSet)) {
+		unsupported("reorder values")
+	}
+
+	for i, l := range updated.Labels {
+		if oldSet[l] {
+			continue
 		}
-		for _, l := range ne.Labels {
-			if !oldLabels[l] {
-				b.add(Change{
-					Object: "enum", Action: "alter", Name: ne.Name,
-					SQL: fmt.Sprintf("ALTER TYPE %s ADD VALUE '%s';", b.q(ne.Name), l),
-				})
-			}
+		pos := ""
+		switch next := slices.IndexFunc(updated.Labels[i+1:], func(l string) bool { return oldSet[l] }); {
+		case next < 0: // appended after all existing labels
+		case i > 0:
+			pos = " AFTER " + pgd.QuoteLiteral(updated.Labels[i-1])
+		default:
+			pos = " BEFORE " + pgd.QuoteLiteral(updated.Labels[i+1+next])
+		}
+		b.addEnum(updated, "alter", fmt.Sprintf("ALTER TYPE %s ADD VALUE %s%s;", name, pgd.QuoteLiteral(l), pos),
+			Hazard{Level: "warning", Code: "ENUM_ADD_VALUE", Message: fmt.Sprintf(
+				"new value %s of %s can't be used until the transaction commits: run the migration without a transaction or split it", pgd.QuoteLiteral(l), updated.Name)})
+	}
+}
+
+func (b *diffBuilder) dropEnums(old, updated []pgd.Enum) {
+	newMap := enumMap(updated)
+	for i := range old {
+		oe := &old[i]
+		if _, exists := newMap[enumKey(oe)]; !exists {
+			b.addEnum(oe, "drop", fmt.Sprintf("DROP TYPE %s;", pgd.QualifiedName(oe.Schema, oe.Name)))
 		}
 	}
 }
 
-// --- helpers ---
+func (b *diffBuilder) addEnum(e *pgd.Enum, action, sql string, hazards ...Hazard) {
+	b.add(Change{Schema: cmp.Or(e.Schema, "public"), Object: "enum", Action: action, Name: e.Name, SQL: sql, Hazards: hazards})
+}
 
-func schemaMap(schemas []pgd.Schema) map[string]*pgd.Schema {
-	m := make(map[string]*pgd.Schema, len(schemas))
-	for i := range schemas {
-		m[schemas[i].Name] = &schemas[i]
+func labelSet(labels []string) map[string]bool {
+	m := make(map[string]bool, len(labels))
+	for _, l := range labels {
+		m[l] = true
 	}
 	return m
+}
+
+// keepLabels returns labels that are in set, in their order.
+func keepLabels(labels []string, set map[string]bool) []string {
+	var out []string
+	for _, l := range labels {
+		if set[l] {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+// --- Comments ---
+
+// commentKey identifies a table (column == "") or column comment.
+type commentKey struct {
+	schema, table, column string
+}
+
+// projectComments returns effective table and column comments, keys in model order.
+// As in generated DDL, a comment from the <comments> section (the SQL converter puts
+// COMMENT ON there) overrides the comment attribute.
+func projectComments(p *pgd.Project) ([]commentKey, map[commentKey]string) {
+	var keys []commentKey
+	m := make(map[commentKey]string)
+	set := func(k commentKey, v string) {
+		if _, seen := m[k]; !seen {
+			keys = append(keys, k)
+		}
+		m[k] = v
+	}
+	for _, s := range p.Schemas {
+		for _, t := range s.Tables {
+			if t.Comment != "" {
+				set(commentKey{s.Name, t.Name, ""}, t.Comment)
+			}
+			for _, c := range t.Columns {
+				if c.Comment != "" {
+					set(commentKey{s.Name, t.Name, c.Name}, c.Comment)
+				}
+			}
+		}
+	}
+	for _, c := range p.Comments {
+		switch strings.ToLower(c.On) {
+		case "table":
+			set(commentKey{cmp.Or(c.Schema, "public"), c.Name, ""}, c.Value)
+		case "column":
+			set(commentKey{cmp.Or(c.Schema, "public"), c.Table, c.Name}, c.Value)
+		}
+	}
+	return keys, m
+}
+
+func (b *diffBuilder) diffComments(old, updated *pgd.Project) {
+	oldKeys, oldC := projectComments(old)
+	newKeys, newC := projectComments(updated)
+
+	for _, k := range newKeys {
+		if v := newC[k]; v != oldC[k] || b.commentRecreated(k) {
+			b.addComment(k, v)
+		}
+	}
+	var oldTargets, newTargets map[commentKey]bool
+	for _, k := range oldKeys {
+		if _, exists := newC[k]; exists || oldC[k] == "" || b.commentRecreated(k) {
+			continue
+		}
+		if oldTargets == nil {
+			oldTargets, newTargets = commentTargets(old), commentTargets(updated)
+		}
+		// comments of dropped objects are gone with them
+		if oldTargets[k] && newTargets[k] {
+			b.addComment(k, "")
+		}
+	}
+}
+
+// commentRecreated reports whether the commented column was dropped and re-added.
+func (b *diffBuilder) commentRecreated(k commentKey) bool {
+	return k.column != "" && slices.Contains(b.recreated[k.schema+"."+k.table], k.column)
+}
+
+// addComment emits COMMENT ON TABLE or COLUMN; an empty comment drops it.
+func (b *diffBuilder) addComment(k commentKey, comment string) {
+	value := "NULL"
+	if comment != "" {
+		value = pgd.QuoteLiteral(comment)
+	}
+	c := Change{Schema: k.schema, Object: "table", Action: "alter", Table: k.table, Name: k.table}
+	target := pgd.Comment{On: "table", Schema: k.schema, Name: k.table}
+	if k.column != "" {
+		c.Object, c.Name = "column", k.column
+		target = pgd.Comment{On: "column", Schema: k.schema, Table: k.table, Name: k.column}
+	}
+	c.SQL = fmt.Sprintf("COMMENT ON %s IS %s;", pgd.CommentTarget(&target), value)
+	b.add(c)
+}
+
+// commentTargets returns the tables and columns of the project as comment keys.
+func commentTargets(p *pgd.Project) map[commentKey]bool {
+	m := make(map[commentKey]bool)
+	for _, s := range p.Schemas {
+		for _, t := range s.Tables {
+			m[commentKey{s.Name, t.Name, ""}] = true
+			for _, c := range t.Columns {
+				m[commentKey{s.Name, t.Name, c.Name}] = true
+			}
+		}
+	}
+	return m
+}
+
+// --- Recreated columns ---
+
+// touchesRecreated reports whether any of cols, or a column mentioned in exprs, of the
+// table was dropped and re-added: objects involving it were dropped with it.
+func (b *diffBuilder) touchesRecreated(table string, cols []string, exprs ...string) bool {
+	for _, rc := range b.recreated[b.schema+"."+table] {
+		if slices.Contains(cols, rc) {
+			return true
+		}
+		for _, e := range exprs {
+			if mentionsColumn(e, rc) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (b *diffBuilder) indexRecreated(idx *pgd.Index) bool {
+	cols := idx.KeyColumns()
+	if idx.Include != nil {
+		cols = append(cols, pgd.ColRefNames(idx.Include.Columns)...)
+	}
+	var exprs []string
+	for _, k := range idx.Keys {
+		if k.IsExpression() {
+			exprs = append(exprs, k.Expression)
+		}
+	}
+	if idx.Where != nil {
+		exprs = append(exprs, idx.Where.Value)
+	}
+	return b.touchesRecreated(idx.Table, cols, exprs...)
+}
+
+// stringLiteralRe matches SQL string literals, including doubled quotes inside.
+var stringLiteralRe = regexp.MustCompile(`'(?:[^']|'')*'`)
+
+// mentionsColumn reports whether the SQL expression references column, plain or quoted,
+// outside string literals and not as a function name.
+func mentionsColumn(expr, column string) bool {
+	re := regexp.MustCompile(`(^|[^\w$"])("` + regexp.QuoteMeta(column) + `"|` + regexp.QuoteMeta(column) + `)($|[^\w$"(])`)
+	return re.MatchString(stringLiteralRe.ReplaceAllString(expr, "''"))
+}
+
+// --- helpers ---
+
+func findSchema(schemas []pgd.Schema, name string) *pgd.Schema {
+	for i := range schemas {
+		if schemas[i].Name == name {
+			return &schemas[i]
+		}
+	}
+	return nil
 }
 
 func tableMap(tables []pgd.Table) map[string]*pgd.Table {
@@ -833,30 +1378,33 @@ func columnMap(cols []pgd.Column) map[string]*pgd.Column {
 	return m
 }
 
-// matchIndexBySemantic finds an index in candidates with the same table, columns, using, and where.
-func matchIndexBySemantic(idx *pgd.Index, candidates []pgd.Index) *pgd.Index {
-	for i := range candidates {
-		c := &candidates[i]
-		if c.Table != idx.Table || c.Unique != idx.Unique || c.Using != idx.Using {
-			continue
-		}
-		if colRefNames(c.Columns) != colRefNames(idx.Columns) {
-			continue
-		}
-		cWhere, iWhere := "", ""
-		if c.Where != nil {
-			cWhere = c.Where.Value
-		}
-		if idx.Where != nil {
-			iWhere = idx.Where.Value
-		}
-		if cWhere != iWhere {
-			continue
-		}
-		return c
+// renameCandidates are objects whose names are absent in the other model, grouped by
+// identity in model order: a rename pairs them one-to-one, first with first.
+type renameCandidates[T any] map[string][]*T
+
+// take returns the next candidate with the identity, or nil.
+func (c renameCandidates[T]) take(id string) *T {
+	q := c[id]
+	if len(q) == 0 {
+		return nil
 	}
-	return nil
+	c[id] = q[1:]
+	return q[0]
 }
+
+// newRenameCandidates returns the items whose keys are absent in other, grouped by identity.
+func newRenameCandidates[T any](items []T, other map[string]*T, key, identity func(*T) string) renameCandidates[T] {
+	c := renameCandidates[T]{}
+	for i := range items {
+		if _, exists := other[key(&items[i])]; !exists {
+			id := identity(&items[i])
+			c[id] = append(c[id], &items[i])
+		}
+	}
+	return c
+}
+
+func indexName(idx *pgd.Index) string { return idx.Name }
 
 func indexMap(indexes []pgd.Index) map[string]*pgd.Index {
 	m := make(map[string]*pgd.Index, len(indexes))
@@ -866,31 +1414,44 @@ func indexMap(indexes []pgd.Index) map[string]*pgd.Index {
 	return m
 }
 
-// matchFKBySemantic finds a FK in candidates that has the same columns and target table.
-func matchFKBySemantic(fk *pgd.ForeignKey, candidates []pgd.ForeignKey) *pgd.ForeignKey {
-	for i := range candidates {
-		c := &candidates[i]
-		if c.ToTable != fk.ToTable || len(c.Columns) != len(fk.Columns) {
-			continue
-		}
-		match := true
-		for j := range fk.Columns {
-			if fk.Columns[j].Name != c.Columns[j].Name || fk.Columns[j].References != c.Columns[j].References {
-				match = false
-				break
-			}
-		}
-		if match {
-			return c
-		}
+// fkIdentity identifies an FK by its target table and column mapping.
+func fkIdentity(fk *pgd.ForeignKey) string {
+	var b strings.Builder
+	b.WriteString(fk.ToTable)
+	for _, c := range fk.Columns {
+		b.WriteString("|" + c.Name + ">" + c.References)
 	}
-	return nil
+	return b.String()
+}
+
+// Constraints are keyed by name. Inline constraints parsed from SQL have no name,
+// so an unnamed constraint is keyed by its definition.
+
+func fkKey(fk *pgd.ForeignKey) string {
+	if fk.Name != "" {
+		return fk.Name
+	}
+	return "\x00" + fkIdentity(fk)
+}
+
+func uniqueKey(u *pgd.Unique) string {
+	if u.Name != "" {
+		return u.Name
+	}
+	return "\x00" + uniqueIdentity(u)
+}
+
+func checkKey(c *pgd.Check) string {
+	if c.Name != "" {
+		return c.Name
+	}
+	return "\x00" + strings.TrimSpace(c.Expression)
 }
 
 func fkMap(fks []pgd.ForeignKey) map[string]*pgd.ForeignKey {
 	m := make(map[string]*pgd.ForeignKey, len(fks))
 	for i := range fks {
-		m[fks[i].Name] = &fks[i]
+		m[fkKey(&fks[i])] = &fks[i]
 	}
 	return m
 }
@@ -898,7 +1459,7 @@ func fkMap(fks []pgd.ForeignKey) map[string]*pgd.ForeignKey {
 func uniqueMap(us []pgd.Unique) map[string]*pgd.Unique {
 	m := make(map[string]*pgd.Unique, len(us))
 	for i := range us {
-		m[us[i].Name] = &us[i]
+		m[uniqueKey(&us[i])] = &us[i]
 	}
 	return m
 }
@@ -906,7 +1467,7 @@ func uniqueMap(us []pgd.Unique) map[string]*pgd.Unique {
 func checkMap(cs []pgd.Check) map[string]*pgd.Check {
 	m := make(map[string]*pgd.Check, len(cs))
 	for i := range cs {
-		m[cs[i].Name] = &cs[i]
+		m[checkKey(&cs[i])] = &cs[i]
 	}
 	return m
 }
@@ -945,68 +1506,74 @@ func seqOptStr(seq *pgd.IdentitySeqOpt) string {
 	return fmt.Sprintf("%d:%d:%d:%d:%d:%s", seq.Start, seq.Increment, seq.Min, seq.Max, seq.Cache, seq.Cycle)
 }
 
-func colRefNames(refs []pgd.ColRef) string {
-	var parts []string
-	for _, r := range refs {
-		s := r.Name
-		if r.Order != "" {
-			s += ":" + r.Order
-		}
-		if r.Nulls != "" {
-			s += ":" + r.Nulls
-		}
-		if r.Opclass != "" {
-			s += ":" + r.Opclass
-		}
-		parts = append(parts, s)
+func indexElemKey(name, order, nulls, opclass string) string {
+	s := name
+	if order != "" && order != "asc" {
+		s += ":" + order
 	}
-	return strings.Join(parts, ",")
+	if nulls != "" {
+		s += ":" + nulls
+	}
+	if opclass != "" {
+		s += ":" + opclass
+	}
+	return s
 }
 
+// indexIdentity identifies what an index indexes. Indexes with equal identities are
+// the same index, possibly renamed.
+func indexIdentity(idx *pgd.Index) string {
+	return indexIdentityExpr(idx, strings.TrimSpace)
+}
+
+// indexIdentityExpr is indexIdentity with expressions and the predicate converted by expr.
+func indexIdentityExpr(idx *pgd.Index, expr func(string) string) string {
+	keys := make([]string, len(idx.Keys))
+	for i, k := range idx.Keys {
+		id := k.ID()
+		if k.IsExpression() {
+			id = expr(id)
+		}
+		keys[i] = indexElemKey(id, k.Order, k.Nulls, k.Opclass)
+	}
+	where := idx.Predicate()
+	if where != "" {
+		where = expr(where)
+	}
+	return strings.Join([]string{idx.Table, strconv.FormatBool(idx.Unique == "true"), idx.Method(),
+		strings.Join(keys, ","), where}, "|")
+}
+
+// indexChanged reports whether the index DDL changed, apart from its name. Expressions
+// that differ only in formatting are equal.
 func indexChanged(old, updated *pgd.Index) bool {
-	if old.Unique != updated.Unique {
+	if indexOptions(old) != indexOptions(updated) {
 		return true
 	}
-	if old.Using != updated.Using {
-		return true
+	return indexIdentity(old) != indexIdentity(updated) &&
+		indexIdentityExpr(old, sqlconv.ExprKey) != indexIdentityExpr(updated, sqlconv.ExprKey)
+}
+
+// indexOptions returns INCLUDE, NULLS NOT DISTINCT, WITH and TABLESPACE of an index.
+func indexOptions(idx *pgd.Index) string {
+	var include string
+	if idx.Include != nil {
+		include = strings.Join(pgd.ColRefNames(idx.Include.Columns), ",")
 	}
-	if colRefNames(old.Columns) != colRefNames(updated.Columns) {
-		return true
+	var with string
+	if idx.With != nil {
+		with = pgd.WithParams(idx.With.Params)
 	}
-	oldWhere := ""
-	if old.Where != nil {
-		oldWhere = old.Where.Value
-	}
-	newWhere := ""
-	if updated.Where != nil {
-		newWhere = updated.Where.Value
-	}
-	if oldWhere != newWhere {
-		return true
-	}
-	return false
+	return strings.Join([]string{include, strconv.FormatBool(idx.NullsDistinct == "false"), with, idx.Tablespace}, "|")
 }
 
 func fkChanged(old, updated *pgd.ForeignKey) bool {
-	if old.ToTable != updated.ToTable {
-		return true
-	}
-	if old.OnDelete != updated.OnDelete || old.OnUpdate != updated.OnUpdate {
-		return true
-	}
-	if len(old.Columns) != len(updated.Columns) {
-		return true
-	}
-	for i := range old.Columns {
-		if old.Columns[i].Name != updated.Columns[i].Name || old.Columns[i].References != updated.Columns[i].References {
-			return true
-		}
-	}
-	return false
+	return fkIdentity(old) != fkIdentity(updated) ||
+		pgd.RefAction(old.OnDelete) != pgd.RefAction(updated.OnDelete) || pgd.RefAction(old.OnUpdate) != pgd.RefAction(updated.OnUpdate)
 }
 
 func pkChanged(old, updated *pgd.PrimaryKey) bool {
-	return colRefNames(old.Columns) != colRefNames(updated.Columns)
+	return !slices.Equal(pgd.ColRefNames(old.Columns), pgd.ColRefNames(updated.Columns))
 }
 
 func isCompatibleCast(old, updated string) bool {

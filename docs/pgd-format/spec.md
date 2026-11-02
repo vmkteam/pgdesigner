@@ -4,7 +4,7 @@
 **Target:** PostgreSQL 18
 **File Extension:** `.pgd`
 **Encoding:** UTF-8
-**Validation:** `pgd-format.xsd` (see `lfdfq pgd-format.xsd`)
+**Validation:** [`pgd-format.xsd`](pgd-format.xsd)
 
 ## Overview
 
@@ -453,6 +453,8 @@ Custom types (enums, composites, domains) are referenced by name. Schema-qualifi
 | `expression` | string | (required) | SQL expression |
 | `stored` | boolean | `true` | `true` = STORED, `false` = VIRTUAL (PG18+) |
 
+Unlike `<check>`, the expression is an attribute, not element text. An empty `expression` is a lint error (E033).
+
 ---
 
 ## 11. Constraints
@@ -565,10 +567,11 @@ The element text content is the CHECK expression (use CDATA for special characte
 <with>
   <param name="fillfactor" value="90"></param>
   <param name="autovacuum_enabled" value="false"></param>
+  <param name="toast.autovacuum_enabled" value="false"></param>
 </with>
 ```
 
-Used in `<table>`, `<partition>`, `<materialized-view>`, and `<index>`.
+Used in `<table>`, `<partition>`, `<materialized-view>`, and `<index>`. Parameters of the table's TOAST table have the `toast.` prefix.
 
 ---
 
@@ -699,7 +702,34 @@ Indexes are stored at the **schema level**, not inside tables.
 | `nulls` | enum | `first`, `last` |
 | `opclass` | string | Operator class (e.g. `jsonb_path_ops`, `text_pattern_ops`) |
 
+### Index keys: `<column>` and `<expression>`
+
+Index keys are `<column>` and `<expression>` children in key order; they may interleave,
+e.g. `("shopId", COALESCE("updatedAt", "createdAt") DESC, "statusId")`:
+
+```xml
+<index name="IX_shipments_last_activity" table="shipments">
+  <column name="shopId"></column>
+  <expression order="desc"><![CDATA[COALESCE("updatedAt", "createdAt")]]></expression>
+  <column name="statusId"></column>
+</index>
+```
+
 ### `<expression>` — expression index key (CDATA)
+
+Text content is one expression. Attributes are the same as for an index `<column>`:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `order` | enum | `asc`, `desc` |
+| `nulls` | enum | `first`, `last` |
+| `opclass` | string | Operator class (e.g. `gin_trgm_ops`) |
+
+```xml
+<index name="ix_drugs_mnn_trgm" table="drugs" using="gin">
+  <expression opclass="gin_trgm_ops"><![CDATA[params ->> 'mnn']]></expression>
+</index>
+```
 
 ### `<where>` — partial index predicate (CDATA)
 

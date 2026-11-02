@@ -3,7 +3,10 @@ package pdd
 import (
 	"encoding/xml"
 	"os"
+	"reflect"
 	"testing"
+
+	"github.com/vmkteam/pgdesigner/pkg/pgd"
 )
 
 func TestConvert(t *testing.T) {
@@ -113,4 +116,20 @@ func splitLines(s string) []string {
 		lines = append(lines, s[start:])
 	}
 	return lines
+}
+
+func TestConvertIndex_KeyOrder(t *testing.T) {
+	idx := convertIndex("t", &PDDIndex{
+		Name:     "ix_t",
+		RawCols:  PDDCText{Text: "name,lower(title)"},
+		RawSorts: PDDCText{Text: "ASC,DESC"},
+		RawNulls: PDDCText{Text: "NULLS FIRST,NULLS LAST"},
+	})
+	want := []pgd.IndexKey{
+		{Name: "name", Nulls: "first"},
+		{Expression: "lower(title)", Order: "desc", Nulls: "last"},
+	}
+	if idx == nil || !reflect.DeepEqual(idx.Keys, want) {
+		t.Fatalf("keys: got %+v, want %+v", idx, want)
+	}
 }

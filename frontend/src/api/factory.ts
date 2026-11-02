@@ -34,7 +34,7 @@ export type {
   IIgnoredRule,
   IAboutInfo,
   IIdentitySeqOpt,
-  IIndexColDetail,
+  IIndexKeyDetail,
   IPartitionByRPC,
   IPartitionRPC,
   IProjectSettings,

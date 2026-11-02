@@ -1,7 +1,9 @@
 package lint
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -93,6 +95,7 @@ var (
 	indexChecks = []indexCheck{
 		checkIndexTable,
 		checkIndexColumns,
+		checkIndexExpressions,
 		checkIndexOnBoolean,
 		checkIndexVersionFeatures,
 	}
@@ -107,7 +110,7 @@ type validator struct {
 	tables      map[string]*pgd.Table             // "schema.table" → *pgd.Table
 	columns     map[string]map[string]*pgd.Column // "schema.table" → colName → *pgd.Column
 	indexes     map[string][]*pgd.Index           // "schema.table" → []*pgd.Index
-	userTypes   map[string]bool                   // user-defined type names
+	typeSchemas map[string][]string               // lowercase user-defined type name → schemas defining it
 	naming      string                            // convention from settings
 	pgVersion   int                               // project PG target version (e.g. 18)
 	ignoreRules map[string]bool                   // global codes to skip
@@ -201,7 +204,7 @@ func (v *validator) buildIndex() {
 	v.tables = make(map[string]*pgd.Table)
 	v.columns = make(map[string]map[string]*pgd.Column)
 	v.indexes = make(map[string][]*pgd.Index)
-	v.userTypes = make(map[string]bool)
+	v.typeSchemas = make(map[string][]string)
 
 	for i := range v.p.Schemas {
 		s := &v.p.Schemas[i]
@@ -256,10 +259,29 @@ func (v *validator) buildIndex() {
 }
 
 func (v *validator) addUserType(schema, name string) {
-	v.userTypes[strings.ToLower(name)] = true
-	if schema != "" {
-		v.userTypes[strings.ToLower(schema+"."+name)] = true
+	key := strings.ToLower(name)
+	v.typeSchemas[key] = append(v.typeSchemas[key], cmp.Or(schema, "public"))
+}
+
+// isUserType reports whether t, a lowercase type name optionally qualified, is defined in the project.
+func (v *validator) isUserType(t string) bool {
+	schema, name, qualified := strings.Cut(t, ".")
+	if !qualified {
+		return len(v.typeSchemas[t]) > 0
 	}
+	return slices.ContainsFunc(v.typeSchemas[name], func(s string) bool { return strings.EqualFold(s, schema) })
+}
+
+// typeSchema returns the schema of a user-defined type written without one, when the type
+// is defined only in non-public schemas: PostgreSQL looks an unqualified type up in
+// search_path, so it is not found there. "" if typ is qualified or found in public.
+func (v *validator) typeSchema(typ string) string {
+	t := pgd.StripTypeParams(typ)
+	schemas := v.typeSchemas[t]
+	if strings.Contains(t, ".") || len(schemas) == 0 || slices.Contains(schemas, "public") {
+		return ""
+	}
+	return schemas[0]
 }
 
 func (v *validator) run() {
@@ -366,7 +388,7 @@ func (v *validator) resolveTable(ref, currentSchema string) (*pgd.Table, string)
 
 func (v *validator) isKnownType(typ string) bool {
 	t := pgd.StripTypeParams(typ)
-	return pgd.IsKnownBuiltinType(typ) || v.userTypes[t]
+	return pgd.IsKnownBuiltinType(typ) || v.isUserType(t)
 }
 
 func normalizeBaseType(typ string) string {
@@ -440,17 +462,12 @@ func checkDuplicateIndexNames(v *validator) {
 
 func checkDuplicateIndexCols(v *validator) {
 	for _, s := range v.p.Schemas {
-		type sig struct{ table, cols string }
-		seen := make(map[sig]string) // sig → first index name
+		seen := make(map[string]string) // signature → first index name
 		for _, idx := range s.Indexes {
-			names := make([]string, len(idx.Columns))
-			for i, c := range idx.Columns {
-				names[i] = c.Name
-			}
-			if len(names) == 0 {
+			if len(idx.Keys) == 0 {
 				continue
 			}
-			k := sig{idx.Table, strings.Join(names, ",")}
+			k := indexSig(&idx)
 			if first, ok := seen[k]; ok {
 				v.warnf(RuleDupIndexCols, tpath(s.Name, idx.Name),
 					"index has same columns as %q on table %q", first, idx.Table)
@@ -787,18 +804,18 @@ func (v *validator) checkFKIndex(schema string, t *pgd.Table, fk *pgd.ForeignKey
 	}
 
 	// PK covers?
-	if t.PK != nil && prefixMatch(t.PK.Columns, fkCols) {
+	if t.PK != nil && prefixMatch(pgd.ColRefNames(t.PK.Columns), fkCols) {
 		return
 	}
 	// Any UNIQUE covers?
 	for _, u := range t.Uniques {
-		if prefixMatch(u.Columns, fkCols) {
+		if prefixMatch(pgd.ColRefNames(u.Columns), fkCols) {
 			return
 		}
 	}
 	// Any index covers?
 	for _, idx := range v.indexes[tpath(schema, t.Name)] {
-		if prefixMatch(idx.Columns, fkCols) {
+		if prefixMatch(keyIDs(idx), fkCols) {
 			return
 		}
 	}
@@ -806,17 +823,40 @@ func (v *validator) checkFKIndex(schema string, t *pgd.Table, fk *pgd.ForeignKey
 	v.warnf(RuleMissingFKIndex, tpath(schema, t.Name), "FK %q columns have no matching index", fk.Name)
 }
 
-// prefixMatch reports whether refs starts with the given names.
-func prefixMatch(refs []pgd.ColRef, names []string) bool {
-	if len(refs) < len(names) {
-		return false
+// prefixMatch reports whether ids starts with the given names.
+func prefixMatch(ids, names []string) bool {
+	return len(ids) >= len(names) && slices.Equal(ids[:len(names)], names)
+}
+
+// indexSig describes what an index does apart from its name: duplicate indexes have
+// equal signatures. Indexes that differ in method, uniqueness, NULLS NOT DISTINCT, predicate,
+// INCLUDE or key opclass and ordering are not duplicates.
+func indexSig(idx *pgd.Index) string {
+	var include []string
+	if idx.Include != nil {
+		include = pgd.ColRefNames(idx.Include.Columns)
 	}
-	for i, n := range names {
-		if refs[i].Name != n {
-			return false
-		}
+	return strings.Join([]string{idx.Table, idx.Method(), strconv.FormatBool(idx.Unique == "true"),
+		strconv.FormatBool(idx.NullsDistinct == "false"), idx.Predicate(), strings.Join(keyDefs(idx), ","), strings.Join(include, ",")}, "|")
+}
+
+// keyDefs describes index keys in order as in DDL: column or expression, opclass and ordering.
+func keyDefs(idx *pgd.Index) []string {
+	defs := make([]string, len(idx.Keys))
+	for i, k := range idx.Keys {
+		k.Expression = strings.TrimSpace(k.Expression)
+		defs[i] = pgd.IndexKeyDef(k)
 	}
-	return true
+	return defs
+}
+
+// keyIDs identifies index keys in order, see pgd.IndexKey.ID.
+func keyIDs(idx *pgd.Index) []string {
+	ids := make([]string, len(idx.Keys))
+	for i, k := range idx.Keys {
+		ids[i] = k.ID()
+	}
+	return ids
 }
 
 func checkUniqueRefs(v *validator, schema string, t *pgd.Table) {
@@ -935,9 +975,15 @@ func checkColumns(v *validator, schema string, t *pgd.Table) {
 		if c.Type != "" && !v.isKnownType(c.Type) {
 			v.errorf(RuleUnknownType, cp, "unknown type %q", c.Type)
 		}
+		if s := v.typeSchema(c.Type); s != "" {
+			v.warnf(RuleUnqualifiedType, cp, "type %q is defined in schema %q: write %q, an unqualified type is looked up in search_path", c.Type, s, s+"."+c.Type)
+		}
 
 		if c.Identity != nil && c.Default != "" {
 			v.warnf(RuleIdentityDefault, cp, "column has both identity and default")
+		}
+		if c.Generated != nil && strings.TrimSpace(c.Generated.Expression) == "" {
+			v.errorf(RuleGeneratedNoExpr, cp, `generated column has no expression: set it in the attribute, <generated expression="...">`)
 		}
 		if c.Generated != nil && c.Default != "" {
 			v.warnf(RuleGeneratedDefault, cp, "column has both generated expression and default")
@@ -1171,10 +1217,10 @@ func checkIndexColumns(v *validator, schema string, idx *pgd.Index) {
 	if cols == nil {
 		return // table doesn't exist, E012 already reported
 	}
-	for _, ref := range idx.Columns {
-		if _, ok := cols[ref.Name]; !ok {
+	for _, name := range idx.KeyColumns() {
+		if _, ok := cols[name]; !ok {
 			v.errorf(RuleIdxColNotFound, tpath(schema, idx.Name),
-				"index references unknown column %q in table %q", ref.Name, idx.Table)
+				"index references unknown column %q in table %q", name, idx.Table)
 		}
 	}
 	if idx.Include != nil {
@@ -1187,17 +1233,51 @@ func checkIndexColumns(v *validator, schema string, idx *pgd.Index) {
 	}
 }
 
+// checkIndexExpressions warns about several keys put into one <expression>, e.g.
+// `"shopId", COALESCE(...) DESC`: generated DDL wraps it in parentheses into one row value.
+func checkIndexExpressions(v *validator, schema string, idx *pgd.Index) {
+	for _, k := range idx.Keys {
+		if k.IsExpression() && hasTopLevelComma(k.Expression) {
+			v.warnf(RuleIdxExprMultiKey, tpath(schema, idx.Name),
+				"expression %q holds several keys: put each into its own <column> or <expression>", k.Expression)
+		}
+	}
+}
+
+// hasTopLevelComma reports whether expr has a comma outside parentheses, brackets and quotes.
+func hasTopLevelComma(expr string) bool {
+	depth := 0
+	var quote rune
+	for _, r := range expr {
+		switch {
+		case quote != 0:
+			if r == quote {
+				quote = 0
+			}
+		case r == '\'' || r == '"':
+			quote = r
+		case r == '(' || r == '[':
+			depth++
+		case r == ')' || r == ']':
+			depth--
+		case r == ',' && depth == 0:
+			return true
+		}
+	}
+	return false
+}
+
 func checkIndexOnBoolean(v *validator, schema string, idx *pgd.Index) {
 	cols := v.columns[tpath(schema, idx.Table)]
 	if cols == nil {
 		return
 	}
-	for _, ref := range idx.Columns {
-		if c, ok := cols[ref.Name]; ok {
+	for _, name := range idx.KeyColumns() {
+		if c, ok := cols[name]; ok {
 			lt := strings.ToLower(c.Type)
 			if lt == "boolean" || lt == "bool" {
 				v.infof(RuleIndexOnBool, tpath(schema, idx.Name),
-					"index on boolean column %q — partial index is more efficient", ref.Name)
+					"index on boolean column %q — partial index is more efficient", name)
 			}
 		}
 	}
@@ -1213,13 +1293,19 @@ func checkOverlappingIndexes(v *validator) {
 			byTable[idx.Table] = append(byTable[idx.Table], idx)
 		}
 		for _, idxs := range byTable {
+			keys := make([][]string, len(idxs))
+			for i := range idxs {
+				keys[i] = keyDefs(&idxs[i])
+			}
 			for i, a := range idxs {
 				for j, b := range idxs {
-					if i == j || len(a.Columns) == 0 || len(b.Columns) == 0 {
+					ak, bk := keys[i], keys[j]
+					if i == j || len(ak) == 0 || a.Unique == "true" ||
+						a.Method() != "btree" || b.Method() != "btree" || a.Predicate() != b.Predicate() {
 						continue
 					}
-					// a is redundant if a.Columns is a strict prefix of b.Columns
-					if len(a.Columns) < len(b.Columns) && colRefsPrefix(a.Columns, b.Columns) {
+					// a non-unique btree is redundant if its keys are a strict prefix of b's keys
+					if len(ak) < len(bk) && prefixMatch(bk, ak) {
 						v.warnf(RuleOverlapIndex, tpath(s.Name, a.Name),
 							"index is a prefix of %q on table %q — redundant", b.Name, a.Table)
 					}
@@ -1227,15 +1313,6 @@ func checkOverlappingIndexes(v *validator) {
 			}
 		}
 	}
-}
-
-func colRefsPrefix(short, long []pgd.ColRef) bool {
-	for i, c := range short {
-		if c.Name != long[i].Name {
-			return false
-		}
-	}
-	return true
 }
 
 func checkTooManyIndexes(v *validator) {
@@ -1277,7 +1354,7 @@ func (v *validator) checkFKTargetUnique(schema string, t *pgd.Table, fk *pgd.For
 }
 
 func colNamesMatch(refs []pgd.ColRef, names []string) bool {
-	return len(refs) == len(names) && prefixMatch(refs, names)
+	return slices.Equal(pgd.ColRefNames(refs), names)
 }
 
 func checkDuplicateFKs(v *validator, schema string, t *pgd.Table) {
@@ -1353,7 +1430,7 @@ func checkVersionFeatures(v *validator, schema string, t *pgd.Table) {
 		v.versionWarn(path, 10, "table partitioning")
 	}
 	for _, u := range t.Uniques {
-		if u.NullsDistinct == "true" {
+		if u.NullsDistinct == "false" {
 			v.versionWarn(path, 15, "NULLS NOT DISTINCT")
 		}
 	}

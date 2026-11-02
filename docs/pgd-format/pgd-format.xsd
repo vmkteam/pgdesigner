@@ -290,7 +290,15 @@
     <xs:sequence>
       <xs:element name="naming"   type="NamingSettingsType"   minOccurs="0" maxOccurs="1"/>
       <xs:element name="defaults" type="DefaultSettingsType"  minOccurs="0" maxOccurs="1"/>
+      <!-- Lint rules to ignore project-wide: ignore-rules="W015,I009" -->
+      <xs:element name="lint" minOccurs="0" maxOccurs="1">
+        <xs:complexType>
+          <xs:attribute name="ignore-rules" type="xs:string" use="optional"/>
+        </xs:complexType>
+      </xs:element>
     </xs:sequence>
+    <!-- Save generated DDL next to the model on save: true (default) or false -->
+    <xs:attribute name="auto-save-ddl" type="xs:boolean" use="optional" default="true"/>
   </xs:complexType>
 
   <!-- Naming convention for generated identifiers -->
@@ -449,15 +457,15 @@
   <!-- CREATE DOMAIN name [AS] type [COLLATE c] [DEFAULT expr] [NOT NULL] [CHECK (...)] -->
   <xs:complexType name="DomainType">
     <xs:sequence>
+      <!-- NOT NULL marker (presence of this element means NOT NULL) -->
+      <xs:element name="not-null" minOccurs="0" maxOccurs="1">
+        <xs:complexType/>
+      </xs:element>
       <!-- Named CHECK constraints on the domain -->
       <xs:element name="constraint" minOccurs="0" maxOccurs="unbounded">
         <xs:complexType mixed="true">
           <xs:attribute name="name" type="xs:string" use="optional"/>
         </xs:complexType>
-      </xs:element>
-      <!-- NOT NULL marker (presence of this element means NOT NULL) -->
-      <xs:element name="not-null" minOccurs="0" maxOccurs="1">
-        <xs:complexType/>
       </xs:element>
     </xs:sequence>
     <xs:attribute name="name"      type="xs:string"         use="required"/>
@@ -706,9 +714,15 @@
           <xs:attribute name="column"     type="xs:string" use="optional"/>
           <!-- A raw SQL expression (mutually exclusive with column) -->
           <xs:attribute name="expression" type="xs:string" use="optional"/>
+          <!-- Operator class of the column or expression -->
+          <xs:attribute name="opclass"    type="xs:string" use="optional"/>
           <!-- The exclusion operator, e.g. "=", "&&", "&amp;&amp;" -->
           <xs:attribute name="with"       type="xs:string" use="required"/>
         </xs:complexType>
+      </xs:element>
+      <!-- WHERE predicate (raw SQL, typically CDATA) -->
+      <xs:element name="where" minOccurs="0" maxOccurs="1">
+        <xs:complexType mixed="true"/>
       </xs:element>
     </xs:sequence>
     <xs:attribute name="name"       type="xs:string"      use="optional"/>
@@ -775,20 +789,19 @@
 
   <xs:complexType name="IndexType">
     <xs:sequence>
-      <!-- Regular column references in the index key -->
-      <xs:element name="column"     type="ColumnRefType"  minOccurs="0" maxOccurs="unbounded"/>
-      <!-- Expression index key (raw SQL, typically CDATA) -->
-      <xs:element name="expression" minOccurs="0" maxOccurs="unbounded">
-        <xs:complexType mixed="true">
-          <xs:attribute name="opclass" type="xs:string" use="optional"/>
-          <xs:attribute name="order"   type="SortOrderType" use="optional"/>
-          <xs:attribute name="nulls"   type="NullsPlacementType" use="optional"/>
-        </xs:complexType>
-      </xs:element>
-      <!-- WHERE predicate for partial index (raw SQL, typically CDATA) -->
-      <xs:element name="where" minOccurs="0" maxOccurs="1">
-        <xs:complexType mixed="true"/>
-      </xs:element>
+      <!-- Index keys in key order: columns and expressions may interleave -->
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <!-- Column key -->
+        <xs:element name="column"     type="ColumnRefType"/>
+        <!-- Expression key (raw SQL, typically CDATA) -->
+        <xs:element name="expression">
+          <xs:complexType mixed="true">
+            <xs:attribute name="opclass" type="xs:string" use="optional"/>
+            <xs:attribute name="order"   type="SortOrderType" use="optional"/>
+            <xs:attribute name="nulls"   type="NullsPlacementType" use="optional"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
       <!-- INCLUDE columns (covering index, PG11+) -->
       <xs:element name="include" minOccurs="0" maxOccurs="1">
         <xs:complexType>
@@ -799,6 +812,10 @@
       </xs:element>
       <!-- Storage parameters for the index -->
       <xs:element name="with" type="WithType" minOccurs="0" maxOccurs="1"/>
+      <!-- WHERE predicate for partial index (raw SQL, typically CDATA) -->
+      <xs:element name="where" minOccurs="0" maxOccurs="1">
+        <xs:complexType mixed="true"/>
+      </xs:element>
     </xs:sequence>
     <xs:attribute name="name"           type="xs:string"       use="required"/>
     <!-- The table this index belongs to -->
@@ -927,6 +944,24 @@
     <xs:attribute name="rows"       type="xs:positiveInteger" use="optional"/>
     <!-- CREATE OR REPLACE -->
     <xs:attribute name="or-replace" type="xs:boolean"         use="optional" default="true"/>
+    <!-- function (default), procedure or aggregate -->
+    <xs:attribute name="kind" use="optional" default="function">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="function"/>
+          <xs:enumeration value="procedure"/>
+          <xs:enumeration value="aggregate"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="window"      type="xs:boolean" use="optional" default="false"/>
+    <!-- Aggregate (kind="aggregate") parameters -->
+    <xs:attribute name="sfunc"       type="xs:string"  use="optional"/>
+    <xs:attribute name="stype"       type="xs:string"  use="optional"/>
+    <xs:attribute name="finalfunc"   type="xs:string"  use="optional"/>
+    <xs:attribute name="initcond"    type="xs:string"  use="optional"/>
+    <xs:attribute name="sortop"      type="xs:string"  use="optional"/>
+    <xs:attribute name="combinefunc" type="xs:string"  use="optional"/>
   </xs:complexType>
 
   <!-- ============================================================

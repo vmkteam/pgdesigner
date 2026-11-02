@@ -4,10 +4,14 @@
 // indexes, types, views, functions, triggers, policies, roles, extensions,
 // grants, comments, and diagram layouts.
 //
-// XSD schema: docs/architecture/pgd-format.xsd
+// XSD schema: docs/pgd-format/pgd-format.xsd
 package pgd
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"fmt"
+	"strings"
+)
 
 // Project is the root element of a .pgd file.
 type Project struct {
@@ -384,16 +388,103 @@ type Index struct {
 	NullsDistinct string       `xml:"nulls-distinct,attr,omitempty"`
 	Concurrently  string       `xml:"concurrently,attr,omitempty"` // pgdesigner-specific: DDL generation hint
 	Tablespace    string       `xml:"tablespace,attr,omitempty"`
-	Columns       []ColRef     `xml:"column,omitempty"`
-	Expressions   []Expression `xml:"expression,omitempty"`
+	Keys          []IndexKey   `xml:",any"` // <column> and <expression> elements in key order
 	Include       *Include     `xml:"include,omitempty"`
 	With          *With        `xml:"with,omitempty"`
 	Where         *WhereClause `xml:"where,omitempty"`
 }
 
-// Expression holds a raw SQL expression (for expression indexes).
-type Expression struct {
-	Value string `xml:",cdata"`
+// Method returns the index access method, btree by default.
+func (idx *Index) Method() string {
+	if idx.Using == "" {
+		return "btree"
+	}
+	return strings.ToLower(idx.Using)
+}
+
+// Predicate returns the WHERE predicate of a partial index, "" for a full index.
+func (idx *Index) Predicate() string {
+	if idx.Where == nil {
+		return ""
+	}
+	return strings.TrimSpace(idx.Where.Value)
+}
+
+// KeyColumns returns the column names of the index keys in order, skipping expressions.
+func (idx *Index) KeyColumns() []string {
+	var names []string
+	for _, k := range idx.Keys {
+		if !k.IsExpression() {
+			names = append(names, k.Name)
+		}
+	}
+	return names
+}
+
+// IndexKey is an index key: a column, or an expression when Expression is set.
+// In XML it is <column name="..."> or <expression><![CDATA[...]]></expression>.
+type IndexKey struct {
+	Name       string // column name
+	Expression string // raw SQL expression
+	Order      string // asc | desc
+	Nulls      string // first | last
+	Opclass    string // operator class (e.g. jsonb_path_ops, gin_trgm_ops)
+}
+
+// IsExpression reports whether the key is an expression.
+func (k IndexKey) IsExpression() bool {
+	return k.Expression != ""
+}
+
+// ID identifies what the key indexes, regardless of ordering and opclass: the column name,
+// or the trimmed expression in parentheses as in DDL, so "lower(x)" and "(lower(x))" match.
+func (k IndexKey) ID() string {
+	if !k.IsExpression() {
+		return k.Name
+	}
+	e := strings.TrimSpace(k.Expression)
+	if strings.HasPrefix(e, "(") {
+		return e
+	}
+	return "(" + e + ")"
+}
+
+// indexKeyXML is the XML form of both <column> and <expression> index keys.
+type indexKeyXML struct {
+	Name    string `xml:"name,attr,omitempty"`
+	Order   string `xml:"order,attr,omitempty"`
+	Nulls   string `xml:"nulls,attr,omitempty"`
+	Opclass string `xml:"opclass,attr,omitempty"`
+	Value   string `xml:",cdata"`
+}
+
+// MarshalXML writes the key as <column> or <expression>.
+func (k IndexKey) MarshalXML(e *xml.Encoder, _ xml.StartElement) error {
+	start := xml.StartElement{Name: xml.Name{Local: "column"}}
+	v := indexKeyXML{Name: k.Name, Order: k.Order, Nulls: k.Nulls, Opclass: k.Opclass}
+	if k.IsExpression() {
+		start.Name.Local = "expression"
+		v.Name, v.Value = "", k.Expression
+	}
+	return e.EncodeElement(v, start)
+}
+
+// UnmarshalXML reads a <column> or <expression> key.
+func (k *IndexKey) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var v indexKeyXML
+	if err := d.DecodeElement(&v, &start); err != nil {
+		return err
+	}
+	*k = IndexKey{Order: v.Order, Nulls: v.Nulls, Opclass: v.Opclass}
+	switch start.Name.Local {
+	case "column":
+		k.Name = v.Name
+	case "expression":
+		k.Expression = v.Value
+	default:
+		return fmt.Errorf("unexpected <%s> in <index>", start.Name.Local)
+	}
+	return nil
 }
 
 // Include holds INCLUDE columns for covering indexes.

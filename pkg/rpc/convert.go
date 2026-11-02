@@ -158,7 +158,7 @@ func newTableDetail(p *pgd.Project, t *pgd.Table, schema *pgd.Schema) *TableDeta
 
 	// Uniques
 	for _, u := range t.Uniques {
-		ud := UniqueDetail{Name: u.Name, NullsDistinct: u.NullsDistinct == "true"}
+		ud := UniqueDetail{Name: u.Name, NullsNotDistinct: u.NullsDistinct == "false"}
 		for _, c := range u.Columns {
 			ud.Columns = append(ud.Columns, c.Name)
 		}
@@ -204,17 +204,12 @@ func newTableDetail(p *pgd.Project, t *pgd.Table, schema *pgd.Schema) *TableDeta
 			continue
 		}
 		id := IndexDetail{
-			Name:          idx.Name,
-			Unique:        idx.Unique == "true",
-			NullsDistinct: idx.NullsDistinct == "true",
-			Using:         idx.Using,
+			Name:             idx.Name,
+			Unique:           idx.Unique == "true",
+			NullsNotDistinct: idx.NullsDistinct == "false",
+			Using:            idx.Using,
 		}
-		for _, c := range idx.Columns {
-			id.Columns = append(id.Columns, IndexColDetail{Name: c.Name, Order: c.Order, Nulls: c.Nulls, Opclass: c.Opclass})
-		}
-		for _, e := range idx.Expressions {
-			id.Expressions = append(id.Expressions, e.Value)
-		}
+		id.Keys = MapV(idx.Keys, newIndexKeyDetail)
 		if idx.With != nil {
 			for _, p := range idx.With.Params {
 				id.With = append(id.With, WithParamDetail{Name: p.Name, Value: p.Value})
@@ -324,4 +319,12 @@ func splitCSV(s string) []string {
 		}
 	}
 	return result
+}
+
+func newIndexKeyDetail(k pgd.IndexKey) IndexKeyDetail {
+	d := IndexKeyDetail{Kind: IndexKeyColumn, Name: k.Name, Order: k.Order, Nulls: k.Nulls, Opclass: k.Opclass}
+	if k.IsExpression() {
+		d.Kind, d.Name, d.Expression = IndexKeyExpression, "", k.Expression
+	}
+	return d
 }

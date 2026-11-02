@@ -81,49 +81,131 @@ func skipIfNoPG(t *testing.T) {
 	}
 }
 
-func TestParseIndexColumns(t *testing.T) {
+func TestIsDSN(t *testing.T) {
+	tests := []struct {
+		in   string
+		want bool
+	}{
+		{"postgres://u@h/db", true},
+		{"postgresql://u@h/db", true},
+		{"postgres://", true},
+		{"abcdefgh.pgd", false}, // 12 chars used to panic
+		{"abcdefg.pgd", false},
+		{"abcdefghi.pgd", false},
+		{"postgres.pgd", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			assert.Equal(t, tt.want, IsDSN(tt.in))
+		})
+	}
+}
+
+func TestRedactDSN(t *testing.T) {
+	assert.Equal(t, "postgres://u:xxxxx@h:5432/db", RedactDSN("postgres://u:S3cret@h:5432/db"))
+	assert.Equal(t, "file.pgd", RedactDSN("file.pgd"))
+
+	_, err := parseDSN("postgres://u:S3cret@h:badport/db")
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), "S3cret")
+}
+
+func TestDatabaseName(t *testing.T) {
+	assert.Equal(t, "mydb", DatabaseName("postgres://u:p@localhost:5432/mydb?sslmode=disable"))
+	assert.Empty(t, DatabaseName("postgres://u@localhost:5432/"))
+	assert.Empty(t, DatabaseName("postgres://u@localhost"))
+}
+
+func TestParseIndexKeys(t *testing.T) {
 	tests := []struct {
 		name string
 		def  string
-		want []pgd.ColRef
+		want []pgd.IndexKey
 	}{
 		{
 			name: "plain column",
 			def:  `CREATE INDEX foo ON t ("name")`,
-			want: []pgd.ColRef{{Name: "name"}},
+			want: []pgd.IndexKey{{Name: "name"}},
 		},
 		{
 			name: "desc nulls last",
 			def:  `CREATE INDEX foo ON t ("name" DESC NULLS LAST)`,
-			want: []pgd.ColRef{{Name: "name", Order: "desc", Nulls: "last"}},
+			want: []pgd.IndexKey{{Name: "name", Order: "desc", Nulls: "last"}},
 		},
 		{
 			name: "gin with opclass",
 			def:  `CREATE INDEX foo ON t USING gin ("query" gin_trgm_ops)`,
-			want: []pgd.ColRef{{Name: "query", Opclass: "gin_trgm_ops"}},
+			want: []pgd.IndexKey{{Name: "query", Opclass: "gin_trgm_ops"}},
 		},
 		{
 			name: "btree opclass with desc",
 			def:  `CREATE INDEX foo ON t ("email" text_pattern_ops DESC)`,
-			want: []pgd.ColRef{{Name: "email", Order: "desc", Opclass: "text_pattern_ops"}},
+			want: []pgd.IndexKey{{Name: "email", Order: "desc", Opclass: "text_pattern_ops"}},
 		},
 		{
 			name: "multi-column with mixed opclass",
 			def:  `CREATE INDEX foo ON t ("a" int4_ops, "b" DESC)`,
-			want: []pgd.ColRef{{Name: "a", Opclass: "int4_ops"}, {Name: "b", Order: "desc"}},
+			want: []pgd.IndexKey{{Name: "a", Opclass: "int4_ops"}, {Name: "b", Order: "desc"}},
 		},
 		{
 			name: "expression index",
 			def:  `CREATE INDEX foo ON t ((lower("name")))`,
-			want: []pgd.ColRef{{Name: `(lower(name))`}},
+			want: []pgd.IndexKey{{Expression: `(lower(name))`}},
+		},
+		{
+			name: "columns and expressions interleaved",
+			def:  `CREATE INDEX foo ON t USING btree ("shopId", COALESCE("updatedAt", "createdAt") DESC, "statusId")`,
+			want: []pgd.IndexKey{{Name: "shopId"}, {Expression: `(COALESCE("updatedAt", "createdAt"))`, Order: "desc"}, {Name: "statusId"}},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := parseIndexColumns(tt.def)
+			got := parseIndexKeys(tt.def)
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestConvertColumn_Generated(t *testing.T) {
+	tests := []struct {
+		attGenerated string
+		want         *pgd.Generated
+	}{
+		{"s", &pgd.Generated{Expression: "(first_name || ' '::text) || last_name", Stored: "true"}},
+		{"v", &pgd.Generated{Expression: "(first_name || ' '::text) || last_name", Stored: "false"}},
+		{"", nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.attGenerated, func(t *testing.T) {
+			// pg_get_expr output, normalized like the SQL converter stores it
+			col := convertColumn(pgColumn{Name: "full_name", Type: "text", AttGenerated: tt.attGenerated,
+				DefaultValue: "((first_name || ' '::text) || last_name)"})
+			assert.Equal(t, tt.want, col.Generated)
+		})
+	}
+}
+
+func TestParseRelOptions(t *testing.T) {
+	assert.Equal(t, []pgd.WithParam{{Name: "fillfactor", Value: "80"}, {Name: "toast.autovacuum_enabled", Value: "false"}},
+		parseRelOptions([]string{"fillfactor=80", "toast.autovacuum_enabled=false"}))
+	assert.Empty(t, parseRelOptions(nil))
+}
+
+func TestConvertIndex_ExpressionOptions(t *testing.T) {
+	idx := convertIndex("t", pgIndex{
+		IndexName: "ix_t_mnn_trgm",
+		Method:    "gin",
+		Def:       `CREATE INDEX ix_t_mnn_trgm ON public.t USING gin (((params ->> 'mnn'::text)) gin_trgm_ops)`,
+	})
+	assert.Equal(t, []pgd.IndexKey{{Expression: "(params ->> 'mnn'::text)", Opclass: "gin_trgm_ops"}}, idx.Keys)
+
+	idx = convertIndex("t", pgIndex{
+		IndexName: "ix_t_lower_desc",
+		Method:    "btree",
+		Def:       `CREATE INDEX ix_t_lower_desc ON public.t USING btree (lower(title) DESC NULLS LAST)`,
+	})
+	assert.Equal(t, []pgd.IndexKey{{Expression: "(lower(title))", Order: "desc", Nulls: "last"}}, idx.Keys)
 }
 
 func TestParseIndexExtras(t *testing.T) {
@@ -360,4 +442,40 @@ func countFKs(p *pgd.Project) int {
 		}
 	}
 	return n
+}
+
+func TestIntrospect_StorageOptions(t *testing.T) {
+	skipIfNoPG(t)
+
+	const ddl = `CREATE TABLE t (id int, body text) WITH (autovacuum_enabled=false, toast.autovacuum_enabled=false, vacuum_index_cleanup=auto, autovacuum_vacuum_scale_factor=0.05);
+CREATE TABLE p (id int) PARTITION BY RANGE (id);
+CREATE TABLE p1 PARTITION OF p FOR VALUES FROM (0) TO (10) WITH (fillfactor=40);`
+	dsn := createDB(t, "pgd_test_storage")
+	defer dropDB(t, "pgd_test_storage")
+	run(t, "psql", dsn, "-c", ddl)
+
+	re, err := Connect(dsn, Options{})
+	require.NoError(t, err)
+	parsed, err := sqlconv.ParseSQL(ddl, "storage")
+	require.NoError(t, err)
+
+	// the database and the DDL give the same options: TOAST ones with the toast. prefix
+	table := func(p *pgd.Project, name string) *pgd.Table {
+		for i, tbl := range p.Schemas[0].Tables {
+			if tbl.Name == name {
+				return &p.Schemas[0].Tables[i]
+			}
+		}
+		t.Fatalf("no table %s", name)
+		return nil
+	}
+	assert.ElementsMatch(t, []pgd.WithParam{
+		{Name: "autovacuum_enabled", Value: "false"}, {Name: "toast.autovacuum_enabled", Value: "false"},
+		{Name: "vacuum_index_cleanup", Value: "auto"}, {Name: "autovacuum_vacuum_scale_factor", Value: "0.05"},
+	}, table(re, "t").With.Params)
+	assert.ElementsMatch(t, table(re, "t").With.Params, table(parsed, "t").With.Params)
+
+	require.Len(t, table(re, "p").Partitions, 1)
+	assert.Equal(t, &pgd.With{Params: []pgd.WithParam{{Name: "fillfactor", Value: "40"}}}, table(re, "p").Partitions[0].With)
+	assert.Equal(t, table(re, "p").Partitions[0].With, table(parsed, "p").Partitions[0].With)
 }

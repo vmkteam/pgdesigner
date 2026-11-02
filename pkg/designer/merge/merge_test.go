@@ -67,7 +67,7 @@ func fk(name, toTable string, pairs ...string) pgd.ForeignKey {
 func idx(name, table string, cols ...string) pgd.Index {
 	i := pgd.Index{Name: name, Table: table}
 	for _, c := range cols {
-		i.Columns = append(i.Columns, pgd.ColRef{Name: c})
+		i.Keys = append(i.Keys, pgd.IndexKey{Name: c})
 	}
 	return i
 }

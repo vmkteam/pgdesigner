@@ -1532,7 +1532,7 @@ func (ProjectService) SMD() smd.ServiceInfo {
 									},
 								},
 								{
-									Name: "nullsDistinct",
+									Name: "nullsNotDistinct",
 									Type: smd.Boolean,
 								},
 							},
@@ -1583,6 +1583,10 @@ func (ProjectService) SMD() smd.ServiceInfo {
 								},
 								{
 									Name: "expression",
+									Type: smd.String,
+								},
+								{
+									Name: "opclass",
 									Type: smd.String,
 								},
 								{
@@ -1652,7 +1656,7 @@ func (ProjectService) SMD() smd.ServiceInfo {
 									Type: smd.Boolean,
 								},
 								{
-									Name: "nullsDistinct",
+									Name: "nullsNotDistinct",
 									Type: smd.Boolean,
 								},
 								{
@@ -1660,17 +1664,10 @@ func (ProjectService) SMD() smd.ServiceInfo {
 									Type: smd.String,
 								},
 								{
-									Name: "columns",
+									Name: "keys",
 									Type: smd.Array,
 									Items: map[string]string{
-										"$ref": "#/definitions/IndexColDetail",
-									},
-								},
-								{
-									Name: "expressions",
-									Type: smd.Array,
-									Items: map[string]string{
-										"type": smd.String,
+										"$ref": "#/definitions/IndexKeyDetail",
 									},
 								},
 								{
@@ -1693,12 +1690,23 @@ func (ProjectService) SMD() smd.ServiceInfo {
 								},
 							},
 						},
-						"IndexColDetail": {
+						"IndexKeyDetail": {
 							Type: "object",
 							Properties: smd.PropertyList{
 								{
-									Name: "name",
-									Type: smd.String,
+									Name:        "kind",
+									Description: `column|expression`,
+									Type:        smd.String,
+								},
+								{
+									Name:        "name",
+									Description: `column name`,
+									Type:        smd.String,
+								},
+								{
+									Name:        "expression",
+									Description: `SQL expression`,
+									Type:        smd.String,
 								},
 								{
 									Name:        "order",
@@ -2159,7 +2167,7 @@ Used for saving DDL, diff patches, and other generated text.`,
 										},
 									},
 									{
-										Name: "nullsDistinct",
+										Name: "nullsNotDistinct",
 										Type: smd.Boolean,
 									},
 								},
@@ -2235,6 +2243,10 @@ Used for saving DDL, diff patches, and other generated text.`,
 										Type: smd.String,
 									},
 									{
+										Name: "opclass",
+										Type: smd.String,
+									},
+									{
 										Name: "with",
 										Type: smd.String,
 									},
@@ -2267,7 +2279,7 @@ Used for saving DDL, diff patches, and other generated text.`,
 										Type: smd.Boolean,
 									},
 									{
-										Name: "nullsDistinct",
+										Name: "nullsNotDistinct",
 										Type: smd.Boolean,
 									},
 									{
@@ -2275,17 +2287,10 @@ Used for saving DDL, diff patches, and other generated text.`,
 										Type: smd.String,
 									},
 									{
-										Name: "columns",
+										Name: "keys",
 										Type: smd.Array,
 										Items: map[string]string{
-											"$ref": "#/definitions/IndexColInput",
-										},
-									},
-									{
-										Name: "expressions",
-										Type: smd.Array,
-										Items: map[string]string{
-											"type": smd.String,
+											"$ref": "#/definitions/IndexKeyInput",
 										},
 									},
 									{
@@ -2308,11 +2313,20 @@ Used for saving DDL, diff patches, and other generated text.`,
 									},
 								},
 							},
-							"IndexColInput": {
+							"IndexKeyInput": {
 								Type: "object",
 								Properties: smd.PropertyList{
 									{
+										Name:        "kind",
+										Description: `column|expression`,
+										Type:        smd.String,
+									},
+									{
 										Name: "name",
+										Type: smd.String,
+									},
+									{
+										Name: "expression",
 										Type: smd.String,
 									},
 									{
@@ -2616,7 +2630,7 @@ Used for saving DDL, diff patches, and other generated text.`,
 									},
 								},
 								{
-									Name: "nullsDistinct",
+									Name: "nullsNotDistinct",
 									Type: smd.Boolean,
 								},
 							},
@@ -2667,6 +2681,10 @@ Used for saving DDL, diff patches, and other generated text.`,
 								},
 								{
 									Name: "expression",
+									Type: smd.String,
+								},
+								{
+									Name: "opclass",
 									Type: smd.String,
 								},
 								{
@@ -2736,7 +2754,7 @@ Used for saving DDL, diff patches, and other generated text.`,
 									Type: smd.Boolean,
 								},
 								{
-									Name: "nullsDistinct",
+									Name: "nullsNotDistinct",
 									Type: smd.Boolean,
 								},
 								{
@@ -2744,17 +2762,10 @@ Used for saving DDL, diff patches, and other generated text.`,
 									Type: smd.String,
 								},
 								{
-									Name: "columns",
+									Name: "keys",
 									Type: smd.Array,
 									Items: map[string]string{
-										"$ref": "#/definitions/IndexColDetail",
-									},
-								},
-								{
-									Name: "expressions",
-									Type: smd.Array,
-									Items: map[string]string{
-										"type": smd.String,
+										"$ref": "#/definitions/IndexKeyDetail",
 									},
 								},
 								{
@@ -2777,12 +2788,23 @@ Used for saving DDL, diff patches, and other generated text.`,
 								},
 							},
 						},
-						"IndexColDetail": {
+						"IndexKeyDetail": {
 							Type: "object",
 							Properties: smd.PropertyList{
 								{
-									Name: "name",
-									Type: smd.String,
+									Name:        "kind",
+									Description: `column|expression`,
+									Type:        smd.String,
+								},
+								{
+									Name:        "name",
+									Description: `column name`,
+									Type:        smd.String,
+								},
+								{
+									Name:        "expression",
+									Description: `SQL expression`,
+									Type:        smd.String,
 								},
 								{
 									Name:        "order",
@@ -3095,7 +3117,7 @@ It does NOT modify the project — only computes the diff.`,
 										},
 									},
 									{
-										Name: "nullsDistinct",
+										Name: "nullsNotDistinct",
 										Type: smd.Boolean,
 									},
 								},
@@ -3171,6 +3193,10 @@ It does NOT modify the project — only computes the diff.`,
 										Type: smd.String,
 									},
 									{
+										Name: "opclass",
+										Type: smd.String,
+									},
+									{
 										Name: "with",
 										Type: smd.String,
 									},
@@ -3203,7 +3229,7 @@ It does NOT modify the project — only computes the diff.`,
 										Type: smd.Boolean,
 									},
 									{
-										Name: "nullsDistinct",
+										Name: "nullsNotDistinct",
 										Type: smd.Boolean,
 									},
 									{
@@ -3211,17 +3237,10 @@ It does NOT modify the project — only computes the diff.`,
 										Type: smd.String,
 									},
 									{
-										Name: "columns",
+										Name: "keys",
 										Type: smd.Array,
 										Items: map[string]string{
-											"$ref": "#/definitions/IndexColInput",
-										},
-									},
-									{
-										Name: "expressions",
-										Type: smd.Array,
-										Items: map[string]string{
-											"type": smd.String,
+											"$ref": "#/definitions/IndexKeyInput",
 										},
 									},
 									{
@@ -3244,11 +3263,20 @@ It does NOT modify the project — only computes the diff.`,
 									},
 								},
 							},
-							"IndexColInput": {
+							"IndexKeyInput": {
 								Type: "object",
 								Properties: smd.PropertyList{
 									{
+										Name:        "kind",
+										Description: `column|expression`,
+										Type:        smd.String,
+									},
+									{
 										Name: "name",
+										Type: smd.String,
+									},
+									{
+										Name: "expression",
 										Type: smd.String,
 									},
 									{

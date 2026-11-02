@@ -26,7 +26,14 @@ func ParseSQL(sql string, projectName string) (*pgd.Project, error) {
 
 	result, err := pgquery.Parse(sql)
 	if err != nil {
-		return nil, fmt.Errorf("parse sql: %w", err)
+		// PG18 virtual generated columns are a syntax error for the PG17 parser
+		marked := markVirtualGenerated(sql)
+		if marked == sql {
+			return nil, fmt.Errorf("parse sql: %w", err)
+		}
+		if result, err = pgquery.Parse(marked); err != nil {
+			return nil, fmt.Errorf("parse sql: %w", err)
+		}
 	}
 
 	c := &sqlConverter{
@@ -107,9 +114,8 @@ func normalizeOrder(p *pgd.Project) {
 	}
 }
 
-// resolveFKImplicitPK fixes FK columns where REFERENCES table had no column list.
-// In that case the parser stored fkCol.References = fkCol.Name (fallback).
-// We resolve to the actual PK columns of the target table.
+// resolveFKImplicitPK sets the referenced columns of FKs declared without a column list
+// (REFERENCES t): PostgreSQL uses the primary key of t.
 func resolveFKImplicitPK(p *pgd.Project) {
 	pkMap := buildPKMap(p)
 	for si := range p.Schemas {
@@ -170,21 +176,11 @@ func indexKey(idx *pgd.Index) string {
 	b.WriteByte(':')
 	b.WriteString(idx.Unique)
 	b.WriteByte(':')
-	for i, c := range idx.Columns {
+	for i, k := range idx.Keys {
 		if i > 0 {
 			b.WriteByte(',')
 		}
-		b.WriteString(c.Name)
-		b.WriteByte('|')
-		b.WriteString(c.Order)
-		b.WriteByte('|')
-		b.WriteString(c.Opclass)
-	}
-	for i, e := range idx.Expressions {
-		if i > 0 || len(idx.Columns) > 0 {
-			b.WriteByte(',')
-		}
-		b.WriteString(e.Value)
+		b.WriteString(pgd.IndexKeyDef(k))
 	}
 	b.WriteByte(':')
 	if idx.Include != nil {
@@ -238,27 +234,18 @@ func buildPKMap(p *pgd.Project) map[string][]string {
 	return pkMap
 }
 
-// fixFKImplicitRefs fixes a single FK whose References were set to FK col names (fallback).
+// fixFKImplicitRefs sets empty References of an FK to the primary key of the referenced
+// table, or to the FK column names when the table or its PK is not in the project.
 func fixFKImplicitRefs(fk *pgd.ForeignKey, pkMap map[string][]string) {
-	if len(fk.Columns) == 0 {
-		return
-	}
-	pkCols, ok := pkMap[fk.ToTable]
-	if !ok || len(pkCols) != len(fk.Columns) {
-		return
-	}
-	needsFix := false
-	for i, c := range fk.Columns {
-		if c.References == c.Name && c.Name != pkCols[i] {
-			needsFix = true
-			break
-		}
-	}
-	if needsFix {
-		for i := range fk.Columns {
-			if i < len(pkCols) {
-				fk.Columns[i].References = pkCols[i]
-			}
+	pkCols := pkMap[fk.ToTable]
+	for i := range fk.Columns {
+		c := &fk.Columns[i]
+		switch {
+		case c.References != "":
+		case len(pkCols) == len(fk.Columns):
+			c.References = pkCols[i]
+		default:
+			c.References = c.Name
 		}
 	}
 }
@@ -356,6 +343,12 @@ func (c *sqlConverter) convertCreateTable(stmt *pg.CreateStmt) {
 	if stmt.Tablespacename != "" {
 		tbl.Tablespace = stmt.Tablespacename
 	}
+	if stmt.Relation.Relpersistence == "u" {
+		tbl.Unlogged = "true"
+	}
+	if stmt.AccessMethod != "" {
+		tbl.Using = stmt.AccessMethod
+	}
 
 	// inherits (#12) / inline PARTITION OF (#13)
 	applyInheritance(&tbl, stmt)
@@ -382,20 +375,8 @@ func (c *sqlConverter) convertCreateTable(stmt *pg.CreateStmt) {
 	}
 
 	// storage params — WITH (fillfactor=90, ...) (#10)
-	if len(stmt.Options) > 0 {
-		var params []pgd.WithParam
-		for _, opt := range stmt.Options {
-			if de, ok := opt.Node.(*pg.Node_DefElem); ok { //nolint:nestif
-				val := defElemString(de.DefElem)
-				if val == "" {
-					val = strconv.FormatInt(defElemInt64(de.DefElem), 10)
-				}
-				params = append(params, pgd.WithParam{Name: de.DefElem.Defname, Value: val})
-			}
-		}
-		if len(params) > 0 {
-			tbl.With = &pgd.With{Params: params}
-		}
+	if params := parseWithParams(stmt.Options); len(params) > 0 {
+		tbl.With = &pgd.With{Params: params}
 	}
 
 	for _, elt := range stmt.TableElts {
@@ -438,11 +419,7 @@ func extractColumnConstraints(tbl *pgd.Table, col *pg.ColumnDef) {
 			}
 			tbl.Uniques = append(tbl.Uniques, u)
 		case pg.ConstrType_CONSTR_FOREIGN:
-			fk := convertFKConstraint(con.Constraint)
-			if len(fk.Columns) == 0 {
-				fk.Columns = []pgd.FKCol{{Name: col.Colname, References: col.Colname}}
-			}
-			tbl.FKs = append(tbl.FKs, fk)
+			tbl.FKs = append(tbl.FKs, convertFKConstraint(con.Constraint, col.Colname))
 		case pg.ConstrType_CONSTR_CHECK:
 			ch := pgd.Check{Name: con.Constraint.Conname}
 			if con.Constraint.RawExpr != nil {
@@ -493,6 +470,8 @@ func convertColumnDef(col *pg.ColumnDef) pgd.Column {
 				gen = "always"
 			}
 			c.Identity = &pgd.Identity{Generated: gen}
+		case pg.ConstrType_CONSTR_GENERATED:
+			c.Generated = convertGenerated(con.Constraint.RawExpr)
 		}
 	}
 
@@ -589,8 +568,7 @@ func convertTableConstraint(tbl *pgd.Table, con *pg.Constraint) {
 		tbl.Checks = append(tbl.Checks, pgd.Check{Name: con.Conname, Expression: expr})
 
 	case pg.ConstrType_CONSTR_FOREIGN:
-		fk := convertFKConstraint(con)
-		tbl.FKs = append(tbl.FKs, fk)
+		tbl.FKs = append(tbl.FKs, convertFKConstraint(con, ""))
 
 	case pg.ConstrType_CONSTR_EXCLUSION:
 		tbl.Excludes = append(tbl.Excludes, convertExcludeConstraint(con))
@@ -633,24 +611,42 @@ func convertExcludeConstraint(con *pg.Constraint) pgd.Exclude {
 	return ex
 }
 
+// parseWithParams converts storage parameters of a table or an index: WITH (fillfactor=90,
+// toast.autovacuum_enabled=false, vacuum_index_cleanup=auto).
 func parseWithParams(options []*pg.Node) []pgd.WithParam {
 	var params []pgd.WithParam
 	for _, opt := range options {
 		de := opt.GetDefElem()
-		if de == nil || de.Arg == nil {
+		if de == nil {
 			continue
 		}
-		var val string
-		if s := de.Arg.GetString_(); s != nil {
-			val = s.Sval
-		} else if iv := de.Arg.GetInteger(); iv != nil {
-			val = strconv.FormatInt(int64(iv.Ival), 10)
+		name := de.Defname
+		if de.Defnamespace != "" {
+			name = de.Defnamespace + "." + name
 		}
-		if val != "" {
-			params = append(params, pgd.WithParam{Name: de.Defname, Value: val})
-		}
+		params = append(params, pgd.WithParam{Name: name, Value: withParamValue(de.Arg)})
 	}
 	return params
+}
+
+// withParamValue returns the value of a storage parameter: a number, a string or a keyword.
+// A parameter without a value is a boolean set to true.
+func withParamValue(arg *pg.Node) string {
+	switch v := arg.GetNode().(type) {
+	case nil:
+		return "true"
+	case *pg.Node_String_:
+		return v.String_.Sval
+	case *pg.Node_Integer:
+		return strconv.Itoa(int(v.Integer.Ival))
+	case *pg.Node_Float:
+		return v.Float.Fval
+	case *pg.Node_Boolean:
+		return strconv.FormatBool(v.Boolean.Boolval)
+	case *pg.Node_TypeName: // an unreserved keyword such as auto or off
+		return parseQualName(v.TypeName.Names).name
+	}
+	return nodeToSQL(arg)
 }
 
 // CREATE INDEX
@@ -681,24 +677,24 @@ func (c *sqlConverter) convertCreateIndex(stmt *pg.IndexStmt) { //nolint:gocogni
 				}
 			}
 
-			if colName != "" {
-				ref := pgd.ColRef{Name: colName}
-				if elem.Ordering == pg.SortByDir_SORTBY_DESC {
-					ref.Order = "desc"
-				}
-				switch elem.NullsOrdering {
-				case pg.SortByNulls_SORTBY_NULLS_FIRST:
-					ref.Nulls = "first"
-				case pg.SortByNulls_SORTBY_NULLS_LAST:
-					ref.Nulls = "last"
-				}
-				if op := funcName(elem.Opclass); op != "" {
-					ref.Opclass = op
-				}
-				idx.Columns = append(idx.Columns, ref)
-			} else if elem.Expr != nil {
-				idx.Expressions = append(idx.Expressions, pgd.Expression{Value: nodeToSQL(elem.Expr)})
+			key := pgd.IndexKey{Name: colName, Opclass: funcName(elem.Opclass)}
+			switch {
+			case colName != "":
+			case elem.Expr != nil:
+				key.Expression = nodeToSQL(elem.Expr)
+			default:
+				continue
 			}
+			if elem.Ordering == pg.SortByDir_SORTBY_DESC {
+				key.Order = "desc"
+			}
+			switch elem.NullsOrdering {
+			case pg.SortByNulls_SORTBY_NULLS_FIRST:
+				key.Nulls = "first"
+			case pg.SortByNulls_SORTBY_NULLS_LAST:
+				key.Nulls = "last"
+			}
+			idx.Keys = append(idx.Keys, key)
 		}
 	}
 
@@ -801,8 +797,7 @@ func (c *sqlConverter) convertAlterTable(stmt *pg.AlterTableStmt) { //nolint:goc
 		}
 		switch con.Constraint.Contype {
 		case pg.ConstrType_CONSTR_FOREIGN:
-			fk := convertFKConstraint(con.Constraint)
-			schema.Tables[tableIdx].FKs = append(schema.Tables[tableIdx].FKs, fk)
+			schema.Tables[tableIdx].FKs = append(schema.Tables[tableIdx].FKs, convertFKConstraint(con.Constraint, ""))
 		case pg.ConstrType_CONSTR_PRIMARY:
 			pkName := con.Constraint.Conname
 			if pkName == "" {
@@ -1254,7 +1249,10 @@ func (c *sqlConverter) convertDefineStmt(stmt *pg.DefineStmt) {
 	c.functions = append(c.functions, f)
 }
 
-func convertFKConstraint(con *pg.Constraint) pgd.ForeignKey {
+// convertFKConstraint converts a FOREIGN KEY or, with column set, a column REFERENCES
+// constraint. Without a referenced column list References are left empty for
+// resolveFKImplicitPK.
+func convertFKConstraint(con *pg.Constraint, column string) pgd.ForeignKey {
 	fk := pgd.ForeignKey{
 		Name:     con.Conname,
 		OnDelete: pgd.FKActionFromPGCode(con.FkDelAction),
@@ -1270,16 +1268,16 @@ func convertFKConstraint(con *pg.Constraint) pgd.ForeignKey {
 	}
 
 	fkCols := extractStrings(con.FkAttrs)
-	pkCols := extractStrings(con.PkAttrs)
-
-	// When REFERENCES table has no column list, PG implies the target PK.
-	// Use FK column names as referenced column names (common convention: same name).
-	if len(pkCols) == 0 {
-		pkCols = fkCols
+	if len(fkCols) == 0 && column != "" {
+		fkCols = []string{column}
 	}
-
-	for i := 0; i < len(fkCols) && i < len(pkCols); i++ {
-		fk.Columns = append(fk.Columns, pgd.FKCol{Name: fkCols[i], References: pkCols[i]})
+	pkCols := extractStrings(con.PkAttrs)
+	for i, name := range fkCols {
+		var ref string
+		if i < len(pkCols) {
+			ref = pkCols[i]
+		}
+		fk.Columns = append(fk.Columns, pgd.FKCol{Name: name, References: ref})
 	}
 
 	if con.Deferrable {
@@ -1349,6 +1347,19 @@ func nodeToSQL(n *pg.Node) string {
 	}
 	result = strings.TrimPrefix(result, "SELECT ")
 	return cleanOperators(result)
+}
+
+// NormalizeExpr parses an SQL expression and deparses it the way the converter stores
+// expressions, so that an expression from the database (pg_get_expr adds parentheses
+// around every operation and cast) compares equal to the same one parsed from DDL.
+// On a parse error expr is returned as is.
+func NormalizeExpr(expr string) string {
+	if n := parseExpr(expr); n != nil {
+		if s := nodeToSQL(n); s != "" {
+			return s
+		}
+	}
+	return expr
 }
 
 // stripDefaultTypeCast removes redundant type casts from default values.

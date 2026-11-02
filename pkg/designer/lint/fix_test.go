@@ -120,8 +120,8 @@ func TestFix_MissingFKIndex(t *testing.T) {
 	assert.Equal(t, "ix_orders_user_id", idx.Name)
 	assert.Equal(t, "orders", idx.Table)
 	assert.Equal(t, "btree", idx.Using)
-	require.Len(t, idx.Columns, 1)
-	assert.Equal(t, "user_id", idx.Columns[0].Name)
+	require.Len(t, idx.Keys, 1)
+	assert.Equal(t, "user_id", idx.Keys[0].Name)
 }
 
 func TestFix_MissingFKIndex_MultiColumn(t *testing.T) {
@@ -149,7 +149,7 @@ func TestFix_MissingFKIndex_MultiColumn(t *testing.T) {
 	require.Len(t, p.Schemas[0].Indexes, 1)
 	idx := p.Schemas[0].Indexes[0]
 	assert.Equal(t, "ix_order_items_order_id_product_id", idx.Name)
-	require.Len(t, idx.Columns, 2)
+	require.Len(t, idx.Keys, 2)
 }
 
 func TestFix_NoPK_SnakeCase(t *testing.T) {
@@ -277,8 +277,8 @@ func TestFix_DropDuplicateIndex(t *testing.T) {
 		Columns: []pgd.Column{{Name: "user_id", Type: "integer"}},
 	})
 	p.Schemas[0].Indexes = []pgd.Index{
-		{Name: "ix_orders_user_id", Table: "orders", Columns: []pgd.ColRef{{Name: "user_id"}}},
-		{Name: "ix_orders_user_id_dup", Table: "orders", Columns: []pgd.ColRef{{Name: "user_id"}}},
+		{Name: "ix_orders_user_id", Table: "orders", Keys: []pgd.IndexKey{{Name: "user_id"}}},
+		{Name: "ix_orders_user_id_dup", Table: "orders", Keys: []pgd.IndexKey{{Name: "user_id"}}},
 	}
 	issue := Issue{
 		Code:    RuleDupIndexCols,
@@ -297,8 +297,8 @@ func TestFix_DropOverlappingIndex(t *testing.T) {
 		Columns: []pgd.Column{{Name: "user_id", Type: "integer"}, {Name: "status", Type: "integer"}},
 	})
 	p.Schemas[0].Indexes = []pgd.Index{
-		{Name: "ix_orders_user_id", Table: "orders", Columns: []pgd.ColRef{{Name: "user_id"}}},
-		{Name: "ix_orders_user_id_status", Table: "orders", Columns: []pgd.ColRef{{Name: "user_id"}, {Name: "status"}}},
+		{Name: "ix_orders_user_id", Table: "orders", Keys: []pgd.IndexKey{{Name: "user_id"}}},
+		{Name: "ix_orders_user_id_status", Table: "orders", Keys: []pgd.IndexKey{{Name: "user_id"}, {Name: "status"}}},
 	}
 	issue := Issue{
 		Code:    RuleOverlapIndex,

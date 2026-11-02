@@ -35,6 +35,7 @@ const (
 	RuleViewNoQuery        = "E030"
 	RuleMultiIdentity      = "E031"
 	RulePartKeyNotInPK     = "E032" // PK/UNIQUE must include all partition key columns
+	RuleGeneratedNoExpr    = "E033"
 
 	// W — Warnings (DDL valid, likely problem)
 	RuleFKTypeMismatch   = "W001"
@@ -58,6 +59,8 @@ const (
 	RuleReservedWord     = "W020"
 	RuleVersionFeature   = "W021" // feature requires newer PG version
 	RulePartBoundOverlap = "W022" // partition bound overlaps with sibling
+	RuleIdxExprMultiKey  = "W023" // index <expression> holds several comma-separated keys
+	RuleUnqualifiedType  = "W024" // column type is defined only in a non-public schema
 
 	// I — Info (suggestions)
 	RulePreferText     = "I001"
@@ -144,6 +147,7 @@ var Rules = map[string]RuleDef{
 	RuleViewNoQuery:        rule(RuleViewNoQuery, Error, ScopeProject, "View No Query", "view has no query"),
 	RuleMultiIdentity:      rule(RuleMultiIdentity, Error, ScopeTable, "Multiple Identity Columns", "table has multiple identity columns (PG allows only one)"),
 	RulePartKeyNotInPK:     rule(RulePartKeyNotInPK, Error, ScopePK, "Partition Key Not In PK", "PK/UNIQUE must include all partition key columns"),
+	RuleGeneratedNoExpr:    rule(RuleGeneratedNoExpr, Error, ScopeColumn, "Generated Column No Expression", "generated column has an empty expression attribute"),
 
 	// Warnings
 	RuleFKTypeMismatch:   rule(RuleFKTypeMismatch, Warning, ScopeFK, "FK Type Mismatch", "FK column type mismatch"),
@@ -167,6 +171,8 @@ var Rules = map[string]RuleDef{
 	RuleReservedWord:     rule(RuleReservedWord, Warning, ScopeTable, "Reserved Word", "reserved word as identifier"),
 	RuleVersionFeature:   rule(RuleVersionFeature, Warning, ScopeTable, "PG Version Feature", "feature requires newer PostgreSQL version"),
 	RulePartBoundOverlap: rule(RulePartBoundOverlap, Warning, ScopeTable, "Partition Bound Overlap", "partition bound overlaps with sibling"),
+	RuleIdxExprMultiKey:  rule(RuleIdxExprMultiKey, Warning, ScopeIndex, "Index Expression With Several Keys", "index expression holds several comma-separated keys"),
+	RuleUnqualifiedType:  rule(RuleUnqualifiedType, Warning, ScopeColumn, "Unqualified Type", "column type is defined only in a non-public schema and is written without it"),
 
 	// Info
 	RulePreferText:        fixableRule(RulePreferText, Info, ScopeColumn, "Prefer Text", "prefer text over char(n)"),

@@ -49,7 +49,16 @@ func WithFull(full bool) Option {
 // LoadFile loads a pgd.Project from a file path or PostgreSQL DSN.
 // It auto-detects the format by extension (.pgd, .dbs, .dm2, .pdd, .sql)
 // or connects to a live database if the path is a PostgreSQL DSN.
+// Errors name the path, with the password of a DSN hidden.
 func LoadFile(path string, opts ...Option) (*pgd.Project, error) {
+	project, err := loadFile(path, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("loading %s: %w", pgre.RedactDSN(path), err)
+	}
+	return project, nil
+}
+
+func loadFile(path string, opts ...Option) (*pgd.Project, error) {
 	var o options
 	for _, opt := range opts {
 		opt(&o)

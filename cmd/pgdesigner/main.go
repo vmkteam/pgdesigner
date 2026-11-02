@@ -7,13 +7,13 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/vmkteam/pgdesigner/frontend"
 	"github.com/vmkteam/pgdesigner/pkg/app"
 	"github.com/vmkteam/pgdesigner/pkg/designer/store"
+	"github.com/vmkteam/pgdesigner/pkg/format"
 	"github.com/vmkteam/pgdesigner/pkg/format/pgre"
 	"github.com/vmkteam/pgdesigner/pkg/pgd"
 )
@@ -61,7 +61,7 @@ func main() {
 Usage:
   pgdesigner [flags] <schema.pgd>    open ERD viewer
   pgdesigner version                 print version and exit
-  pgdesigner convert <file>          convert .dbs/.dm2/.pdd/.sql to .pgd
+  pgdesigner convert <file|dsn>      convert .dbs/.dm2/.pdd/.sql or a database to .pgd
   pgdesigner lint <schema.pgd>       validate schema (use -fix to auto-fix)
   pgdesigner diff <old> <new>        generate ALTER migration SQL (-o to write to file)
   pgdesigner generate <schema.pgd>   generate DDL SQL
@@ -72,7 +72,7 @@ Flags:
 `, version)
 		flag.PrintDefaults()
 	}
-	flag.Parse()
+	args := parseArgs(flag.CommandLine, os.Args[1:], 0, 1)
 
 	if *tsClient {
 		p := &pgd.Project{Version: 1, PgVersion: "18"}
@@ -88,21 +88,16 @@ Flags:
 	var st *store.ProjectStore
 	var inputPath string
 
-	if flag.NArg() < 1 {
+	if len(args) == 0 {
 		// Demo mode: start with embedded chinook schema
 		st = store.NewProjectStore(&pgd.Project{Version: 1, PgVersion: "18", DefaultSchema: "public", Schemas: []pgd.Schema{{Name: "public"}}}, "")
 		st.SetDemo(true)
 		inputPath = "(demo)"
 	} else {
-		inputPath = flag.Arg(0)
-		reOpts := pgre.Options{Full: *fullRE}
-		if *schemaFilter != "" {
-			reOpts.Schemas = strings.Split(*schemaFilter, ",")
-		}
-
-		project, err := loadFile(inputPath, reOpts)
+		inputPath = args[0]
+		project, err := format.LoadFile(inputPath, dsnOptions(*schemaFilter, *fullRE)...)
 		if err != nil {
-			log.Fatalf("failed to load %s: %v", inputPath, err)
+			log.Fatal(err)
 		}
 
 		st = store.NewProjectStore(project, pgdFilePath(inputPath))
@@ -116,8 +111,8 @@ Flags:
 	a := app.NewWithStore(st, appOpts...)
 
 	// Track recent file.
-	if inputPath != "(demo)" {
-		a.Config().AddRecentFile(pgdFilePath(inputPath))
+	if path := pgdFilePath(inputPath); path != "" && inputPath != "(demo)" {
+		a.Config().AddRecentFile(path)
 		_ = a.Config().Save()
 	}
 
@@ -129,7 +124,7 @@ Flags:
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("PgDesigner serving %s at %s\n", inputPath, addr)
+	fmt.Printf("PgDesigner serving %s at %s\n", pgre.RedactDSN(inputPath), addr)
 	fmt.Printf("RPC: %s/rpc/  SMDBox: %s/rpc/doc/\n", addr, addr)
 
 	if *appMode {

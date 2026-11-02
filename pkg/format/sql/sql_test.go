@@ -3,6 +3,7 @@ package sql
 import (
 	"encoding/xml"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -195,6 +196,31 @@ func TestParseSQL_ColumnTypes(t *testing.T) {
 	assert.Equal(t, "always", tbl.Columns[8].Identity.Generated)
 }
 
+func TestParseSQL_GeneratedColumn(t *testing.T) {
+	sql := `CREATE TABLE people (
+		id integer PRIMARY KEY, first_name text NOT NULL, last_name text NOT NULL,
+		full_name text GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED,
+		tsv tsvector GENERATED ALWAYS AS (to_tsvector('russian'::regconfig, first_name)) STORED
+	);`
+
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+
+	cols := p.Schemas[0].Tables[0].Columns
+	require.Len(t, cols, 5)
+	// pg_query deparse makes the left-associative || explicit
+	assert.Equal(t, &pgd.Generated{Expression: "(first_name || ' ') || last_name", Stored: "true"}, cols[3].Generated)
+	assert.Equal(t, &pgd.Generated{Expression: "to_tsvector('russian'::regconfig, first_name)", Stored: "true"}, cols[4].Generated)
+	assert.Empty(t, cols[3].Default)
+
+	// round-trip
+	ddl := pgd.GenerateDDL(p)
+	assert.Contains(t, ddl, `"full_name" text GENERATED ALWAYS AS ((first_name || ' ') || last_name) STORED`)
+	p2, err := ParseSQL(ddl, "test")
+	require.NoError(t, err)
+	assert.Equal(t, cols, p2.Schemas[0].Tables[0].Columns)
+}
+
 func TestParseSQL_Constraints(t *testing.T) {
 	sql := `
 	CREATE TABLE "statuses" (
@@ -271,13 +297,13 @@ func TestParseSQL_Indexes(t *testing.T) {
 
 	// expression index
 	ei := idxs[idxMap["idx_lower"]]
-	assert.True(t, len(ei.Expressions) > 0 || len(ei.Columns) > 0, "should parse expression index")
+	assert.NotEmpty(t, ei.Keys, "should parse expression index")
 
 	// DESC NULLS LAST
 	di := idxs[idxMap["idx_desc"]]
-	if len(di.Columns) > 0 {
-		assert.Equal(t, "desc", di.Columns[0].Order)
-		assert.Equal(t, "last", di.Columns[0].Nulls)
+	if len(di.Keys) > 0 {
+		assert.Equal(t, "desc", di.Keys[0].Order)
+		assert.Equal(t, "last", di.Keys[0].Nulls)
 	}
 }
 
@@ -440,12 +466,12 @@ func TestParseSQL_IndexOpclass(t *testing.T) {
 	}
 
 	gin := idxs[idxMap["ix_query_trgm"]]
-	require.Len(t, gin.Columns, 1)
-	assert.Equal(t, "gin_trgm_ops", gin.Columns[0].Opclass, "GIN opclass must be preserved")
+	require.Len(t, gin.Keys, 1)
+	assert.Equal(t, "gin_trgm_ops", gin.Keys[0].Opclass, "GIN opclass must be preserved")
 
 	btree := idxs[idxMap["ix_email_pat"]]
-	require.Len(t, btree.Columns, 1)
-	assert.Equal(t, "text_pattern_ops", btree.Columns[0].Opclass, "btree opclass must be preserved")
+	require.Len(t, btree.Keys, 1)
+	assert.Equal(t, "text_pattern_ops", btree.Keys[0].Opclass, "btree opclass must be preserved")
 
 	// Round-trip: opclass survives DDL regeneration.
 	ddl := pgd.GenerateDDL(p)
@@ -467,4 +493,162 @@ func TestParseSQL_Serial(t *testing.T) {
 	assert.Equal(t, "serial", p.Schemas[0].Tables[0].Columns[0].Type)
 	assert.Equal(t, "false", p.Schemas[0].Tables[0].Columns[0].Nullable)
 	assert.Equal(t, "bigserial", p.Schemas[0].Tables[0].Columns[1].Type)
+}
+
+func TestParseSQL_IndexExpressionOptions(t *testing.T) {
+	sql := `
+	CREATE TABLE t (id integer PRIMARY KEY, params jsonb, title text);
+	CREATE INDEX ix_t_mnn_trgm ON t USING gin ((params ->> 'mnn') gin_trgm_ops);
+	CREATE INDEX ix_t_lower_desc ON t ((lower(title)) DESC NULLS LAST);
+	`
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+
+	idxs := map[string]pgd.Index{}
+	for _, idx := range p.Schemas[0].Indexes {
+		idxs[idx.Name] = idx
+	}
+	require.Len(t, idxs, 2)
+	assert.Equal(t, []pgd.IndexKey{{Expression: "params ->> 'mnn'", Opclass: "gin_trgm_ops"}}, idxs["ix_t_mnn_trgm"].Keys)
+	assert.Equal(t, []pgd.IndexKey{{Expression: "lower(title)", Order: "desc", Nulls: "last"}}, idxs["ix_t_lower_desc"].Keys)
+
+	ddl := pgd.GenerateDDL(p)
+	assert.Contains(t, ddl, "(params ->> 'mnn') gin_trgm_ops")
+	assert.Contains(t, ddl, "(lower(title)) DESC NULLS LAST")
+
+	// distinct opclass or order keeps indexes apart when deduplicating
+	asc := idxs["ix_t_lower_desc"]
+	asc.Name, asc.Keys = "ix_t_lower_asc", []pgd.IndexKey{{Expression: "lower(title)"}}
+	p.Schemas[0].Indexes = append(p.Schemas[0].Indexes, asc)
+	deduplicateIndexes(p)
+	assert.Len(t, p.Schemas[0].Indexes, 3)
+}
+
+func TestParseSQL_IndexKeyOrder(t *testing.T) {
+	sql := `
+	CREATE TABLE shipments ("shopId" integer, "statusId" integer, "updatedAt" timestamptz, "createdAt" timestamptz);
+	CREATE INDEX "IX_shipments_last_activity" ON shipments ("shopId", COALESCE("updatedAt", "createdAt") DESC, "statusId");
+	`
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+
+	require.Len(t, p.Schemas[0].Indexes, 1)
+	assert.Equal(t, []pgd.IndexKey{
+		{Name: "shopId"},
+		{Expression: `COALESCE("updatedAt", "createdAt")`, Order: "desc"},
+		{Name: "statusId"},
+	}, p.Schemas[0].Indexes[0].Keys)
+	assert.Contains(t, pgd.GenerateDDL(p), "\t\"shopId\",\n\t(COALESCE(\"updatedAt\", \"createdAt\")) DESC,\n\t\"statusId\"\n")
+}
+
+func TestNormalizeExpr(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		// pg_get_expr form → the converter's form
+		{"(range > 0)", "range > 0"},
+		{"((birthdate >= '1930-01-01'::date) AND (birthdate <= (now() - '18 years'::interval)))",
+			"birthdate >= '1930-01-01'::date AND birthdate <= (now() - '18 years'::interval)"},
+		{"to_tsvector('russian'::regconfig, text)", "to_tsvector('russian'::regconfig, text)"},
+		{"not an ( expression", "not an ( expression"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			assert.Equal(t, tt.want, NormalizeExpr(tt.in))
+		})
+	}
+}
+
+func TestExprKey(t *testing.T) {
+	tests := []struct {
+		name     string
+		db, ddl  string
+		sameKeys bool
+	}{
+		{"parentheses and casts", "((price > (0)::numeric) AND (qty > 0))", "price > 0 AND qty > 0", true},
+		{"IN list", "((layer)::text = ANY ((ARRAY['ocr'::character varying, 'sheet'::character varying])::text[]))", `"layer" IN ('ocr', 'sheet')`, true},
+		{"quoted column IN list", `("madeBy")::text = ANY (ARRAY['code'::text, 'llm'::text])`, `"madeBy" IN ('code', 'llm')`, true},
+		{"NOT IN list", "((kind)::text <> ALL ((ARRAY['a'::character varying])::text[]))", "kind NOT IN ('a')", true},
+		{"function with regconfig", "to_tsvector('russian'::regconfig, text)", "to_tsvector('russian', text)", true},
+		{"changed list", "((layer)::text = ANY ((ARRAY['ocr'::character varying])::text[]))", `"layer" IN ('ocr', 'manual')`, false},
+		{"changed operator", "(price > (0)::numeric)", "price >= 0", false},
+		{"regrouped", "(a AND (b OR c))", "(a AND b) OR c", false},
+		{"negative number", "'-1'::integer", "-1", true},
+		{"negative numeric", "'-1.5'::numeric", "-1.5", true},
+		{"single value IN", "((kind)::text = 'a'::text)", "kind IN ('a')", true},
+		{"single value NOT IN", "((kind)::text <> 'a'::text)", "kind NOT IN ('a')", true},
+		{"LIKE", "((name)::text ~~ 'a%'::text)", "name LIKE 'a%'", true},
+		{"NOT ILIKE", "((name)::text !~~* 'a%'::text)", "name NOT ILIKE 'a%'", true},
+		{"BETWEEN", "((qty >= 1) AND (qty <= 10) AND (price > (0)::numeric))", "qty BETWEEN 1 AND 10 AND price > 0", true},
+		{"NOT BETWEEN", "((qty < 1) OR (qty > 10))", "qty NOT BETWEEN 1 AND 10", true},
+		{"implicit cast in function", "lower((email)::text)", "lower(email)", true},
+		{"array default", "'{}'::text[]", "'{}'", true},
+		{"added cast", "(now())::date", "now()", false},
+		{"changed cast", "((ts)::date)", "ts::time", false},
+		{"removed inner cast", "(((ts)::date)::text)", "ts::text", false},
+		{"cast on column", "((p)::integer > 0)", "p > 0", false},
+		{"cast with typmod", "((p)::numeric(5,1) > (0)::numeric)", "p::numeric(6,2) > 0", false},
+		{"cast-like text in literal", "'fe80::a'::inet", "'fe80::b'::inet", false},
+		{"CURRENT_TIMESTAMP", "now()", "CURRENT_TIMESTAMP", true},
+		{"CURRENT_TIMESTAMP with precision", "now()", "CURRENT_TIMESTAMP(0)", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.sameKeys, ExprKey(tt.db) == ExprKey(tt.ddl), "%q vs %q", ExprKey(tt.db), ExprKey(tt.ddl))
+		})
+	}
+}
+
+func TestParseSQL_TableStorageOptions(t *testing.T) {
+	// #19: WITH was parsed but dropped by generate
+	sql := `CREATE UNLOGGED TABLE "public"."t" (
+		"id" integer NOT NULL,
+		CONSTRAINT "PK_t" PRIMARY KEY("id")
+	) USING heap WITH (fillfactor = 80, toast.autovacuum_enabled = false, vacuum_index_cleanup = auto, autovacuum_vacuum_scale_factor = 0.05);`
+
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+	tbl := p.Schemas[0].Tables[0]
+	assert.Equal(t, "true", tbl.Unlogged)
+	assert.Equal(t, "heap", tbl.Using)
+	assert.Equal(t, &pgd.With{Params: []pgd.WithParam{{Name: "fillfactor", Value: "80"}, {Name: "toast.autovacuum_enabled", Value: "false"},
+		{Name: "vacuum_index_cleanup", Value: "auto"}, {Name: "autovacuum_vacuum_scale_factor", Value: "0.05"}}}, tbl.With)
+
+	ddl := pgd.GenerateDDL(p)
+	assert.Contains(t, ddl, "CREATE UNLOGGED TABLE \"t\"")
+	assert.Contains(t, ddl, "WITH (fillfactor='80', toast.autovacuum_enabled='false', vacuum_index_cleanup='auto', autovacuum_vacuum_scale_factor='0.05')")
+
+	p2, err := ParseSQL(ddl, "test")
+	require.NoError(t, err)
+	assert.Equal(t, tbl.With, p2.Schemas[0].Tables[0].With)
+}
+
+func TestParseSQL_FKReferences(t *testing.T) {
+	const tables = `CREATE TABLE a (id int PRIMARY KEY, code text UNIQUE);
+CREATE TABLE ext (k1 int, k2 int, PRIMARY KEY (k1, k2));
+`
+	tests := []struct {
+		name string
+		sql  string
+		want []pgd.FKCol
+	}{
+		{"column list", `CREATE TABLE b (code text, FOREIGN KEY (code) REFERENCES a(code));`, []pgd.FKCol{{Name: "code", References: "code"}}},
+		{"implicit PK", `CREATE TABLE b (a_id int, FOREIGN KEY (a_id) REFERENCES a);`, []pgd.FKCol{{Name: "a_id", References: "id"}}},
+		{"inline with column", `CREATE TABLE b (a_code text REFERENCES a(code));`, []pgd.FKCol{{Name: "a_code", References: "code"}}},
+		{"inline implicit PK", `CREATE TABLE b (a_id int REFERENCES a);`, []pgd.FKCol{{Name: "a_id", References: "id"}}},
+		{"composite implicit PK", `CREATE TABLE b (x int, y int, FOREIGN KEY (x, y) REFERENCES ext);`, []pgd.FKCol{{Name: "x", References: "k1"}, {Name: "y", References: "k2"}}},
+		{"unknown table", `CREATE TABLE b (z_id int REFERENCES z);`, []pgd.FKCol{{Name: "z_id", References: "z_id"}}},
+		{"ALTER TABLE", `CREATE TABLE b (code text); ALTER TABLE b ADD CONSTRAINT fk FOREIGN KEY (code) REFERENCES a(code);`, []pgd.FKCol{{Name: "code", References: "code"}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := ParseSQL(tables+tt.sql, "test")
+			require.NoError(t, err)
+			i := slices.IndexFunc(p.Schemas[0].Tables, func(t pgd.Table) bool { return t.Name == "b" })
+			require.GreaterOrEqual(t, i, 0)
+			fks := p.Schemas[0].Tables[i].FKs
+			require.Len(t, fks, 1)
+			assert.Equal(t, tt.want, fks[0].Columns)
+		})
+	}
 }

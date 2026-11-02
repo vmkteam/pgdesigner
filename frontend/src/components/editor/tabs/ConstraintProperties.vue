@@ -117,8 +117,8 @@ function toggleExclElementMode(i: number) {
       <div class="cp-row">
         <label class="cp-label"></label>
         <label class="cp-check">
-          <input type="checkbox" :checked="item.data.nullsDistinct" @change="setUnique('nullsDistinct', ($event.target as HTMLInputElement).checked)" />
-          Nulls Distinct
+          <input type="checkbox" :checked="item.data.nullsNotDistinct" @change="setUnique('nullsNotDistinct', ($event.target as HTMLInputElement).checked)" />
+          Nulls Not Distinct
         </label>
       </div>
       <div class="cp-group-label">Columns</div>

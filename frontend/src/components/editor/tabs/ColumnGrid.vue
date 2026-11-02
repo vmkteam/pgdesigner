@@ -35,7 +35,7 @@ const tableRef = useTemplateRef<HTMLElement>('tableRef')
 const indexedCols = computed(() => {
   const s = new Set<string>()
   for (const ix of editor.draft?.indexes || []) {
-    for (const c of ix.columns || []) s.add(c.name)
+    for (const k of ix.keys || []) if (k.kind === 'column') s.add(k.name)
   }
   return s
 })

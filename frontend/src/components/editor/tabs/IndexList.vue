@@ -21,7 +21,7 @@ const emit = defineEmits<{
 function addIndex() {
   const idxs = props.indexes || []
   const name = `ix_${props.tableName}_${idxs.length + 1}`
-  emit('updateIndexes', [...idxs, { name, unique: false, nullsDistinct: false, using: 'btree', columns: [], expressions: [], with: [], where: '', include: [] }])
+  emit('updateIndexes', [...idxs, { name, unique: false, nullsNotDistinct: false, using: 'btree', keys: [], with: [], where: '', include: [] }])
   selectedIdx.value = idxs.length
 }
 
@@ -91,8 +91,7 @@ function onKeydown(e: KeyboardEvent) {
             </td>
             <td class="il-method">{{ idx.using || 'btree' }}</td>
             <td class="il-detail">
-              {{ (idx.columns || []).map((c: any) => typeof c === 'string' ? c : c.name).join(', ') }}
-              <span v-if="idx.expressions?.length" class="il-expr">{{ idx.expressions.join(', ') }}</span>
+              <template v-for="(k, ki) in idx.keys || []" :key="ki">{{ ki ? ', ' : '' }}<span v-if="k.kind === 'expression'" class="il-expr">{{ k.expression }}</span><template v-else>{{ k.name }}</template></template>
             </td>
             <td class="text-center"><span v-if="idx.unique">✓</span></td>
             <td class="il-detail il-mono">{{ idx.where }}</td>

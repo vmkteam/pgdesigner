@@ -103,8 +103,8 @@ func TestValidate_E004_DuplicateColumn(t *testing.T) {
 func TestValidate_E005_DuplicateIndexName(t *testing.T) {
 	p := minProject()
 	p.Schemas[0].Indexes = []pgd.Index{
-		{Name: "idx_a", Table: "users", Columns: []pgd.ColRef{{Name: "id"}}},
-		{Name: "idx_a", Table: "users", Columns: []pgd.ColRef{{Name: "name"}}},
+		{Name: "idx_a", Table: "users", Keys: []pgd.IndexKey{{Name: "id"}}},
+		{Name: "idx_a", Table: "users", Keys: []pgd.IndexKey{{Name: "name"}}},
 	}
 	assert.True(t, hasCode(Validate(p), RuleDupIndexName))
 }
@@ -158,14 +158,14 @@ func TestValidate_E011_E012_IndexColumn(t *testing.T) {
 	p := minProject()
 	// E012: unknown table
 	p.Schemas[0].Indexes = []pgd.Index{
-		{Name: "idx_bad", Table: "nonexistent", Columns: []pgd.ColRef{{Name: "id"}}},
+		{Name: "idx_bad", Table: "nonexistent", Keys: []pgd.IndexKey{{Name: "id"}}},
 	}
 	issues := Validate(p)
 	assert.True(t, hasCode(issues, RuleIdxTableNotFound), "expected E012")
 
 	// E011: unknown column
 	p.Schemas[0].Indexes = []pgd.Index{
-		{Name: "idx_bad", Table: "users", Columns: []pgd.ColRef{{Name: "nonexistent"}}},
+		{Name: "idx_bad", Table: "users", Keys: []pgd.IndexKey{{Name: "nonexistent"}}},
 	}
 	issues = Validate(p)
 	assert.True(t, hasCode(issues, RuleIdxColNotFound), "expected E011")
@@ -220,7 +220,7 @@ func TestValidate_E019_IncludeColumnNotFound(t *testing.T) {
 	p := minProject()
 	p.Schemas[0].Indexes = []pgd.Index{{
 		Name: "idx_inc", Table: "users",
-		Columns: []pgd.ColRef{{Name: "id"}},
+		Keys:    []pgd.IndexKey{{Name: "id"}},
 		Include: &pgd.Include{Columns: []pgd.ColRef{{Name: "nonexistent"}}},
 	}}
 	assert.True(t, hasCode(Validate(p), RuleIncludeColNotFound))
@@ -255,6 +255,23 @@ func TestValidate_E030_ViewNoQuery(t *testing.T) {
 	p := minProject()
 	p.Views = &pgd.Views{Views: []pgd.View{{Name: "v_empty"}}}
 	assert.True(t, hasCode(Validate(p), RuleViewNoQuery))
+}
+
+func TestValidate_E033_GeneratedNoExpression(t *testing.T) {
+	// the expression written as element text is ignored by the model
+	const pgdXML = `<pgd><schema name="public"><table name="people">
+		<column name="first_name" type="text"></column>
+		<column name="full_name" type="text"><generated stored="true"><![CDATA[first_name || '!']]></generated></column>
+	</table></schema></pgd>`
+	var p pgd.Project
+	require.NoError(t, xml.Unmarshal([]byte(pgdXML), &p))
+	assert.True(t, hasCode(Validate(&p), RuleGeneratedNoExpr))
+
+	p.Schemas[0].Tables[0].Columns[1].Generated.Expression = " "
+	assert.True(t, hasCode(Validate(&p), RuleGeneratedNoExpr))
+
+	p.Schemas[0].Tables[0].Columns[1].Generated.Expression = "first_name || '!'"
+	assert.False(t, hasCode(Validate(&p), RuleGeneratedNoExpr))
 }
 
 // --- W rules ---
@@ -307,7 +324,7 @@ func TestValidate_W002_MissingFKIndex(t *testing.T) {
 
 	// add index — W002 should disappear
 	p.Schemas[0].Indexes = []pgd.Index{
-		{Name: "idx_parent", Table: "children", Columns: []pgd.ColRef{{Name: "parent_id"}}},
+		{Name: "idx_parent", Table: "children", Keys: []pgd.IndexKey{{Name: "parent_id"}}},
 	}
 	issues = Validate(p)
 	assert.False(t, hasCode(issues, RuleMissingFKIndex), "W002 should not fire with index")
@@ -345,8 +362,8 @@ func TestValidate_W004_NoPK(t *testing.T) {
 func TestValidate_W005_DuplicateIndexColumns(t *testing.T) {
 	p := minProject()
 	p.Schemas[0].Indexes = []pgd.Index{
-		{Name: "idx_1", Table: "users", Columns: []pgd.ColRef{{Name: "name"}}},
-		{Name: "idx_2", Table: "users", Columns: []pgd.ColRef{{Name: "name"}}},
+		{Name: "idx_1", Table: "users", Keys: []pgd.IndexKey{{Name: "name"}}},
+		{Name: "idx_2", Table: "users", Keys: []pgd.IndexKey{{Name: "name"}}},
 	}
 	assert.True(t, hasCode(Validate(p), RuleDupIndexCols))
 }
@@ -416,8 +433,8 @@ func TestValidate_W016_FKToNonUnique(t *testing.T) {
 func TestValidate_W017_OverlappingIndexes(t *testing.T) {
 	p := minProject()
 	p.Schemas[0].Indexes = []pgd.Index{
-		{Name: "idx_short", Table: "users", Columns: []pgd.ColRef{{Name: "name"}}},
-		{Name: "idx_long", Table: "users", Columns: []pgd.ColRef{{Name: "name"}, {Name: "id"}}},
+		{Name: "idx_short", Table: "users", Keys: []pgd.IndexKey{{Name: "name"}}},
+		{Name: "idx_long", Table: "users", Keys: []pgd.IndexKey{{Name: "name"}, {Name: "id"}}},
 	}
 	assert.True(t, hasCode(Validate(p), RuleOverlapIndex), "expected W017 for overlapping index")
 }
@@ -501,7 +518,7 @@ func TestValidate_I013_TooManyIndexes(t *testing.T) {
 		p.Schemas[0].Tables[0].Columns = append(p.Schemas[0].Tables[0].Columns, col)
 		p.Schemas[0].Indexes = append(p.Schemas[0].Indexes, pgd.Index{
 			Name: fmt.Sprintf("idx_%d", i), Table: "users",
-			Columns: []pgd.ColRef{{Name: col.Name}},
+			Keys: []pgd.IndexKey{{Name: col.Name}},
 		})
 	}
 	assert.True(t, hasCode(Validate(p), RuleTooManyIndexes))
@@ -512,7 +529,7 @@ func TestValidate_I016_IndexOnBoolean(t *testing.T) {
 	p.Schemas[0].Tables[0].Columns = append(p.Schemas[0].Tables[0].Columns,
 		pgd.Column{Name: "active", Type: "boolean"})
 	p.Schemas[0].Indexes = []pgd.Index{
-		{Name: "idx_active", Table: "users", Columns: []pgd.ColRef{{Name: "active"}}},
+		{Name: "idx_active", Table: "users", Keys: []pgd.IndexKey{{Name: "active"}}},
 	}
 	assert.True(t, hasCode(Validate(p), RuleIndexOnBool))
 }
@@ -632,5 +649,100 @@ func TestIsKnownBuiltinType(t *testing.T) {
 	unknown := []string{"foobar", "my_custom_type", ""}
 	for _, typ := range unknown {
 		assert.False(t, pgd.IsKnownBuiltinType(typ), "should be unknown: %s", typ)
+	}
+}
+
+func TestValidate_W023_IndexExpressionMultiKey(t *testing.T) {
+	tests := []struct {
+		expr string
+		want bool
+	}{
+		{`"shopId", COALESCE("updatedAt", "createdAt") DESC, "statusId"`, true},
+		{`COALESCE("updatedAt", "createdAt")`, false},
+		{`(a, b)`, false},
+		{`params ->> 'a,b'`, false},
+		{`"a,b" || x`, false},
+		{`(arr)[1:2], x`, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.expr, func(t *testing.T) {
+			p := minProject()
+			p.Schemas[0].Indexes = []pgd.Index{{Name: "ix", Table: "users", Keys: []pgd.IndexKey{{Expression: tt.expr}}}}
+			assert.Equal(t, tt.want, hasCode(Validate(p), RuleIdxExprMultiKey))
+		})
+	}
+}
+
+func TestValidate_W005_W017_NotDuplicates(t *testing.T) {
+	expr := func(e, opclass, order string) pgd.IndexKey {
+		return pgd.IndexKey{Expression: e, Opclass: opclass, Order: order}
+	}
+	tests := []struct {
+		name string
+		a, b pgd.Index
+		dup  string // expected rule, "" for none
+	}{
+		{"same expression, gin vs btree",
+			pgd.Index{Name: "a", Table: "users", Using: "gin", Keys: []pgd.IndexKey{expr("data ->> 'mnn'", "gin_trgm_ops", "")}},
+			pgd.Index{Name: "b", Table: "users", Keys: []pgd.IndexKey{expr("(data ->> 'mnn')", "", "")}}, ""},
+		{"different order",
+			pgd.Index{Name: "a", Table: "users", Keys: []pgd.IndexKey{expr("lower(name)", "", "desc")}},
+			pgd.Index{Name: "b", Table: "users", Keys: []pgd.IndexKey{expr("lower(name)", "", "")}}, ""},
+		{"different predicate",
+			pgd.Index{Name: "a", Table: "users", Keys: []pgd.IndexKey{{Name: "id"}}, Where: &pgd.WhereClause{Value: "id > 0"}},
+			pgd.Index{Name: "b", Table: "users", Keys: []pgd.IndexKey{{Name: "id"}}}, ""},
+		{"explicit asc is the default order",
+			pgd.Index{Name: "a", Table: "users", Keys: []pgd.IndexKey{{Name: "id", Order: "asc"}}},
+			pgd.Index{Name: "b", Table: "users", Keys: []pgd.IndexKey{{Name: "id"}}}, RuleDupIndexCols},
+		{"same expression with and without parentheses",
+			pgd.Index{Name: "a", Table: "users", Keys: []pgd.IndexKey{expr("lower(name)", "", "")}},
+			pgd.Index{Name: "b", Table: "users", Keys: []pgd.IndexKey{expr("(lower(name))", "", "")}}, RuleDupIndexCols},
+		{"unique prefix is not redundant",
+			pgd.Index{Name: "a", Table: "users", Unique: "true", Keys: []pgd.IndexKey{{Name: "id"}}},
+			pgd.Index{Name: "b", Table: "users", Keys: []pgd.IndexKey{{Name: "id"}, {Name: "name"}}}, ""},
+		{"gin prefix is not redundant",
+			pgd.Index{Name: "a", Table: "users", Using: "gin", Keys: []pgd.IndexKey{{Name: "id"}}},
+			pgd.Index{Name: "b", Table: "users", Using: "gin", Keys: []pgd.IndexKey{{Name: "id"}, {Name: "name"}}}, ""},
+		{"NULLS NOT DISTINCT",
+			pgd.Index{Name: "a", Table: "users", Unique: "true", Keys: []pgd.IndexKey{{Name: "name"}}},
+			pgd.Index{Name: "b", Table: "users", Unique: "true", NullsDistinct: "false", Keys: []pgd.IndexKey{{Name: "name"}}}, ""},
+		{"btree prefix is redundant",
+			pgd.Index{Name: "a", Table: "users", Keys: []pgd.IndexKey{{Name: "id"}}},
+			pgd.Index{Name: "b", Table: "users", Keys: []pgd.IndexKey{{Name: "id"}, {Name: "name"}}}, RuleOverlapIndex},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := minProject()
+			p.Schemas[0].Indexes = []pgd.Index{tt.a, tt.b}
+			issues := Validate(p)
+			for _, rule := range []string{RuleDupIndexCols, RuleOverlapIndex} {
+				assert.Equal(t, rule == tt.dup, hasCode(issues, rule), rule)
+			}
+		})
+	}
+}
+
+func TestValidate_W024_UnqualifiedType(t *testing.T) {
+	tests := []struct {
+		typ  string
+		want bool
+	}{
+		{"fulfillmentType", true},
+		{"fulfillmentType[]", true},
+		{"mp.fulfillmentType", false},
+		{"status", false}, // also defined in public
+		{"text", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.typ, func(t *testing.T) {
+			p := minProject()
+			p.Types = &pgd.Types{Enums: []pgd.Enum{
+				{Name: "fulfillmentType", Schema: "mp", Labels: []string{"a"}},
+				{Name: "status", Schema: "mp", Labels: []string{"a"}},
+				{Name: "status", Labels: []string{"a"}},
+			}}
+			p.Schemas[0].Tables[0].Columns = append(p.Schemas[0].Tables[0].Columns, pgd.Column{Name: "x", Type: tt.typ})
+			assert.Equal(t, tt.want, hasCode(Validate(p), RuleUnqualifiedType))
+		})
 	}
 }

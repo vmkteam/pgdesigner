@@ -26,7 +26,7 @@ func testProject() *pgd.Project {
 				PK: &pgd.PrimaryKey{Name: "pk_users", Columns: []pgd.ColRef{{Name: "id"}}},
 			}},
 			Indexes: []pgd.Index{
-				{Name: "idx_users_name", Table: "users", Columns: []pgd.ColRef{{Name: "name"}}},
+				{Name: "idx_users_name", Table: "users", Keys: []pgd.IndexKey{{Name: "name"}}},
 			},
 		}},
 	}
@@ -85,7 +85,7 @@ func TestProjectStore_UpdateTableIndexes(t *testing.T) {
 
 	// Replace indexes
 	newIdx := []pgd.Index{
-		{Name: "idx_email", Table: "users", Columns: []pgd.ColRef{{Name: "email"}}},
+		{Name: "idx_email", Table: "users", Keys: []pgd.IndexKey{{Name: "email"}}},
 	}
 	require.NoError(t, s.UpdateTableIndexes("users", newIdx))
 

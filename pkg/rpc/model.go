@@ -245,9 +245,9 @@ type PKDetail struct {
 
 // UniqueDetail holds unique constraint data.
 type UniqueDetail struct {
-	Name          string   `json:"name"`
-	Columns       []string `json:"columns"`
-	NullsDistinct bool     `json:"nullsDistinct,omitempty"`
+	Name             string   `json:"name"`
+	Columns          []string `json:"columns"`
+	NullsNotDistinct bool     `json:"nullsNotDistinct,omitempty"`
 }
 
 // CheckDetail holds check constraint data.
@@ -340,15 +340,14 @@ type ObjectItem struct {
 
 // IndexDetail holds index data.
 type IndexDetail struct {
-	Name          string            `json:"name"`
-	Unique        bool              `json:"unique,omitempty"`
-	NullsDistinct bool              `json:"nullsDistinct,omitempty"`
-	Using         string            `json:"using,omitempty"`
-	Columns       []IndexColDetail  `json:"columns"`
-	Expressions   []string          `json:"expressions,omitempty"`
-	With          []WithParamDetail `json:"with,omitempty"`
-	Where         string            `json:"where,omitempty"`
-	Include       []string          `json:"include,omitempty"`
+	Name             string            `json:"name"`
+	Unique           bool              `json:"unique,omitempty"`
+	NullsNotDistinct bool              `json:"nullsNotDistinct,omitempty"`
+	Using            string            `json:"using,omitempty"`
+	Keys             []IndexKeyDetail  `json:"keys"`
+	With             []WithParamDetail `json:"with,omitempty"`
+	Where            string            `json:"where,omitempty"`
+	Include          []string          `json:"include,omitempty"`
 }
 
 // WithParamDetail holds a key-value storage parameter.
@@ -357,13 +356,21 @@ type WithParamDetail struct {
 	Value string `json:"value"`
 }
 
-// IndexColDetail holds index column with ordering metadata.
-type IndexColDetail struct {
-	Name    string `json:"name"`
-	Order   string `json:"order,omitempty"` // asc|desc
-	Nulls   string `json:"nulls,omitempty"` // first|last
-	Opclass string `json:"opclass,omitempty"`
+// IndexKeyDetail holds an index key, a column or an expression, with ordering metadata.
+type IndexKeyDetail struct {
+	Kind       string `json:"kind"`                 // column|expression
+	Name       string `json:"name,omitempty"`       // column name
+	Expression string `json:"expression,omitempty"` // SQL expression
+	Order      string `json:"order,omitempty"`      // asc|desc
+	Nulls      string `json:"nulls,omitempty"`      // first|last
+	Opclass    string `json:"opclass,omitempty"`
 }
+
+// Index key kinds.
+const (
+	IndexKeyColumn     = "column"
+	IndexKeyExpression = "expression"
+)
 
 // DirEntry represents a file or directory in a directory listing.
 type DirEntry struct {

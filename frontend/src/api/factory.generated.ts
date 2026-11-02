@@ -310,27 +310,12 @@ export interface IIgnoredRule {
   scope: string // "project" or table name
 }
 
-export interface IIndexColDetail {
-  name: string,
-  order: string, // asc|desc
-  nulls: string, // first|last
-  opclass: string
-}
-
-export interface IIndexColInput {
-  name: string,
-  order: string,
-  nulls: string,
-  opclass: string
-}
-
 export interface IIndexDetail {
   name: string,
   unique: boolean,
-  nullsDistinct: boolean,
+  nullsNotDistinct: boolean,
   using: string,
-  columns: Array<IIndexColDetail>,
-  expressions: Array<string>,
+  keys: Array<IIndexKeyDetail>,
   with: Array<IWithParamDetail>,
   where: string,
   include: Array<string>
@@ -340,13 +325,30 @@ export interface IIndexInput {
   name: string,
   table: string,
   unique: boolean,
-  nullsDistinct: boolean,
+  nullsNotDistinct: boolean,
   using: string,
-  columns: Array<IIndexColInput>,
-  expressions: Array<string>,
+  keys: Array<IIndexKeyInput>,
   with: Array<IWithParamInput>,
   where: string,
   include: Array<string>
+}
+
+export interface IIndexKeyDetail {
+  kind: string, // column|expression
+  name: string, // column name
+  expression: string, // SQL expression
+  order: string, // asc|desc
+  nulls: string, // first|last
+  opclass: string
+}
+
+export interface IIndexKeyInput {
+  kind: string, // column|expression
+  name: string,
+  expression: string,
+  order: string,
+  nulls: string,
+  opclass: string
 }
 
 export interface ILayoutPosition {
@@ -565,13 +567,13 @@ export interface ITypeInfo {
 export interface IUniqueDetail {
   name: string,
   columns: Array<string>,
-  nullsDistinct: boolean
+  nullsNotDistinct: boolean
 }
 
 export interface IUniqueInput {
   name: string,
   columns: Array<string>,
-  nullsDistinct: boolean
+  nullsNotDistinct: boolean
 }
 
 export interface IUpdateInfo {

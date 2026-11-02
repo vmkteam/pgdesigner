@@ -633,7 +633,7 @@ func convert(f *dm2File, projectName string) *pgd.Project {
 			pidx.Using = idx.method
 		}
 		for _, colName := range idxColsByIdx[idx.id] {
-			pidx.Columns = append(pidx.Columns, pgd.ColRef{Name: colName})
+			pidx.Keys = append(pidx.Keys, pgd.IndexKey{Name: colName})
 		}
 		schema.Indexes = append(schema.Indexes, pidx)
 	}
@@ -650,7 +650,7 @@ func convert(f *dm2File, projectName string) *pgd.Project {
 					Table: tbl.Name,
 				}
 				for _, c := range fk.Columns {
-					idx.Columns = append(idx.Columns, pgd.ColRef{Name: c.Name})
+					idx.Keys = append(idx.Keys, pgd.IndexKey{Name: c.Name})
 				}
 				schema.Indexes = append(schema.Indexes, idx)
 			}

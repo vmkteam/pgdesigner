@@ -47,10 +47,10 @@ func (d *ddlWriter) Err() error { return d.err }
 // Output order follows dependency topology:
 //
 //  1. CREATE ROLE
-//  2. CREATE EXTENSION
-//  3. CREATE TYPE (enum, composite, range)
-//  4. CREATE DOMAIN
-//  5. CREATE SCHEMA (non-public)
+//  2. CREATE SCHEMA (non-public)
+//  3. CREATE EXTENSION
+//  4. CREATE TYPE (enum, composite, range)
+//  5. CREATE DOMAIN
 //  6. CREATE SEQUENCE
 //  7. CREATE TABLE (columns, PK, UNIQUE, CHECK — no FK)
 //  8. ALTER TABLE ENABLE ROW LEVEL SECURITY
@@ -73,7 +73,12 @@ func WriteDDL(w io.Writer, p *Project) error {
 		d.writeRole(&p.Roles[i])
 	}
 
-	// Phase 1: extensions
+	// Phase 1: CREATE SCHEMA for all non-public schemas, before the objects in them
+	for _, name := range NonPublicSchemas(p) {
+		d.P("CREATE SCHEMA IF NOT EXISTS %s;\n\n", QuoteIdent(name))
+	}
+
+	// Phase 1.5: extensions
 	for i := range p.Extensions {
 		d.writeExtension(&p.Extensions[i])
 	}
@@ -92,11 +97,6 @@ func WriteDDL(w io.Writer, p *Project) error {
 		for i := range p.Types.Domains {
 			d.writeDomain(&p.Types.Domains[i])
 		}
-	}
-
-	// Phase 3: CREATE SCHEMA for all non-public schemas
-	for _, name := range collectSchemas(p) {
-		d.P("CREATE SCHEMA IF NOT EXISTS %s;\n\n", QuoteIdent(name))
 	}
 
 	// Phase 4: sequences (skip identity-owned)
@@ -261,33 +261,52 @@ func (d *ddlWriter) writeMatViewIndexes(p *Project, mvNames map[string]bool) {
 	}
 }
 
-// collectSchemas returns all non-public schema names from schemas, sequences, views, mat views.
-func collectSchemas(p *Project) []string {
+// NonPublicSchemas returns the sorted names of the schemas the project uses that CREATE SCHEMA
+// can create: schemas of tables, sequences, views, types, extensions and functions except
+// public and the system schemas (pg_catalog, information_schema).
+func NonPublicSchemas(p *Project) []string {
 	seen := make(map[string]bool)
-	for _, s := range p.Schemas {
-		if s.Name != "" && s.Name != "public" {
-			seen[s.Name] = true
+	add := func(name string) {
+		if name != "" && name != "public" && name != "information_schema" && !strings.HasPrefix(name, "pg_") {
+			seen[name] = true
 		}
 	}
+	for _, s := range p.Schemas {
+		add(s.Name)
+	}
 	for _, seq := range p.Sequences {
-		if seq.Schema != "" && seq.Schema != "public" {
-			seen[seq.Schema] = true
-		}
+		add(seq.Schema)
 	}
 	if p.Views != nil {
 		for _, v := range p.Views.Views {
-			if v.Schema != "" && v.Schema != "public" {
-				seen[v.Schema] = true
-			}
+			add(v.Schema)
 		}
 		for _, mv := range p.Views.MatViews {
-			if mv.Schema != "" && mv.Schema != "public" {
-				seen[mv.Schema] = true
-			}
+			add(mv.Schema)
 		}
 	}
+	if p.Types != nil {
+		for _, e := range p.Types.Enums {
+			add(e.Schema)
+		}
+		for _, c := range p.Types.Composites {
+			add(c.Schema)
+		}
+		for _, r := range p.Types.Ranges {
+			add(r.Schema)
+		}
+		for _, d := range p.Types.Domains {
+			add(d.Schema)
+		}
+	}
+	for _, e := range p.Extensions {
+		add(e.Schema)
+	}
+	for _, f := range p.Functions {
+		add(f.Schema)
+	}
 
-	var names []string
+	names := make([]string, 0, len(seen))
 	for name := range seen {
 		names = append(names, name)
 	}
@@ -336,9 +355,17 @@ func (d *ddlWriter) writeExtension(e *Extension) {
 func (d *ddlWriter) writeEnum(e *Enum) {
 	labels := make([]string, len(e.Labels))
 	for i, l := range e.Labels {
-		labels[i] = "'" + l + "'"
+		labels[i] = QuoteLiteral(l)
 	}
 	d.P("CREATE TYPE %s AS ENUM (%s);\n\n", QualifiedName(e.Schema, e.Name), strings.Join(labels, ", "))
+}
+
+// WriteEnum writes CREATE TYPE ... AS ENUM DDL for a single enum.
+// Public API used by diff engine.
+func WriteEnum(w io.Writer, e *Enum) error {
+	d := &ddlWriter{w: w}
+	d.writeEnum(e)
+	return d.Err()
 }
 
 func (d *ddlWriter) writeComposite(c *Composite) {
@@ -589,7 +616,7 @@ func (d *ddlWriter) writeTable(q string, t *Table) {
 		parts = append(parts, "\t"+pkDef(t.PK))
 	}
 	for i := range t.Uniques {
-		parts = append(parts, "\t"+uniqueDef(&t.Uniques[i]))
+		parts = append(parts, "\t"+UniqueDef(&t.Uniques[i]))
 	}
 	for i := range t.Checks {
 		parts = append(parts, "\t"+checkDef(&t.Checks[i]))
@@ -604,9 +631,17 @@ func (d *ddlWriter) writeTable(q string, t *Table) {
 			strings.ToUpper(t.PartitionBy.Type),
 			QuotedColList(t.PartitionBy.Columns))
 	}
+	if t.Using != "" {
+		suffix += "\nUSING " + QuoteIdent(t.Using)
+	}
+	suffix += storageClauses("\n", t.With, t.Tablespace)
 
-	d.P("CREATE TABLE %s%s (\n%s\n)%s;\n\n",
-		q, QuoteIdent(t.Name),
+	unlogged := ""
+	if t.Unlogged == "true" {
+		unlogged = "UNLOGGED "
+	}
+	d.P("CREATE %sTABLE %s%s (\n%s\n)%s;\n\n",
+		unlogged, q, QuoteIdent(t.Name),
 		strings.Join(parts, ",\n"),
 		suffix)
 
@@ -624,11 +659,41 @@ func (d *ddlWriter) writePartitionChild(q, parent string, p *Partition) {
 			strings.ToUpper(p.PartitionBy.Type),
 			QuotedColList(p.PartitionBy.Columns))
 	}
+	d.S(storageClauses("\n    ", p.With, p.Tablespace))
 	d.S(";\n\n")
 
 	for i := range p.Partitions {
 		d.writePartitionChild(q, p.Name, &p.Partitions[i])
 	}
+}
+
+// storageClauses returns the WITH and TABLESPACE clauses of a table, each after sep.
+func storageClauses(sep string, with *With, tablespace string) string {
+	var s string
+	if with != nil && len(with.Params) > 0 {
+		s += sep + "WITH (" + WithParams(with.Params) + ")"
+	}
+	if tablespace != "" {
+		s += sep + "TABLESPACE " + QuoteIdent(tablespace)
+	}
+	return s
+}
+
+// WithParams returns storage parameters as name='value' pairs for WITH and SET.
+func WithParams(params []WithParam) string {
+	parts := make([]string, len(params))
+	for i, p := range params {
+		parts[i] = p.Name + "=" + QuoteLiteral(p.Value)
+	}
+	return strings.Join(parts, ", ")
+}
+
+// WritePartition writes CREATE TABLE … PARTITION OF DDL for a partition and its sub-partitions.
+// Public API used by diff engine.
+func WritePartition(w io.Writer, q, parent string, p *Partition) error {
+	d := &ddlWriter{w: w}
+	d.writePartitionChild(q, parent, p)
+	return d.Err()
 }
 
 // WriteTable writes CREATE TABLE DDL for a single table.
@@ -770,12 +835,12 @@ func writeDefault(b *strings.Builder, def string) {
 
 func (d *ddlWriter) writeTableComments(q string, t *Table) {
 	if t.Comment != "" {
-		d.P("COMMENT ON TABLE %s%s IS %s;\n", q, QuoteIdent(t.Name), EscapeComment(t.Comment))
+		d.P("COMMENT ON TABLE %s%s IS %s;\n", q, QuoteIdent(t.Name), QuoteLiteral(t.Comment))
 	}
 	for i := range t.Columns {
 		c := &t.Columns[i]
 		if c.Comment != "" {
-			d.P("COMMENT ON COLUMN %s%s.%s IS %s;\n", q, QuoteIdent(t.Name), QuoteIdent(c.Name), EscapeComment(c.Comment))
+			d.P("COMMENT ON COLUMN %s%s.%s IS %s;\n", q, QuoteIdent(t.Name), QuoteIdent(c.Name), QuoteLiteral(c.Comment))
 		}
 	}
 	if t.Comment != "" || hasColumnComments(t) {
@@ -814,8 +879,14 @@ func hasColumnStorage(t *Table) bool {
 	return false
 }
 
-// EscapeComment wraps s in single quotes and escapes embedded quotes for SQL.
-func EscapeComment(s string) string {
+// SQLComment returns an SQL line comment. Line breaks, which object names may contain,
+// are replaced so the comment can't end early and leave the rest as SQL.
+func SQLComment(format string, args ...any) string {
+	return "-- " + strings.NewReplacer("\r", " ", "\n", " ").Replace(fmt.Sprintf(format, args...))
+}
+
+// QuoteLiteral returns s as an SQL string literal.
+func QuoteLiteral(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
 }
 
@@ -838,7 +909,8 @@ func pkDef(pk *PrimaryKey) string {
 	return fmt.Sprintf("PRIMARY KEY(%s)", QuotedColList(pk.Columns))
 }
 
-func uniqueDef(u *Unique) string {
+// UniqueDef returns the UNIQUE constraint definition: CONSTRAINT name UNIQUE [NULLS NOT DISTINCT](cols).
+func UniqueDef(u *Unique) string {
 	nullsDistinct := ""
 	if u.NullsDistinct == "false" {
 		nullsDistinct = " NULLS NOT DISTINCT"
@@ -997,14 +1069,15 @@ func (d *ddlWriter) writePolicy(p *Policy) {
 // --- comment ---
 
 func (d *ddlWriter) writeComment(c *Comment) {
-	target := commentTarget(c)
+	target := CommentTarget(c)
 	if target == "" {
 		return
 	}
-	d.P("COMMENT ON %s IS %s;\n", target, EscapeComment(c.Value))
+	d.P("COMMENT ON %s IS %s;\n", target, QuoteLiteral(c.Value))
 }
 
-func commentTarget(c *Comment) string {
+// CommentTarget returns the COMMENT ON target of c, e.g. TABLE "t" or COLUMN "t"."c"; "" if unsupported.
+func CommentTarget(c *Comment) string {
 	switch strings.ToLower(c.On) {
 	case "schema":
 		return "SCHEMA " + QuoteIdent(c.Name)
@@ -1112,14 +1185,7 @@ func (d *ddlWriter) writeIndex(q string, idx *Index) {
 		d.P("\n\tINCLUDE (%s)", QuotedColList(idx.Include.Columns))
 	}
 	d.If(idx.NullsDistinct == "false", "\n\tNULLS NOT DISTINCT")
-	if idx.With != nil && len(idx.With.Params) > 0 {
-		var params []string
-		for _, p := range idx.With.Params {
-			params = append(params, fmt.Sprintf("%s='%s'", p.Name, p.Value))
-		}
-		d.P("\n\tWITH (%s)", strings.Join(params, ", "))
-	}
-	d.If(idx.Tablespace != "", "\n\tTABLESPACE %s", QuoteIdent(idx.Tablespace))
+	d.S(storageClauses("\n\t", idx.With, idx.Tablespace))
 	if idx.Where != nil && idx.Where.Value != "" {
 		d.P("\n\tWHERE %s", idx.Where.Value)
 	}
@@ -1135,31 +1201,35 @@ func WriteIndex(w io.Writer, q string, idx *Index) error {
 }
 
 func indexElements(idx *Index) string {
-	var parts []string
-	for _, col := range idx.Columns {
-		s := "\t" + QuoteIdent(col.Name)
-		if col.Opclass != "" {
-			s += " " + col.Opclass
-		}
-		if col.Order == "desc" {
-			s += " DESC"
-		}
-		switch col.Nulls {
-		case "first":
-			s += " NULLS FIRST"
-		case "last":
-			s += " NULLS LAST"
-		}
-		parts = append(parts, s)
-	}
-	for _, expr := range idx.Expressions {
-		v := expr.Value
-		if !strings.HasPrefix(v, "(") {
-			v = "(" + v + ")"
-		}
-		parts = append(parts, "\t"+v)
+	parts := make([]string, len(idx.Keys))
+	for i, k := range idx.Keys {
+		parts[i] = "\t" + IndexKeyDef(k)
 	}
 	return strings.Join(parts, ",\n")
+}
+
+// IndexKeyDef returns the SQL of an index key: column or expression with opclass, ordering and NULLS placement.
+func IndexKeyDef(k IndexKey) string {
+	s := QuoteIdent(k.Name)
+	if k.IsExpression() {
+		s = k.Expression
+		if !strings.HasPrefix(s, "(") {
+			s = "(" + s + ")"
+		}
+	}
+	if k.Opclass != "" {
+		s += " " + k.Opclass
+	}
+	if k.Order == "desc" {
+		s += " DESC"
+	}
+	switch k.Nulls {
+	case "first":
+		s += " NULLS FIRST"
+	case "last":
+		s += " NULLS LAST"
+	}
+	return s
 }
 
 // --- FK ---
@@ -1174,8 +1244,8 @@ func (d *ddlWriter) writeFK(q string, table string, fk *ForeignKey) {
 		d.P("ALTER TABLE %s%s ADD FOREIGN KEY (%s)\n", q, QuoteIdent(table), localCols)
 	}
 	d.P("\tREFERENCES %s(%s)\n", QuoteIdentQualified(fk.ToTable), refCols)
-	d.P("\tON DELETE %s\n", refAction(fk.OnDelete))
-	d.P("\tON UPDATE %s", refAction(fk.OnUpdate))
+	d.P("\tON DELETE %s\n", RefAction(fk.OnDelete))
+	d.P("\tON UPDATE %s", RefAction(fk.OnUpdate))
 
 	if fk.Deferrable == "true" {
 		d.S("\n\tDEFERRABLE")
@@ -1269,8 +1339,9 @@ func skipSet(s *Schema) map[string]bool {
 	return m
 }
 
+// QuoteIdent returns name as a quoted SQL identifier.
 func QuoteIdent(name string) string {
-	return `"` + name + `"`
+	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
 
 // QuoteIdentQualified handles "schema.table" → "schema"."table".
@@ -1321,7 +1392,9 @@ func hasLength(c *Column) bool {
 	return false
 }
 
-func refAction(a string) string {
+// RefAction returns an FK action of the model as SQL: restrict → RESTRICT, set-null → SET NULL;
+// an empty or unknown action is NO ACTION.
+func RefAction(a string) string {
 	switch strings.ToLower(strings.TrimSpace(a)) {
 	case "restrict":
 		return "RESTRICT"

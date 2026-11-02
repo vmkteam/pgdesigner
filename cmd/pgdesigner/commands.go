@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -20,37 +21,49 @@ import (
 
 func runConvert(args []string) {
 	fs := flag.NewFlagSet("convert", flag.ExitOnError)
-	outFile := fs.String("o", "", "output .pgd file (default: input name with .pgd extension)")
+	outFile := fs.String("o", "", "output .pgd file (default: input name or database name with .pgd extension)")
+	schemaFilter := fs.String("schema", "", "schemas to introspect from a DSN (comma-separated, default: all)")
+	fullRE := fs.Bool("full", false, "full introspection from a DSN (views, functions, triggers, types)")
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: pgdesigner convert [-o output.pgd] <input.dbs|.dm2|.pdd|.sql>\n\nFlags:\n")
+		fmt.Fprintf(os.Stderr, "Usage: pgdesigner convert [-o output.pgd] [-schema s1,s2] [-full] <input.dbs|.dm2|.pdd|.sql|postgres://...>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	pos := parseArgs(fs, args, 1, 1)
 
-	if fs.NArg() < 1 {
-		fs.Usage()
-		os.Exit(1)
-	}
-
-	inputPath := fs.Arg(0)
+	inputPath := pos[0]
 	ext := strings.ToLower(filepath.Ext(inputPath))
-	if ext == format.ExtPGD {
+	if !pgre.IsDSN(inputPath) && ext == format.ExtPGD {
 		log.Fatalf("input is already .pgd: %s", inputPath)
 	}
 
-	project, err := loadFile(inputPath, pgre.Options{})
+	output, err := convertOutput(inputPath, *outFile)
 	if err != nil {
-		log.Fatalf("conversion failed: %v", err)
+		log.Fatal(err)
 	}
-
-	output := *outFile
-	if output == "" {
-		output = strings.TrimSuffix(inputPath, ext) + format.ExtPGD
+	project, err := format.LoadFile(inputPath, dsnOptions(*schemaFilter, *fullRE)...)
+	if err != nil {
+		log.Fatal(err)
 	}
 	if err := saveProject(project, output); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Converted %s → %s\n", inputPath, output)
+	fmt.Printf("Converted %s → %s\n", pgre.RedactDSN(inputPath), output)
+}
+
+// convertOutput returns the output file of convert: the -o value, the input with the .pgd
+// extension or, for a DSN, <dbname>.pgd in the current directory, which must not exist yet.
+func convertOutput(input, output string) (string, error) {
+	switch {
+	case output != "":
+		return output, nil
+	case !pgre.IsDSN(input):
+		return strings.TrimSuffix(input, filepath.Ext(input)) + format.ExtPGD, nil
+	}
+	output = filepath.Base(cmp.Or(pgre.DatabaseName(input), "schema")) + format.ExtPGD
+	if _, err := os.Stat(output); err == nil {
+		return "", fmt.Errorf("%s already exists, set the output file with -o", output)
+	}
+	return output, nil
 }
 
 func runLint(args []string) {
@@ -62,17 +75,12 @@ func runLint(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner lint [-f text|json] [-s error|warning|info] [-fix] <file.pgd|.dbs|.pdd|.sql>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	pos := parseArgs(fs, args, 1, 1)
 
-	if fs.NArg() < 1 {
-		fs.Usage()
-		os.Exit(1)
-	}
-
-	inputPath := fs.Arg(0)
-	project, err := loadFile(inputPath, pgre.Options{})
+	inputPath := pos[0]
+	project, err := format.LoadFile(inputPath)
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", inputPath, err)
+		log.Fatal(err)
 	}
 
 	issues := lint.Validate(project)
@@ -104,6 +112,9 @@ func lintFix(project *pgd.Project, issues []lint.Issue, inputPath string) []lint
 	fmt.Fprintf(os.Stderr, "Fixed %d issues\n", len(results))
 
 	outPath := pgdFilePath(inputPath)
+	if outPath == "" {
+		log.Fatal("-fix saves the project to a file: convert the database first")
+	}
 	if err := saveProject(project, outPath); err != nil {
 		log.Fatalf("save %s: %v", outPath, err)
 	}
@@ -182,21 +193,16 @@ func runDiff(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner diff [-f sql|json] [-o output] <old.pgd> <new.pgd>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	pos := parseArgs(fs, args, 2, 2)
 
-	if fs.NArg() < 2 {
-		fs.Usage()
-		os.Exit(1)
-	}
-
-	opts := pgre.Options{}
-	oldProject, err := loadFile(fs.Arg(0), opts)
+	// a database is introspected fully: without its enums diff would create them again
+	oldProject, err := format.LoadFile(pos[0], format.WithFull(true))
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", fs.Arg(0), err)
+		log.Fatal(err)
 	}
-	newProject, err := loadFile(fs.Arg(1), opts)
+	newProject, err := format.LoadFile(pos[1], format.WithFull(true))
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", fs.Arg(1), err)
+		log.Fatal(err)
 	}
 
 	result := diff.Diff(oldProject, newProject)
@@ -239,16 +245,11 @@ func runGenerate(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner generate [-o output.sql] <file.pgd|.dbs|.pdd|.sql>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	pos := parseArgs(fs, args, 1, 1)
 
-	if fs.NArg() < 1 {
-		fs.Usage()
-		os.Exit(1)
-	}
-
-	project, err := loadFile(fs.Arg(0), pgre.Options{})
+	project, err := format.LoadFile(pos[0])
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", fs.Arg(0), err)
+		log.Fatal(err)
 	}
 
 	ddl := pgd.GenerateDDL(project)
@@ -269,26 +270,20 @@ func runMerge(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner merge [flags] <base> <overlay> [<extra>...]\n\nMerges multiple schema files into one .pgd. Overlay wins on conflicts.\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	pos := parseArgs(fs, args, 2, -1)
 
-	if fs.NArg() < 2 {
-		fs.Usage()
-		os.Exit(1)
-	}
-
-	opts := pgre.Options{}
-	projects := make([]*pgd.Project, fs.NArg())
-	for i := range fs.NArg() {
-		p, err := loadFile(fs.Arg(i), opts)
+	projects := make([]*pgd.Project, len(pos))
+	for i, path := range pos {
+		p, err := format.LoadFile(path)
 		if err != nil {
-			log.Fatalf("failed to load %s: %v", fs.Arg(i), err)
+			log.Fatal(err)
 		}
 		projects[i] = p
 		tables := 0
 		for _, s := range p.Schemas {
 			tables += len(s.Tables)
 		}
-		fmt.Fprintf(os.Stderr, "  %s: %d tables\n", filepath.Base(fs.Arg(i)), tables)
+		fmt.Fprintf(os.Stderr, "  %s: %d tables\n", filepath.Base(path), tables)
 	}
 
 	mergeOpts := merge.Options{Layout: *layout, Name: *name}
@@ -321,16 +316,11 @@ func runTestData(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner testdata [flags] <file.pgd|.dbs|.pdd|.sql>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	pos := parseArgs(fs, args, 1, 1)
 
-	if fs.NArg() < 1 {
-		fs.Usage()
-		os.Exit(1)
-	}
-
-	project, err := loadFile(fs.Arg(0), pgre.Options{})
+	project, err := format.LoadFile(pos[0])
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", fs.Arg(0), err)
+		log.Fatal(err)
 	}
 
 	opts := gendata.Options{

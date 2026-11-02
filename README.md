@@ -5,7 +5,7 @@
 [![Go](https://img.shields.io/badge/Go-1.24-00ADD8)](go.mod)
 [![macOS | Linux | Windows](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)]()
 
-Visual PostgreSQL schema designer with git-friendly `.pgd` XML format, diff/ALTER engine, and 66 lint rules. Ships as a single binary — no cloud, no account, no telemetry.
+Visual PostgreSQL schema designer with git-friendly `.pgd` XML format, diff/ALTER engine, and 69 lint rules. Ships as a single binary — no cloud, no account, no telemetry.
 
 <p align="center">
   <a href="https://pgdesigner.io">
@@ -27,7 +27,7 @@ Most schema design tools are either database-agnostic (losing PG-specific featur
 - **PG-specialized** — full PostgreSQL 18 DDL: partitions, RLS, domains, triggers, GIN/GiST indexes, identity columns
 - **Git-friendly format** — `.pgd` XML that diffs cleanly in pull requests, no binary blobs
 - **Diff/ALTER engine** — compare two schema versions, generate migration SQL with hazard detection
-- **66 lint rules** — naming conventions, missing indexes, FK integrity, type checks — with autofix
+- **69 lint rules** — naming conventions, missing indexes, FK integrity, type checks — with autofix
 - **No cloud, no account** — runs locally, your schemas stay on your machine
 
 ## Features
@@ -38,7 +38,7 @@ Most schema design tools are either database-agnostic (losing PG-specific featur
 | **Table Editor** | Columns, constraints, indexes, FK with inline editing |
 | **DDL Generation** | Complete CREATE/ALTER SQL from schema model |
 | **Diff Engine** | Semantic ALTER between two schemas with hazard warnings |
-| **Lint & Autofix** | 66 rules: naming, types, FK, indexes, constraints |
+| **Lint & Autofix** | 69 rules: naming, types, FK, indexes, constraints |
 | **Sample Data** | Generate realistic INSERT statements from schema |
 | **Import** | pgModeler (.pdd), DbSchema (.dbs), Toad (.dm2), plain SQL, live PostgreSQL |
 | **Reverse Engineering** | Import from live PostgreSQL via `pg_catalog` |
@@ -81,8 +81,9 @@ pgdesigner lint schema.pgd
 # Diff two schemas
 pgdesigner diff old.pgd new.pgd
 
-# Convert from other formats
+# Convert from other formats or a database
 pgdesigner convert schema.pdd -o schema.pgd
+pgdesigner convert "postgres://user@localhost:5432/mydb?sslmode=disable" -o mydb.pgd
 ```
 
 ## Demo

@@ -176,20 +176,27 @@ describe('validateTable', () => {
   // --- Indexes ---
 
   it('E001: index without name', () => {
-    const errs = validateTable(minTable({ indexes: [{ name: '', columns: ['id'], expressions: [] }] as any }))
+    const errs = validateTable(minTable({ indexes: [{ name: '', keys: [{ kind: 'column', name: 'id' }] }] as any }))
     expect(errs.some(e => e.code === 'E001' && e.field === 'idx.0.name')).toBe(true)
   })
 
   it('E011: index without columns or expressions', () => {
-    const errs = validateTable(minTable({ indexes: [{ name: 'idx_x', columns: [], expressions: [] }] as any }))
+    const errs = validateTable(minTable({ indexes: [{ name: 'idx_x', keys: [] }] as any }))
     expect(codes(errs)).toContain('E011')
+  })
+
+  it('E011: empty index column or expression', () => {
+    const empty = (key: object) => validateTable(minTable({ indexes: [{ name: 'idx_x', keys: [key] }] as any }))
+    expect(codes(empty({ kind: 'column', name: '' }))).toContain('E011')
+    expect(codes(empty({ kind: 'expression', expression: ' ' }))).toContain('E011')
+    expect(codes(empty({ kind: 'expression', expression: 'lower(name)' }))).not.toContain('E011')
   })
 
   it('E005: duplicate index names', () => {
     const errs = validateTable(minTable({
       indexes: [
-        { name: 'idx_x', columns: ['id'], expressions: [] },
-        { name: 'idx_x', columns: ['name'], expressions: [] },
+        { name: 'idx_x', keys: [{ kind: 'column', name: 'id' }] },
+        { name: 'idx_x', keys: [{ kind: 'column', name: 'name' }] },
       ] as any,
     }))
     expect(codes(errs)).toContain('E005')
