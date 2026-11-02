@@ -61,7 +61,7 @@ func main() {
 Usage:
   pgdesigner [flags] <schema.pgd>    open ERD viewer
   pgdesigner version                 print version and exit
-  pgdesigner convert <file>          convert .dbs/.dm2/.pdd/.sql to .pgd
+  pgdesigner convert <file|dsn>      convert .dbs/.dm2/.pdd/.sql or a database to .pgd
   pgdesigner lint <schema.pgd>       validate schema (use -fix to auto-fix)
   pgdesigner diff <old> <new>        generate ALTER migration SQL (-o to write to file)
   pgdesigner generate <schema.pgd>   generate DDL SQL
@@ -72,7 +72,8 @@ Flags:
 `, version)
 		flag.PrintDefaults()
 	}
-	flag.Parse()
+	args := parseArgs(flag.CommandLine, os.Args[1:])
+	checkArgs(flag.CommandLine, args, 0, 1)
 
 	if *tsClient {
 		p := &pgd.Project{Version: 1, PgVersion: "18"}
@@ -88,13 +89,13 @@ Flags:
 	var st *store.ProjectStore
 	var inputPath string
 
-	if flag.NArg() < 1 {
+	if len(args) == 0 {
 		// Demo mode: start with embedded chinook schema
 		st = store.NewProjectStore(&pgd.Project{Version: 1, PgVersion: "18", DefaultSchema: "public", Schemas: []pgd.Schema{{Name: "public"}}}, "")
 		st.SetDemo(true)
 		inputPath = "(demo)"
 	} else {
-		inputPath = flag.Arg(0)
+		inputPath = args[0]
 		reOpts := pgre.Options{Full: *fullRE}
 		if *schemaFilter != "" {
 			reOpts.Schemas = strings.Split(*schemaFilter, ",")

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -20,37 +21,43 @@ import (
 
 func runConvert(args []string) {
 	fs := flag.NewFlagSet("convert", flag.ExitOnError)
-	outFile := fs.String("o", "", "output .pgd file (default: input name with .pgd extension)")
+	outFile := fs.String("o", "", "output .pgd file (default: input name or database name with .pgd extension)")
+	schemaFilter := fs.String("schema", "", "schemas to introspect from a DSN (comma-separated, default: all)")
+	fullRE := fs.Bool("full", false, "full introspection from a DSN (views, functions, triggers, types)")
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: pgdesigner convert [-o output.pgd] <input.dbs|.dm2|.pdd|.sql>\n\nFlags:\n")
+		fmt.Fprintf(os.Stderr, "Usage: pgdesigner convert [-o output.pgd] [-schema s1,s2] [-full] <input.dbs|.dm2|.pdd|.sql|postgres://...>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	pos := parseArgs(fs, args)
+	checkArgs(fs, pos, 1, 1)
 
-	if fs.NArg() < 1 {
-		fs.Usage()
-		os.Exit(1)
-	}
-
-	inputPath := fs.Arg(0)
+	inputPath := pos[0]
+	isDSN := pgre.IsDSN(inputPath)
 	ext := strings.ToLower(filepath.Ext(inputPath))
-	if ext == format.ExtPGD {
+	if !isDSN && ext == format.ExtPGD {
 		log.Fatalf("input is already .pgd: %s", inputPath)
 	}
 
-	project, err := loadFile(inputPath, pgre.Options{})
+	reOpts := pgre.Options{Full: *fullRE}
+	if *schemaFilter != "" {
+		reOpts.Schemas = strings.Split(*schemaFilter, ",")
+	}
+	project, err := loadFile(inputPath, reOpts)
 	if err != nil {
 		log.Fatalf("conversion failed: %v", err)
 	}
 
-	output := *outFile
-	if output == "" {
-		output = strings.TrimSuffix(inputPath, ext) + format.ExtPGD
+	source, output := inputPath, *outFile
+	if isDSN {
+		dbName := cmp.Or(pgre.DatabaseName(inputPath), "schema")
+		source = "database " + dbName // don't print the DSN: it may contain a password
+		output = cmp.Or(output, dbName+format.ExtPGD)
 	}
+	output = cmp.Or(output, strings.TrimSuffix(inputPath, filepath.Ext(inputPath))+format.ExtPGD)
 	if err := saveProject(project, output); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Converted %s → %s\n", inputPath, output)
+	fmt.Printf("Converted %s → %s\n", source, output)
 }
 
 func runLint(args []string) {
@@ -62,14 +69,10 @@ func runLint(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner lint [-f text|json] [-s error|warning|info] [-fix] <file.pgd|.dbs|.pdd|.sql>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	pos := parseArgs(fs, args)
+	checkArgs(fs, pos, 1, 1)
 
-	if fs.NArg() < 1 {
-		fs.Usage()
-		os.Exit(1)
-	}
-
-	inputPath := fs.Arg(0)
+	inputPath := pos[0]
 	project, err := loadFile(inputPath, pgre.Options{})
 	if err != nil {
 		log.Fatalf("failed to load %s: %v", inputPath, err)
@@ -182,21 +185,17 @@ func runDiff(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner diff [-f sql|json] [-o output] <old.pgd> <new.pgd>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
-
-	if fs.NArg() < 2 {
-		fs.Usage()
-		os.Exit(1)
-	}
+	pos := parseArgs(fs, args)
+	checkArgs(fs, pos, 2, 2)
 
 	opts := pgre.Options{}
-	oldProject, err := loadFile(fs.Arg(0), opts)
+	oldProject, err := loadFile(pos[0], opts)
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", fs.Arg(0), err)
+		log.Fatalf("failed to load %s: %v", pos[0], err)
 	}
-	newProject, err := loadFile(fs.Arg(1), opts)
+	newProject, err := loadFile(pos[1], opts)
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", fs.Arg(1), err)
+		log.Fatalf("failed to load %s: %v", pos[1], err)
 	}
 
 	result := diff.Diff(oldProject, newProject)
@@ -239,16 +238,12 @@ func runGenerate(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner generate [-o output.sql] <file.pgd|.dbs|.pdd|.sql>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	pos := parseArgs(fs, args)
+	checkArgs(fs, pos, 1, 1)
 
-	if fs.NArg() < 1 {
-		fs.Usage()
-		os.Exit(1)
-	}
-
-	project, err := loadFile(fs.Arg(0), pgre.Options{})
+	project, err := loadFile(pos[0], pgre.Options{})
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", fs.Arg(0), err)
+		log.Fatalf("failed to load %s: %v", pos[0], err)
 	}
 
 	ddl := pgd.GenerateDDL(project)
@@ -269,26 +264,22 @@ func runMerge(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner merge [flags] <base> <overlay> [<extra>...]\n\nMerges multiple schema files into one .pgd. Overlay wins on conflicts.\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
-
-	if fs.NArg() < 2 {
-		fs.Usage()
-		os.Exit(1)
-	}
+	pos := parseArgs(fs, args)
+	checkArgs(fs, pos, 2, -1)
 
 	opts := pgre.Options{}
-	projects := make([]*pgd.Project, fs.NArg())
-	for i := range fs.NArg() {
-		p, err := loadFile(fs.Arg(i), opts)
+	projects := make([]*pgd.Project, len(pos))
+	for i, path := range pos {
+		p, err := loadFile(path, opts)
 		if err != nil {
-			log.Fatalf("failed to load %s: %v", fs.Arg(i), err)
+			log.Fatalf("failed to load %s: %v", path, err)
 		}
 		projects[i] = p
 		tables := 0
 		for _, s := range p.Schemas {
 			tables += len(s.Tables)
 		}
-		fmt.Fprintf(os.Stderr, "  %s: %d tables\n", filepath.Base(fs.Arg(i)), tables)
+		fmt.Fprintf(os.Stderr, "  %s: %d tables\n", filepath.Base(path), tables)
 	}
 
 	mergeOpts := merge.Options{Layout: *layout, Name: *name}
@@ -321,16 +312,12 @@ func runTestData(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pgdesigner testdata [flags] <file.pgd|.dbs|.pdd|.sql>\n\nFlags:\n")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	pos := parseArgs(fs, args)
+	checkArgs(fs, pos, 1, 1)
 
-	if fs.NArg() < 1 {
-		fs.Usage()
-		os.Exit(1)
-	}
-
-	project, err := loadFile(fs.Arg(0), pgre.Options{})
+	project, err := loadFile(pos[0], pgre.Options{})
 	if err != nil {
-		log.Fatalf("failed to load %s: %v", fs.Arg(0), err)
+		log.Fatalf("failed to load %s: %v", pos[0], err)
 	}
 
 	opts := gendata.Options{

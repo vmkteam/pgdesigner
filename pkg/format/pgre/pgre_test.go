@@ -81,6 +81,33 @@ func skipIfNoPG(t *testing.T) {
 	}
 }
 
+func TestIsDSN(t *testing.T) {
+	tests := []struct {
+		in   string
+		want bool
+	}{
+		{"postgres://u@h/db", true},
+		{"postgresql://u@h/db", true},
+		{"postgres://", true},
+		{"abcdefgh.pgd", false}, // 12 chars used to panic
+		{"abcdefg.pgd", false},
+		{"abcdefghi.pgd", false},
+		{"postgres.pgd", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			assert.Equal(t, tt.want, IsDSN(tt.in))
+		})
+	}
+}
+
+func TestDatabaseName(t *testing.T) {
+	assert.Equal(t, "mydb", DatabaseName("postgres://u:p@localhost:5432/mydb?sslmode=disable"))
+	assert.Empty(t, DatabaseName("postgres://u@localhost:5432/"))
+	assert.Empty(t, DatabaseName("postgres://u@localhost"))
+}
+
 func TestParseIndexColumns(t *testing.T) {
 	tests := []struct {
 		name string

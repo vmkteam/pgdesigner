@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/xml"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -64,6 +65,39 @@ func pgdFilePath(path string) string {
 		return strings.TrimSuffix(path, filepath.Ext(path)) + ".pgd"
 	}
 	return path
+}
+
+// parseArgs parses flags placed anywhere in args, so "generate in.pgd -o out.sql"
+// works like "generate -o out.sql in.pgd". Arguments after "--" are positional.
+// It returns the positional arguments.
+func parseArgs(fs *flag.FlagSet, args []string) []string {
+	var positional []string
+	for {
+		_ = fs.Parse(args) // flag.ExitOnError: exits on bad flags
+		rest := fs.Args()
+		if n := len(args) - len(rest); n > 0 && args[n-1] == "--" {
+			return append(positional, rest...)
+		}
+		if len(rest) == 0 {
+			return positional
+		}
+		positional = append(positional, rest[0])
+		args = rest[1:]
+	}
+}
+
+// checkArgs exits with usage when the number of positional arguments is out of [minArgs, maxArgs].
+// maxArgs < 0 means no upper limit.
+func checkArgs(fs *flag.FlagSet, args []string, minArgs, maxArgs int) {
+	switch {
+	case maxArgs >= 0 && len(args) > maxArgs:
+		fmt.Fprintf(fs.Output(), "unexpected argument: %s\n\n", args[maxArgs])
+	case len(args) < minArgs:
+	default:
+		return
+	}
+	fs.Usage()
+	os.Exit(1)
 }
 
 // writeOutput writes data to path, or to stdout when path is empty.
