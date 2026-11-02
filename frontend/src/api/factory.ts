@@ -35,6 +35,7 @@ export type {
   IAboutInfo,
   IIdentitySeqOpt,
   IIndexColDetail,
+  IIndexExprDetail,
   IPartitionByRPC,
   IPartitionRPC,
   IProjectSettings,

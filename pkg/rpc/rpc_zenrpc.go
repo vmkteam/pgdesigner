@@ -1586,6 +1586,10 @@ func (ProjectService) SMD() smd.ServiceInfo {
 									Type: smd.String,
 								},
 								{
+									Name: "opclass",
+									Type: smd.String,
+								},
+								{
 									Name: "with",
 									Type: smd.String,
 								},
@@ -1670,7 +1674,7 @@ func (ProjectService) SMD() smd.ServiceInfo {
 									Name: "expressions",
 									Type: smd.Array,
 									Items: map[string]string{
-										"type": smd.String,
+										"$ref": "#/definitions/IndexExprDetail",
 									},
 								},
 								{
@@ -1698,6 +1702,29 @@ func (ProjectService) SMD() smd.ServiceInfo {
 							Properties: smd.PropertyList{
 								{
 									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name:        "order",
+									Description: `asc|desc`,
+									Type:        smd.String,
+								},
+								{
+									Name:        "nulls",
+									Description: `first|last`,
+									Type:        smd.String,
+								},
+								{
+									Name: "opclass",
+									Type: smd.String,
+								},
+							},
+						},
+						"IndexExprDetail": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "expression",
 									Type: smd.String,
 								},
 								{
@@ -2235,6 +2262,10 @@ Used for saving DDL, diff patches, and other generated text.`,
 										Type: smd.String,
 									},
 									{
+										Name: "opclass",
+										Type: smd.String,
+									},
+									{
 										Name: "with",
 										Type: smd.String,
 									},
@@ -2285,7 +2316,7 @@ Used for saving DDL, diff patches, and other generated text.`,
 										Name: "expressions",
 										Type: smd.Array,
 										Items: map[string]string{
-											"type": smd.String,
+											"$ref": "#/definitions/IndexExprInput",
 										},
 									},
 									{
@@ -2313,6 +2344,27 @@ Used for saving DDL, diff patches, and other generated text.`,
 								Properties: smd.PropertyList{
 									{
 										Name: "name",
+										Type: smd.String,
+									},
+									{
+										Name: "order",
+										Type: smd.String,
+									},
+									{
+										Name: "nulls",
+										Type: smd.String,
+									},
+									{
+										Name: "opclass",
+										Type: smd.String,
+									},
+								},
+							},
+							"IndexExprInput": {
+								Type: "object",
+								Properties: smd.PropertyList{
+									{
+										Name: "expression",
 										Type: smd.String,
 									},
 									{
@@ -2670,6 +2722,10 @@ Used for saving DDL, diff patches, and other generated text.`,
 									Type: smd.String,
 								},
 								{
+									Name: "opclass",
+									Type: smd.String,
+								},
+								{
 									Name: "with",
 									Type: smd.String,
 								},
@@ -2754,7 +2810,7 @@ Used for saving DDL, diff patches, and other generated text.`,
 									Name: "expressions",
 									Type: smd.Array,
 									Items: map[string]string{
-										"type": smd.String,
+										"$ref": "#/definitions/IndexExprDetail",
 									},
 								},
 								{
@@ -2782,6 +2838,29 @@ Used for saving DDL, diff patches, and other generated text.`,
 							Properties: smd.PropertyList{
 								{
 									Name: "name",
+									Type: smd.String,
+								},
+								{
+									Name:        "order",
+									Description: `asc|desc`,
+									Type:        smd.String,
+								},
+								{
+									Name:        "nulls",
+									Description: `first|last`,
+									Type:        smd.String,
+								},
+								{
+									Name: "opclass",
+									Type: smd.String,
+								},
+							},
+						},
+						"IndexExprDetail": {
+							Type: "object",
+							Properties: smd.PropertyList{
+								{
+									Name: "expression",
 									Type: smd.String,
 								},
 								{
@@ -3171,6 +3250,10 @@ It does NOT modify the project — only computes the diff.`,
 										Type: smd.String,
 									},
 									{
+										Name: "opclass",
+										Type: smd.String,
+									},
+									{
 										Name: "with",
 										Type: smd.String,
 									},
@@ -3221,7 +3304,7 @@ It does NOT modify the project — only computes the diff.`,
 										Name: "expressions",
 										Type: smd.Array,
 										Items: map[string]string{
-											"type": smd.String,
+											"$ref": "#/definitions/IndexExprInput",
 										},
 									},
 									{
@@ -3249,6 +3332,27 @@ It does NOT modify the project — only computes the diff.`,
 								Properties: smd.PropertyList{
 									{
 										Name: "name",
+										Type: smd.String,
+									},
+									{
+										Name: "order",
+										Type: smd.String,
+									},
+									{
+										Name: "nulls",
+										Type: smd.String,
+									},
+									{
+										Name: "opclass",
+										Type: smd.String,
+									},
+								},
+							},
+							"IndexExprInput": {
+								Type: "object",
+								Properties: smd.PropertyList{
+									{
+										Name: "expression",
 										Type: smd.String,
 									},
 									{

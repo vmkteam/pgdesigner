@@ -278,7 +278,9 @@ func convertIndex(tableName string, idx pgIndex) *pgd.Index {
 	}
 	for _, elem := range parseIndexColumns(def) {
 		if pgd.IsExpression(elem.Name) {
-			out.Expressions = append(out.Expressions, pgd.Expression{Value: elem.Name})
+			out.Expressions = append(out.Expressions, pgd.Expression{
+				Value: elem.Name, Order: elem.Order, Nulls: elem.Nulls, Opclass: elem.Opclass,
+			})
 		} else {
 			elem.Name = strings.Trim(elem.Name, `"`)
 			out.Columns = append(out.Columns, elem)

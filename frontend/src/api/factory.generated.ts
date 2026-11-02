@@ -330,10 +330,24 @@ export interface IIndexDetail {
   nullsDistinct: boolean,
   using: string,
   columns: Array<IIndexColDetail>,
-  expressions: Array<string>,
+  expressions: Array<IIndexExprDetail>,
   with: Array<IWithParamDetail>,
   where: string,
   include: Array<string>
+}
+
+export interface IIndexExprDetail {
+  expression: string,
+  order: string, // asc|desc
+  nulls: string, // first|last
+  opclass: string
+}
+
+export interface IIndexExprInput {
+  expression: string,
+  order: string,
+  nulls: string,
+  opclass: string
 }
 
 export interface IIndexInput {
@@ -343,7 +357,7 @@ export interface IIndexInput {
   nullsDistinct: boolean,
   using: string,
   columns: Array<IIndexColInput>,
-  expressions: Array<string>,
+  expressions: Array<IIndexExprInput>,
   with: Array<IWithParamInput>,
   where: string,
   include: Array<string>

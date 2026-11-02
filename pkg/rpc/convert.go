@@ -213,7 +213,7 @@ func newTableDetail(p *pgd.Project, t *pgd.Table, schema *pgd.Schema) *TableDeta
 			id.Columns = append(id.Columns, IndexColDetail{Name: c.Name, Order: c.Order, Nulls: c.Nulls, Opclass: c.Opclass})
 		}
 		for _, e := range idx.Expressions {
-			id.Expressions = append(id.Expressions, e.Value)
+			id.Expressions = append(id.Expressions, IndexExprDetail{Expression: e.Value, Order: e.Order, Nulls: e.Nulls, Opclass: e.Opclass})
 		}
 		if idx.With != nil {
 			for _, p := range idx.With.Params {

@@ -345,7 +345,7 @@ type IndexDetail struct {
 	NullsDistinct bool              `json:"nullsDistinct,omitempty"`
 	Using         string            `json:"using,omitempty"`
 	Columns       []IndexColDetail  `json:"columns"`
-	Expressions   []string          `json:"expressions,omitempty"`
+	Expressions   []IndexExprDetail `json:"expressions,omitempty"`
 	With          []WithParamDetail `json:"with,omitempty"`
 	Where         string            `json:"where,omitempty"`
 	Include       []string          `json:"include,omitempty"`
@@ -363,6 +363,14 @@ type IndexColDetail struct {
 	Order   string `json:"order,omitempty"` // asc|desc
 	Nulls   string `json:"nulls,omitempty"` // first|last
 	Opclass string `json:"opclass,omitempty"`
+}
+
+// IndexExprDetail holds index expression with ordering metadata.
+type IndexExprDetail struct {
+	Expression string `json:"expression"`
+	Order      string `json:"order,omitempty"` // asc|desc
+	Nulls      string `json:"nulls,omitempty"` // first|last
+	Opclass    string `json:"opclass,omitempty"`
 }
 
 // DirEntry represents a file or directory in a directory listing.

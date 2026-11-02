@@ -1130,3 +1130,31 @@ func TestSynthetic_ReferenceSQL_Match(t *testing.T) {
 		assert.Equal(t, ref, gen, "%s count mismatch (ref=%d gen=%d)", q.name, ref, gen)
 	}
 }
+
+func TestWriteIndex_ExpressionOptions(t *testing.T) {
+	const pgdXML = `<index name="ix_t_mnn_trgm" table="t" using="gin">
+  <expression opclass="gin_trgm_ops"><![CDATA[params ->> 'mnn']]></expression>
+  <expression order="desc" nulls="last"><![CDATA[(lower(title))]]></expression>
+</index>`
+	var idx Index
+	require.NoError(t, xml.Unmarshal([]byte(pgdXML), &idx))
+	assert.Equal(t, []Expression{
+		{Value: "params ->> 'mnn'", Opclass: "gin_trgm_ops"},
+		{Value: "(lower(title))", Order: "desc", Nulls: "last"},
+	}, idx.Expressions)
+
+	var buf bytes.Buffer
+	require.NoError(t, WriteIndex(&buf, "", &idx))
+	assert.Equal(t, `CREATE INDEX "ix_t_mnn_trgm" ON "t" USING GIN (
+	(params ->> 'mnn') gin_trgm_ops,
+	(lower(title)) DESC NULLS LAST
+);
+
+`, buf.String())
+
+	// attributes survive saving
+	out, err := xml.Marshal(&idx)
+	require.NoError(t, err)
+	assert.Contains(t, string(out), `<expression opclass="gin_trgm_ops"><![CDATA[params ->> 'mnn']]></expression>`)
+	assert.Contains(t, string(out), `<expression order="desc" nulls="last"><![CDATA[(lower(title))]]></expression>`)
+}

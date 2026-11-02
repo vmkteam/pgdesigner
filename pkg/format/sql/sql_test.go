@@ -493,3 +493,32 @@ func TestParseSQL_Serial(t *testing.T) {
 	assert.Equal(t, "false", p.Schemas[0].Tables[0].Columns[0].Nullable)
 	assert.Equal(t, "bigserial", p.Schemas[0].Tables[0].Columns[1].Type)
 }
+
+func TestParseSQL_IndexExpressionOptions(t *testing.T) {
+	sql := `
+	CREATE TABLE t (id integer PRIMARY KEY, params jsonb, title text);
+	CREATE INDEX ix_t_mnn_trgm ON t USING gin ((params ->> 'mnn') gin_trgm_ops);
+	CREATE INDEX ix_t_lower_desc ON t ((lower(title)) DESC NULLS LAST);
+	`
+	p, err := ParseSQL(sql, "test")
+	require.NoError(t, err)
+
+	idxs := map[string]pgd.Index{}
+	for _, idx := range p.Schemas[0].Indexes {
+		idxs[idx.Name] = idx
+	}
+	require.Len(t, idxs, 2)
+	assert.Equal(t, []pgd.Expression{{Value: "params ->> 'mnn'", Opclass: "gin_trgm_ops"}}, idxs["ix_t_mnn_trgm"].Expressions)
+	assert.Equal(t, []pgd.Expression{{Value: "lower(title)", Order: "desc", Nulls: "last"}}, idxs["ix_t_lower_desc"].Expressions)
+
+	ddl := pgd.GenerateDDL(p)
+	assert.Contains(t, ddl, "(params ->> 'mnn') gin_trgm_ops")
+	assert.Contains(t, ddl, "(lower(title)) DESC NULLS LAST")
+
+	// distinct opclass or order keeps indexes apart when deduplicating
+	asc := idxs["ix_t_lower_desc"]
+	asc.Name, asc.Expressions = "ix_t_lower_asc", []pgd.Expression{{Value: "lower(title)"}}
+	p.Schemas[0].Indexes = append(p.Schemas[0].Indexes, asc)
+	deduplicateIndexes(p)
+	assert.Len(t, p.Schemas[0].Indexes, 3)
+}

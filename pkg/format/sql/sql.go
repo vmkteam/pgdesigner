@@ -185,6 +185,10 @@ func indexKey(idx *pgd.Index) string {
 			b.WriteByte(',')
 		}
 		b.WriteString(e.Value)
+		b.WriteByte('|')
+		b.WriteString(e.Order)
+		b.WriteByte('|')
+		b.WriteString(e.Opclass)
 	}
 	b.WriteByte(':')
 	if idx.Include != nil {
@@ -683,23 +687,22 @@ func (c *sqlConverter) convertCreateIndex(stmt *pg.IndexStmt) { //nolint:gocogni
 				}
 			}
 
+			ref := pgd.ColRef{Name: colName, Opclass: funcName(elem.Opclass)}
+			if elem.Ordering == pg.SortByDir_SORTBY_DESC {
+				ref.Order = "desc"
+			}
+			switch elem.NullsOrdering {
+			case pg.SortByNulls_SORTBY_NULLS_FIRST:
+				ref.Nulls = "first"
+			case pg.SortByNulls_SORTBY_NULLS_LAST:
+				ref.Nulls = "last"
+			}
 			if colName != "" {
-				ref := pgd.ColRef{Name: colName}
-				if elem.Ordering == pg.SortByDir_SORTBY_DESC {
-					ref.Order = "desc"
-				}
-				switch elem.NullsOrdering {
-				case pg.SortByNulls_SORTBY_NULLS_FIRST:
-					ref.Nulls = "first"
-				case pg.SortByNulls_SORTBY_NULLS_LAST:
-					ref.Nulls = "last"
-				}
-				if op := funcName(elem.Opclass); op != "" {
-					ref.Opclass = op
-				}
 				idx.Columns = append(idx.Columns, ref)
 			} else if elem.Expr != nil {
-				idx.Expressions = append(idx.Expressions, pgd.Expression{Value: nodeToSQL(elem.Expr)})
+				idx.Expressions = append(idx.Expressions, pgd.Expression{
+					Value: nodeToSQL(elem.Expr), Order: ref.Order, Nulls: ref.Nulls, Opclass: ref.Opclass,
+				})
 			}
 		}
 	}

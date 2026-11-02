@@ -1137,29 +1137,34 @@ func WriteIndex(w io.Writer, q string, idx *Index) error {
 func indexElements(idx *Index) string {
 	var parts []string
 	for _, col := range idx.Columns {
-		s := "\t" + QuoteIdent(col.Name)
-		if col.Opclass != "" {
-			s += " " + col.Opclass
-		}
-		if col.Order == "desc" {
-			s += " DESC"
-		}
-		switch col.Nulls {
-		case "first":
-			s += " NULLS FIRST"
-		case "last":
-			s += " NULLS LAST"
-		}
-		parts = append(parts, s)
+		parts = append(parts, "\t"+QuoteIdent(col.Name)+indexElemOptions(col.Opclass, col.Order, col.Nulls))
 	}
 	for _, expr := range idx.Expressions {
 		v := expr.Value
 		if !strings.HasPrefix(v, "(") {
 			v = "(" + v + ")"
 		}
-		parts = append(parts, "\t"+v)
+		parts = append(parts, "\t"+v+indexElemOptions(expr.Opclass, expr.Order, expr.Nulls))
 	}
 	return strings.Join(parts, ",\n")
+}
+
+// indexElemOptions returns the opclass, ordering and NULLS placement of an index key element.
+func indexElemOptions(opclass, order, nulls string) string {
+	var s string
+	if opclass != "" {
+		s += " " + opclass
+	}
+	if order == "desc" {
+		s += " DESC"
+	}
+	switch nulls {
+	case "first":
+		s += " NULLS FIRST"
+	case "last":
+		s += " NULLS LAST"
+	}
+	return s
 }
 
 // --- FK ---

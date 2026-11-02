@@ -27,6 +27,18 @@ function updateCol(i: number, field: string, value: string) {
   cols[i] = { ...cols[i]!, [field]: value }
   set('columns', cols)
 }
+
+function addExpr() {
+  set('expressions', [...(props.index.expressions || []), { expression: '', order: '', nulls: '', opclass: '' }])
+}
+function removeExpr(i: number) {
+  set('expressions', (props.index.expressions || []).filter((_, j) => j !== i))
+}
+function updateExpr(i: number, field: string, value: string) {
+  const exprs = [...(props.index.expressions || [])]
+  exprs[i] = { ...exprs[i]!, [field]: value }
+  set('expressions', exprs)
+}
 </script>
 
 <template>
@@ -77,11 +89,21 @@ function updateCol(i: number, field: string, value: string) {
     <div class="ip-row">
       <label class="ip-label">Expressions</label>
     </div>
-    <div v-for="(expr, i) in (index.expressions || [])" :key="i" class="ip-expr-row">
-      <input class="ip-input ip-mono" :value="expr" @change="set('expressions', [...(index.expressions || []).slice(0, i), ($event.target as HTMLInputElement).value, ...(index.expressions || []).slice(i + 1)])" />
-      <button class="ip-btn-del" @click="set('expressions', (index.expressions || []).filter((_, j) => j !== i))">×</button>
+    <div v-for="(expr, i) in (index.expressions || [])" :key="i" class="ip-col-row">
+      <input class="ip-expr-input ip-mono" :value="expr.expression" placeholder="expression" @change="updateExpr(i, 'expression', ($event.target as HTMLInputElement).value)" />
+      <select class="ip-col-order" :value="expr.order || ''" @change="updateExpr(i, 'order', ($event.target as HTMLSelectElement).value)">
+        <option value="">ASC</option>
+        <option value="desc">DESC</option>
+      </select>
+      <select class="ip-col-nulls" :value="expr.nulls || ''" @change="updateExpr(i, 'nulls', ($event.target as HTMLSelectElement).value)">
+        <option value="">(default)</option>
+        <option value="first">NULLS FIRST</option>
+        <option value="last">NULLS LAST</option>
+      </select>
+      <input class="ip-col-opclass ip-mono" :value="expr.opclass || ''" placeholder="opclass" title="operator class (e.g. gin_trgm_ops)" @change="updateExpr(i, 'opclass', ($event.target as HTMLInputElement).value)" />
+      <button class="ip-btn-del" @click="removeExpr(i)">×</button>
     </div>
-    <button class="ip-btn-add" @click="set('expressions', [...(index.expressions || []), ''])">+ Add expression</button>
+    <button class="ip-btn-add" @click="addExpr">+ Add expression</button>
 
     <DynamicColumnList label="Include" :model-value="index.include || []" :columns="columns" @update:model-value="set('include', $event)" />
 
@@ -132,7 +154,12 @@ function updateCol(i: number, field: string, value: string) {
   color: var(--color-text-primary); outline: none;
 }
 .ip-col-opclass:focus { border-color: var(--color-accent); }
-.ip-expr-row { display: flex; gap: 0.231rem; margin-bottom: 0.231rem; }
+.ip-expr-input {
+  flex: 1 1 100%; min-width: 6rem; padding: 1px 0.308rem; font-size: 0.923rem; height: 1.538rem;
+  border: 1px solid var(--color-border); background: var(--color-bg-surface);
+  color: var(--color-text-primary); outline: none;
+}
+.ip-expr-input:focus { border-color: var(--color-accent); }
 .ip-btn-del {
   width: 1.538rem; height: 1.538rem; font-size: 0.923rem;
   border: 1px solid var(--color-border); background: var(--color-bg-surface);

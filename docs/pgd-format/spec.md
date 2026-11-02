@@ -703,6 +703,20 @@ Indexes are stored at the **schema level**, not inside tables.
 
 ### `<expression>` — expression index key (CDATA)
 
+Text content is the expression. Attributes are the same as for an index `<column>`:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `order` | enum | `asc`, `desc` |
+| `nulls` | enum | `first`, `last` |
+| `opclass` | string | Operator class (e.g. `gin_trgm_ops`) |
+
+```xml
+<index name="ix_drugs_mnn_trgm" table="drugs" using="gin">
+  <expression opclass="gin_trgm_ops"><![CDATA[params ->> 'mnn']]></expression>
+</index>
+```
+
 ### `<where>` — partial index predicate (CDATA)
 
 ### `<include>` — covering index columns (PG11+)

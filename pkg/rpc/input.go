@@ -184,7 +184,7 @@ type IndexInput struct {
 	NullsDistinct bool             `json:"nullsDistinct,omitempty"`
 	Using         string           `json:"using,omitempty"`
 	Columns       []IndexColInput  `json:"columns"`
-	Expressions   []string         `json:"expressions,omitempty"`
+	Expressions   []IndexExprInput `json:"expressions,omitempty"`
 	With          []WithParamInput `json:"with,omitempty"`
 	Where         string           `json:"where,omitempty"`
 	Include       []string         `json:"include,omitempty"`
@@ -204,6 +204,14 @@ type IndexColInput struct {
 	Opclass string `json:"opclass,omitempty"`
 }
 
+// IndexExprInput is an index expression with ordering.
+type IndexExprInput struct {
+	Expression string `json:"expression"`
+	Order      string `json:"order,omitempty"`
+	Nulls      string `json:"nulls,omitempty"`
+	Opclass    string `json:"opclass,omitempty"`
+}
+
 func (idx IndexInput) toPGD() pgd.Index {
 	ix := pgd.Index{
 		Name:  idx.Name,
@@ -220,7 +228,7 @@ func (idx IndexInput) toPGD() pgd.Index {
 		ix.Columns = append(ix.Columns, pgd.ColRef{Name: c.Name, Order: c.Order, Nulls: c.Nulls, Opclass: c.Opclass})
 	}
 	for _, e := range idx.Expressions {
-		ix.Expressions = append(ix.Expressions, pgd.Expression{Value: e})
+		ix.Expressions = append(ix.Expressions, pgd.Expression{Value: e.Expression, Order: e.Order, Nulls: e.Nulls, Opclass: e.Opclass})
 	}
 	if len(idx.With) > 0 {
 		w := &pgd.With{}

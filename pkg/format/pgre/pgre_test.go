@@ -153,6 +153,22 @@ func TestParseIndexColumns(t *testing.T) {
 	}
 }
 
+func TestConvertIndex_ExpressionOptions(t *testing.T) {
+	idx := convertIndex("t", pgIndex{
+		IndexName: "ix_t_mnn_trgm",
+		Method:    "gin",
+		Def:       `CREATE INDEX ix_t_mnn_trgm ON public.t USING gin (((params ->> 'mnn'::text)) gin_trgm_ops)`,
+	})
+	assert.Equal(t, []pgd.Expression{{Value: "(params ->> 'mnn'::text)", Opclass: "gin_trgm_ops"}}, idx.Expressions)
+
+	idx = convertIndex("t", pgIndex{
+		IndexName: "ix_t_lower_desc",
+		Method:    "btree",
+		Def:       `CREATE INDEX ix_t_lower_desc ON public.t USING btree (lower(title) DESC NULLS LAST)`,
+	})
+	assert.Equal(t, []pgd.Expression{{Value: "(lower(title))", Order: "desc", Nulls: "last"}}, idx.Expressions)
+}
+
 func TestParseIndexExtras(t *testing.T) {
 	tests := []struct {
 		name             string

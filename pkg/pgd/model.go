@@ -391,9 +391,12 @@ type Index struct {
 	Where         *WhereClause `xml:"where,omitempty"`
 }
 
-// Expression holds a raw SQL expression (for expression indexes).
+// Expression holds a raw SQL expression of an index key, with optional ordering like ColRef.
 type Expression struct {
-	Value string `xml:",cdata"`
+	Value   string `xml:",cdata"`
+	Order   string `xml:"order,attr,omitempty"`   // asc | desc
+	Nulls   string `xml:"nulls,attr,omitempty"`   // first | last
+	Opclass string `xml:"opclass,attr,omitempty"` // operator class (e.g. gin_trgm_ops)
 }
 
 // Include holds INCLUDE columns for covering indexes.

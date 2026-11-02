@@ -92,7 +92,7 @@ function onKeydown(e: KeyboardEvent) {
             <td class="il-method">{{ idx.using || 'btree' }}</td>
             <td class="il-detail">
               {{ (idx.columns || []).map((c: any) => typeof c === 'string' ? c : c.name).join(', ') }}
-              <span v-if="idx.expressions?.length" class="il-expr">{{ idx.expressions.join(', ') }}</span>
+              <span v-if="idx.expressions?.length" class="il-expr">{{ idx.expressions.map(e => e.expression).join(', ') }}</span>
             </td>
             <td class="text-center"><span v-if="idx.unique">✓</span></td>
             <td class="il-detail il-mono">{{ idx.where }}</td>
