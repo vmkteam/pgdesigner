@@ -443,3 +443,39 @@ func countFKs(p *pgd.Project) int {
 	}
 	return n
 }
+
+func TestIntrospect_StorageOptions(t *testing.T) {
+	skipIfNoPG(t)
+
+	const ddl = `CREATE TABLE t (id int, body text) WITH (autovacuum_enabled=false, toast.autovacuum_enabled=false, vacuum_index_cleanup=auto, autovacuum_vacuum_scale_factor=0.05);
+CREATE TABLE p (id int) PARTITION BY RANGE (id);
+CREATE TABLE p1 PARTITION OF p FOR VALUES FROM (0) TO (10) WITH (fillfactor=40);`
+	dsn := createDB(t, "pgd_test_storage")
+	defer dropDB(t, "pgd_test_storage")
+	run(t, "psql", dsn, "-c", ddl)
+
+	re, err := Connect(dsn, Options{})
+	require.NoError(t, err)
+	parsed, err := sqlconv.ParseSQL(ddl, "storage")
+	require.NoError(t, err)
+
+	// the database and the DDL give the same options: TOAST ones with the toast. prefix
+	table := func(p *pgd.Project, name string) *pgd.Table {
+		for i, tbl := range p.Schemas[0].Tables {
+			if tbl.Name == name {
+				return &p.Schemas[0].Tables[i]
+			}
+		}
+		t.Fatalf("no table %s", name)
+		return nil
+	}
+	assert.ElementsMatch(t, []pgd.WithParam{
+		{Name: "autovacuum_enabled", Value: "false"}, {Name: "toast.autovacuum_enabled", Value: "false"},
+		{Name: "vacuum_index_cleanup", Value: "auto"}, {Name: "autovacuum_vacuum_scale_factor", Value: "0.05"},
+	}, table(re, "t").With.Params)
+	assert.ElementsMatch(t, table(re, "t").With.Params, table(parsed, "t").With.Params)
+
+	require.Len(t, table(re, "p").Partitions, 1)
+	assert.Equal(t, &pgd.With{Params: []pgd.WithParam{{Name: "fillfactor", Value: "40"}}}, table(re, "p").Partitions[0].With)
+	assert.Equal(t, table(re, "p").Partitions[0].With, table(parsed, "p").Partitions[0].With)
+}

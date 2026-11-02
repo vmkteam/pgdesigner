@@ -1090,6 +1090,44 @@ func TestDiff_TableOptions(t *testing.T) {
 		changeSQLs(Diff(table(func(t *pgd.Table) { t.Tablespace = "fast" }), old)))
 }
 
+func TestDiff_PartitionOptions(t *testing.T) {
+	// partitions are written like generate does and keep their storage options
+	table := func(parts ...pgd.Partition) *pgd.Project {
+		return project(schema("public", []pgd.Table{{
+			Name:        "p",
+			Columns:     []pgd.Column{col("id", "integer")},
+			PartitionBy: &pgd.PartitionBy{Type: "range", Columns: []pgd.ColRef{{Name: "id"}}},
+			Partitions:  parts,
+		}}, nil))
+	}
+	p1 := pgd.Partition{Name: "p1", Bound: "FOR VALUES FROM (0) TO (10)"}
+	p2 := pgd.Partition{Name: "p2", Bound: "FOR VALUES FROM (10) TO (20)", Tablespace: "fast",
+		With: &pgd.With{Params: []pgd.WithParam{{Name: "fillfactor", Value: "40"}}}}
+	p2ff := p2
+	p2ff.With = &pgd.With{Params: []pgd.WithParam{{Name: "fillfactor", Value: "50"}}}
+	sub := pgd.Partition{Name: "p1", Bound: p1.Bound, PartitionBy: &pgd.PartitionBy{Type: "hash", Columns: []pgd.ColRef{{Name: "id"}}},
+		Partitions: []pgd.Partition{{Name: "p1_0", Bound: "FOR VALUES WITH (MODULUS 2, REMAINDER 0)", With: p2.With}}}
+	sub1 := sub
+	sub1.Partitions = []pgd.Partition{{Name: "p1_0", Bound: "FOR VALUES WITH (MODULUS 2, REMAINDER 0)"}}
+
+	tests := []struct {
+		name         string
+		old, updated *pgd.Project
+		want         []string
+	}{
+		{"new partition", table(p1), table(p1, p2), []string{
+			"CREATE TABLE \"p2\" PARTITION OF \"p\"\n    FOR VALUES FROM (10) TO (20)\n    WITH (fillfactor='40')\n    TABLESPACE \"fast\";",
+		}},
+		{"changed partition options", table(p1, p2), table(p1, p2ff), []string{`ALTER TABLE "p2" SET (fillfactor='50');`}},
+		{"changed sub-partition options", table(sub1), table(sub), []string{`ALTER TABLE "p1_0" SET (fillfactor='40');`}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, changeSQLs(Diff(tt.old, tt.updated)))
+		})
+	}
+}
+
 func TestDiff_NewSchemaBeforeEnum(t *testing.T) {
 	updated := project(schema("public", nil, nil))
 	updated.Types = &pgd.Types{Enums: []pgd.Enum{{Name: "st", Schema: "mp", Labels: []string{"a"}}}}

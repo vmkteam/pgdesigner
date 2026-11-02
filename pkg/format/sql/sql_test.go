@@ -3,6 +3,7 @@ package sql
 import (
 	"encoding/xml"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -603,20 +604,51 @@ func TestParseSQL_TableStorageOptions(t *testing.T) {
 	sql := `CREATE UNLOGGED TABLE "public"."t" (
 		"id" integer NOT NULL,
 		CONSTRAINT "PK_t" PRIMARY KEY("id")
-	) USING heap WITH (fillfactor = 80);`
+	) USING heap WITH (fillfactor = 80, toast.autovacuum_enabled = false, vacuum_index_cleanup = auto, autovacuum_vacuum_scale_factor = 0.05);`
 
 	p, err := ParseSQL(sql, "test")
 	require.NoError(t, err)
 	tbl := p.Schemas[0].Tables[0]
 	assert.Equal(t, "true", tbl.Unlogged)
 	assert.Equal(t, "heap", tbl.Using)
-	assert.Equal(t, &pgd.With{Params: []pgd.WithParam{{Name: "fillfactor", Value: "80"}}}, tbl.With)
+	assert.Equal(t, &pgd.With{Params: []pgd.WithParam{{Name: "fillfactor", Value: "80"}, {Name: "toast.autovacuum_enabled", Value: "false"},
+		{Name: "vacuum_index_cleanup", Value: "auto"}, {Name: "autovacuum_vacuum_scale_factor", Value: "0.05"}}}, tbl.With)
 
 	ddl := pgd.GenerateDDL(p)
 	assert.Contains(t, ddl, "CREATE UNLOGGED TABLE \"t\"")
-	assert.Contains(t, ddl, "WITH (fillfactor='80')")
+	assert.Contains(t, ddl, "WITH (fillfactor='80', toast.autovacuum_enabled='false', vacuum_index_cleanup='auto', autovacuum_vacuum_scale_factor='0.05')")
 
 	p2, err := ParseSQL(ddl, "test")
 	require.NoError(t, err)
 	assert.Equal(t, tbl.With, p2.Schemas[0].Tables[0].With)
+}
+
+func TestParseSQL_FKReferences(t *testing.T) {
+	const tables = `CREATE TABLE a (id int PRIMARY KEY, code text UNIQUE);
+CREATE TABLE ext (k1 int, k2 int, PRIMARY KEY (k1, k2));
+`
+	tests := []struct {
+		name string
+		sql  string
+		want []pgd.FKCol
+	}{
+		{"column list", `CREATE TABLE b (code text, FOREIGN KEY (code) REFERENCES a(code));`, []pgd.FKCol{{Name: "code", References: "code"}}},
+		{"implicit PK", `CREATE TABLE b (a_id int, FOREIGN KEY (a_id) REFERENCES a);`, []pgd.FKCol{{Name: "a_id", References: "id"}}},
+		{"inline with column", `CREATE TABLE b (a_code text REFERENCES a(code));`, []pgd.FKCol{{Name: "a_code", References: "code"}}},
+		{"inline implicit PK", `CREATE TABLE b (a_id int REFERENCES a);`, []pgd.FKCol{{Name: "a_id", References: "id"}}},
+		{"composite implicit PK", `CREATE TABLE b (x int, y int, FOREIGN KEY (x, y) REFERENCES ext);`, []pgd.FKCol{{Name: "x", References: "k1"}, {Name: "y", References: "k2"}}},
+		{"unknown table", `CREATE TABLE b (z_id int REFERENCES z);`, []pgd.FKCol{{Name: "z_id", References: "z_id"}}},
+		{"ALTER TABLE", `CREATE TABLE b (code text); ALTER TABLE b ADD CONSTRAINT fk FOREIGN KEY (code) REFERENCES a(code);`, []pgd.FKCol{{Name: "code", References: "code"}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := ParseSQL(tables+tt.sql, "test")
+			require.NoError(t, err)
+			i := slices.IndexFunc(p.Schemas[0].Tables, func(t pgd.Table) bool { return t.Name == "b" })
+			require.GreaterOrEqual(t, i, 0)
+			fks := p.Schemas[0].Tables[i].FKs
+			require.Len(t, fks, 1)
+			assert.Equal(t, tt.want, fks[0].Columns)
+		})
+	}
 }

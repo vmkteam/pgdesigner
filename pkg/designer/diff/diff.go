@@ -811,12 +811,15 @@ func (b *diffBuilder) diffPartitions(table string, old, updated []pgd.Partition)
 	}
 
 	// Attach new partitions
-	for _, np := range updated {
+	for i := range updated {
+		np := &updated[i]
 		op, exists := oldMap[np.Name]
 		if !exists {
+			var sb strings.Builder
+			_ = pgd.WritePartition(&sb, pgd.SchemaQualifier(b.schema), table, np)
 			b.add(Change{
 				Object: "partition", Action: "add", Table: table, Name: np.Name,
-				SQL: fmt.Sprintf("CREATE TABLE %s PARTITION OF %s\n    %s;", b.qt(np.Name), t, np.Bound),
+				SQL: strings.TrimSpace(sb.String()),
 			})
 			continue
 		}
@@ -829,6 +832,10 @@ func (b *diffBuilder) diffPartitions(table string, old, updated []pgd.Partition)
 				Hazards: []Hazard{{Level: "warning", Code: "REATTACH_PARTITION", Message: fmt.Sprintf("detach+attach partition %s with new bounds", np.Name)}},
 			})
 		}
+		// a partition is a table with its own storage options and sub-partitions
+		b.diffTableOptions(&pgd.Table{Name: op.Name, With: op.With, Tablespace: op.Tablespace},
+			&pgd.Table{Name: np.Name, With: np.With, Tablespace: np.Tablespace})
+		b.diffPartitions(np.Name, op.Partitions, np.Partitions)
 	}
 }
 

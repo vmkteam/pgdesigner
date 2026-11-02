@@ -24,7 +24,7 @@ type pgTable struct {
 	RelKind        string
 	RelPersistence string
 	Tablespace     string
-	RelOptions     []string `pg:",array"` // fillfactor=80
+	RelOptions     []string `pg:",array"` // fillfactor=80, toast.autovacuum_enabled=false
 	AccessMethod   string
 	Comment        string
 }
@@ -229,13 +229,14 @@ func (i *introspector) queryTables() ([]pgTable, error) {
 		SELECT c.oid, n.nspname AS schema_name, c.relname AS table_name,
 		       c.relkind AS rel_kind, c.relpersistence AS rel_persistence,
 		       COALESCE(t.spcname, '') AS tablespace,
-		       c.reloptions AS rel_options,
+		       array_cat(c.reloptions, (SELECT array_agg('toast.' || o) FROM unnest(tc.reloptions) o)) AS rel_options,
 		       COALESCE(am.amname, '') AS access_method,
 		       COALESCE(obj_description(c.oid), '') AS comment
 		FROM pg_class c
 		JOIN pg_namespace n ON n.oid = c.relnamespace
 		LEFT JOIN pg_tablespace t ON t.oid = c.reltablespace
 		LEFT JOIN pg_am am ON am.oid = c.relam
+		LEFT JOIN pg_class tc ON tc.oid = c.reltoastrelid
 		WHERE c.relkind IN ('r', 'p')
 		  %s
 		ORDER BY n.nspname, c.relname
@@ -627,14 +628,19 @@ func (i *introspector) introspectPartitions(project *pgd.Project) {
 	// Attach children and remove child tables from schema
 	for si := range project.Schemas {
 		s := &project.Schemas[si]
+		tables := make(map[string]*pgd.Table, len(s.Tables))
+		for ti := range s.Tables {
+			tables[s.Tables[ti].Name] = &s.Tables[ti]
+		}
 		for ti := range s.Tables {
 			t := &s.Tables[ti]
 			if chs, ok := childMap[t.Name]; ok {
 				for _, ch := range chs {
-					t.Partitions = append(t.Partitions, pgd.Partition{
-						Name:  ch.ChildName,
-						Bound: ch.BoundExpr,
-					})
+					p := pgd.Partition{Name: ch.ChildName, Bound: ch.BoundExpr}
+					if child := tables[ch.ChildName]; child != nil { // storage options of the partition table
+						p.With, p.Tablespace = child.With, child.Tablespace
+					}
+					t.Partitions = append(t.Partitions, p)
 				}
 			}
 		}

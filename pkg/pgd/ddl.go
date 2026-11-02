@@ -687,6 +687,14 @@ func WithParams(params []WithParam) string {
 	return strings.Join(parts, ", ")
 }
 
+// WritePartition writes CREATE TABLE … PARTITION OF DDL for a partition and its sub-partitions.
+// Public API used by diff engine.
+func WritePartition(w io.Writer, q, parent string, p *Partition) error {
+	d := &ddlWriter{w: w}
+	d.writePartitionChild(q, parent, p)
+	return d.Err()
+}
+
 // WriteTable writes CREATE TABLE DDL for a single table.
 // Public API used by diff engine.
 func WriteTable(w io.Writer, q string, t *Table) error {
