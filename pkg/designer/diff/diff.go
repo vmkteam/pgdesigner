@@ -189,7 +189,7 @@ func (b *diffBuilder) dropIndexes(old, updated *pgd.Schema) {
 		oi := &old.Indexes[i]
 		ni, exists := newIndexes[oi.Name]
 		if !exists {
-			ni = renamed[indexIdentity(oi)] // the index may be renamed
+			ni = renamed.take(indexIdentity(oi)) // the index may be renamed
 		}
 		if ni == nil || indexChanged(oi, ni) {
 			b.dropIndex(oi.Name)
@@ -375,10 +375,16 @@ func (b *diffBuilder) createConstraints(old, updated *pgd.Schema) {
 		ni := &updated.Indexes[i]
 		oi, exists := oldIndexes[ni.Name]
 		if !exists {
-			oi = renamed[indexIdentity(ni)] // the index may be renamed
+			oi = renamed.take(indexIdentity(ni)) // the index may be renamed
 		}
-		if oi == nil || indexChanged(oi, ni) || b.indexRecreated(ni) {
+		switch {
+		case oi == nil || indexChanged(oi, ni) || b.indexRecreated(ni):
 			b.addIndex(ni)
+		case oi.Name != ni.Name:
+			b.add(Change{
+				Object: "index", Action: "alter", Name: ni.Name,
+				SQL: fmt.Sprintf("ALTER INDEX %s RENAME TO %s;", b.qt(oi.Name), b.q(ni.Name)),
+			})
 		}
 	}
 
@@ -870,7 +876,7 @@ func (b *diffBuilder) dropRemovedFK(table string, old, updated []pgd.ForeignKey)
 		ofk := &old[i]
 		nfk, exists := newFKs[fkKey(ofk)]
 		if !exists {
-			nfk = renamed[fkIdentity(ofk)] // the FK may be renamed
+			nfk = renamed.take(fkIdentity(ofk)) // the FK may be renamed
 		}
 		if nfk == nil || fkChanged(ofk, nfk) {
 			b.dropFK(table, ofk)
@@ -885,10 +891,16 @@ func (b *diffBuilder) addNewFK(table string, old, updated []pgd.ForeignKey) {
 		nfk := &updated[i]
 		ofk, exists := oldFKs[fkKey(nfk)]
 		if !exists {
-			ofk = renamed[fkIdentity(nfk)] // the FK may be renamed
+			ofk = renamed.take(fkIdentity(nfk)) // the FK may be renamed
 		}
-		if ofk == nil || fkChanged(ofk, nfk) || b.touchesRecreated(table, fkColNames(nfk.Columns)) {
+		switch {
+		case ofk == nil || fkChanged(ofk, nfk) || b.touchesRecreated(table, fkColNames(nfk.Columns)):
 			b.addFK(table, nfk)
+		case ofk.Name != nfk.Name && ofk.Name != "" && nfk.Name != "":
+			b.add(Change{
+				Object: "fk", Action: "alter", Table: table, Name: nfk.Name,
+				SQL: fmt.Sprintf("ALTER TABLE %s RENAME CONSTRAINT %s TO %s;", b.qt(table), b.q(ofk.Name), b.q(nfk.Name)),
+			})
 		}
 	}
 }
@@ -1304,20 +1316,30 @@ func columnMap(cols []pgd.Column) map[string]*pgd.Column {
 	return m
 }
 
-// renamedIndexes returns indexes whose names are absent in other by identity: rename
-// candidates. The first index with an identity wins.
-func renamedIndexes(indexes []pgd.Index, other map[string]*pgd.Index) map[string]*pgd.Index {
-	m := make(map[string]*pgd.Index)
+// renameCandidates are objects whose names are absent in the other model, grouped by
+// identity in model order: a rename pairs them one-to-one, first with first.
+type renameCandidates[T any] map[string][]*T
+
+// take returns the next candidate with the identity, or nil.
+func (c renameCandidates[T]) take(id string) *T {
+	q := c[id]
+	if len(q) == 0 {
+		return nil
+	}
+	c[id] = q[1:]
+	return q[0]
+}
+
+// renamedIndexes returns indexes whose names are absent in other: rename candidates.
+func renamedIndexes(indexes []pgd.Index, other map[string]*pgd.Index) renameCandidates[pgd.Index] {
+	c := renameCandidates[pgd.Index]{}
 	for i := range indexes {
-		idx := &indexes[i]
-		if _, exists := other[idx.Name]; exists {
-			continue
-		}
-		if id := indexIdentity(idx); m[id] == nil {
-			m[id] = idx
+		if _, exists := other[indexes[i].Name]; !exists {
+			id := indexIdentity(&indexes[i])
+			c[id] = append(c[id], &indexes[i])
 		}
 	}
-	return m
+	return c
 }
 
 func indexMap(indexes []pgd.Index) map[string]*pgd.Index {
@@ -1328,20 +1350,16 @@ func indexMap(indexes []pgd.Index) map[string]*pgd.Index {
 	return m
 }
 
-// renamedFKs returns FKs whose names are absent in other by identity: rename candidates.
-// The first FK with an identity wins.
-func renamedFKs(fks []pgd.ForeignKey, other map[string]*pgd.ForeignKey) map[string]*pgd.ForeignKey {
-	m := make(map[string]*pgd.ForeignKey)
+// renamedFKs returns FKs whose keys are absent in other: rename candidates.
+func renamedFKs(fks []pgd.ForeignKey, other map[string]*pgd.ForeignKey) renameCandidates[pgd.ForeignKey] {
+	c := renameCandidates[pgd.ForeignKey]{}
 	for i := range fks {
-		fk := &fks[i]
-		if _, exists := other[fkKey(fk)]; exists {
-			continue
-		}
-		if id := fkIdentity(fk); m[id] == nil {
-			m[id] = fk
+		if _, exists := other[fkKey(&fks[i])]; !exists {
+			id := fkIdentity(&fks[i])
+			c[id] = append(c[id], &fks[i])
 		}
 	}
-	return m
+	return c
 }
 
 // fkIdentity identifies an FK by its target table and column mapping.

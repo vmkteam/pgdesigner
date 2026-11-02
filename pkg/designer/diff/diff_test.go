@@ -836,10 +836,15 @@ func TestDiff_IndexRename(t *testing.T) {
 		return pgd.Index{Name: name, Table: "t", Keys: []pgd.IndexKey{{Expression: value}}}
 	}
 
-	// renamed index: same definition under a new name is not re-created
+	// renamed index: same definition under a new name is renamed, not re-created
 	r := Diff(project(schema("public", nil, []pgd.Index{expr("ix_old", "lower(a)")})),
 		project(schema("public", nil, []pgd.Index{expr("ix_new", "lower(a)")})))
-	assert.Empty(t, r.Changes)
+	assert.Equal(t, []string{`ALTER INDEX "ix_old" RENAME TO "ix_new";`}, changeSQLs(r))
+
+	// renames pair one-to-one: a second identical index is dropped
+	r = Diff(project(schema("app", nil, []pgd.Index{expr("ix_a", "lower(a)"), expr("ix_b", "lower(a)")})),
+		project(schema("app", nil, []pgd.Index{expr("ix_c", "lower(a)")})))
+	assert.Equal(t, []string{`DROP INDEX "app"."ix_b";`, `ALTER INDEX "app"."ix_a" RENAME TO "ix_c";`}, changeSQLs(r))
 
 	// indexes on different expressions are different indexes
 	r = Diff(project(schema("public", nil, []pgd.Index{expr("ix_a", "lower(a)")})),
@@ -1083,4 +1088,18 @@ func TestDiff_NewSchemaBeforeEnum(t *testing.T) {
 	updated.Types = &pgd.Types{Enums: []pgd.Enum{{Name: "st", Schema: "mp", Labels: []string{"a"}}}}
 	assert.Equal(t, []string{`CREATE SCHEMA IF NOT EXISTS "mp";`, `CREATE TYPE "mp"."st" AS ENUM ('a');`},
 		changeSQLs(Diff(project(schema("public", nil, nil)), updated)))
+}
+
+func TestDiff_FKRename(t *testing.T) {
+	tbl := func(fks ...pgd.ForeignKey) []pgd.Table {
+		return []pgd.Table{{Name: "t", Columns: []pgd.Column{col("x", "integer")}, FKs: fks}}
+	}
+	r := Diff(project(schema("public", tbl(fk("fk_old", "p", "restrict", "x", "id")), nil)),
+		project(schema("public", tbl(fk("fk_new", "p", "restrict", "x", "id")), nil)))
+	assert.Equal(t, []string{`ALTER TABLE "t" RENAME CONSTRAINT "fk_old" TO "fk_new";`}, changeSQLs(r))
+
+	// an unnamed FK can't be renamed: nothing to do
+	r = Diff(project(schema("public", tbl(fk("", "p", "restrict", "x", "id")), nil)),
+		project(schema("public", tbl(fk("fk_new", "p", "restrict", "x", "id")), nil)))
+	assert.Empty(t, r.Changes)
 }
