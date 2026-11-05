@@ -42,7 +42,7 @@ brews:
     directory: Formula
     homepage: "https://pgdesigner.io"
     description: "PostgreSQL schema designer — ERD, linting, diffing, sample data"
-    license: "PolyForm-Noncommercial-1.0.0"
+    license: "Apache-2.0"
     test: |
       system "#{bin}/pgdesigner version"
 

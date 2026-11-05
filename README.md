@@ -1,6 +1,6 @@
 # PgDesigner
 
-[![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20NC-blue)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/vmkteam/pgdesigner)](https://github.com/vmkteam/pgdesigner/releases)
 [![Go](https://img.shields.io/badge/Go-1.24-00ADD8)](go.mod)
 [![macOS | Linux | Windows](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)]()
@@ -144,8 +144,12 @@ Round-trip tested on 6 databases (SQL -> PGD -> DDL -> PostgreSQL -> pg_dump -> 
 | AdventureWorks | 68 | 89 | [lorint/AdventureWorks-for-Postgres](https://github.com/lorint/AdventureWorks-for-Postgres) |
 | Synthetic | 8 | 9 | Custom (domains, GIN/GiST, triggers, RLS) |
 
+## Support
+
+Community support via [GitHub Issues](https://github.com/vmkteam/pgdesigner/issues) and [Discussions](https://github.com/vmkteam/pgdesigner/discussions). Priority and enterprise support plans are available for teams — see [SUPPORT.md](SUPPORT.md) or [pgdesigner.io/pricing](https://pgdesigner.io/pricing).
+
 ## License
 
-[PolyForm Noncommercial License 1.0.0](LICENSE) — free for non-commercial use.
+[Apache License 2.0](LICENSE) — free for any use, including commercial. Since v0.1.0; all earlier releases are also available under Apache-2.0.
 
-For commercial use, see [pricing](https://pgdesigner.io/pricing) or [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md).
+"PgDesigner" name and logo are trademarks of vmkteam — see [NOTICE](NOTICE).

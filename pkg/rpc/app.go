@@ -102,7 +102,7 @@ func (s *AppService) About() AboutInfo {
 		GoVersion:   runtime.Version(),
 		Target:      "PostgreSQL 18",
 		Author:      "Sergey Bykov (sergeyfast)",
-		License:     "PolyForm Noncommercial 1.0.0",
+		License:     "Apache-2.0",
 		Website:     "https://pgdesigner.io",
 		GitHub:      "https://github.com/vmkteam/pgdesigner",
 	}
