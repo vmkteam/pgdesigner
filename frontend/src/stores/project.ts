@@ -24,11 +24,10 @@ export const useProjectStore = defineStore('project', () => {
 
   function updateTitle() {
     if (!info.value) { docTitle.value = 'PgDesigner'; return }
-    const suffix = info.value.isRegistered ? 'PgDesigner' : 'PgDesigner [unregistered]'
-    if (info.value.isDemo && !info.value.filePath) { docTitle.value = suffix; return }
+    if (info.value.isDemo && !info.value.filePath) { docTitle.value = 'PgDesigner'; return }
     const name = info.value.name || 'Untitled'
     const dirtyMark = dirty.value ? ' *' : ''
-    docTitle.value = `${name}${dirtyMark} — ${suffix}`
+    docTitle.value = `${name}${dirtyMark} — PgDesigner`
   }
 
   async function rpc<T>(fn: () => Promise<T>): Promise<T | undefined> {

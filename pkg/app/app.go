@@ -66,17 +66,11 @@ func NewWithStore(s *store.ProjectStore, opts ...AppOption) *App {
 		store: s,
 		cfg:   cfg,
 		rpcSrv: rpc.NewWithStore(rpc.ServerOptions{
-			Store:          s,
-			QuitCh:         quitCh,
-			IsRegisteredFn: cfg.IsRegistered,
-			ReadOnly:       o.readOnly,
-			Version:        o.version,
+			Store:    s,
+			QuitCh:   quitCh,
+			ReadOnly: o.readOnly,
+			Version:  o.version,
 			Config: rpc.ConfigCallbacks{
-				Register: func(email string) error {
-					cfg.RegisteredEmail = email
-					return cfg.Save()
-				},
-				IsRegistered:   cfg.IsRegistered,
 				GetRecentFiles: func() []string { return cfg.RecentFiles },
 				AddRecentFile: func(path string) error {
 					cfg.AddRecentFile(path)

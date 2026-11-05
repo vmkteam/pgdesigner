@@ -122,7 +122,7 @@ function openFile() {
       </div>
 
       <div class="ws-footer">
-        <div v-if="!store.info?.isRegistered">Unregistered — non-commercial use only. <a href="https://pgdesigner.io/pricing" target="_blank" class="ws-footer-link">Buy License $19</a></div>
+        <div>Free and open source. <a href="https://github.com/vmkteam/pgdesigner" target="_blank" class="ws-footer-link">Star on GitHub</a></div>
         <div v-if="about" class="ws-version">{{ about.version }}</div>
       </div>
     </div>

@@ -18,11 +18,10 @@ import (
 // ProjectService provides access to the loaded .pgd project.
 type ProjectService struct {
 	zenrpc.Service
-	project        *pgd.Project
-	store          *store.ProjectStore // nil for read-only mode
-	isRegisteredFn func() bool         // callback to check registration status
-	addRecentFile  func(path string) error
-	workDir        string
+	project       *pgd.Project
+	store         *store.ProjectStore // nil for read-only mode
+	addRecentFile func(path string) error
+	workDir       string
 }
 
 // NewProjectService creates a read-only ProjectService.
@@ -32,9 +31,9 @@ func NewProjectService(project *pgd.Project) *ProjectService {
 }
 
 // NewProjectServiceWithStore creates a ProjectService backed by a ProjectStore (read-write).
-func NewProjectServiceWithStore(s *store.ProjectStore, isRegisteredFn func() bool, addRecentFile func(string) error) *ProjectService {
+func NewProjectServiceWithStore(s *store.ProjectStore, addRecentFile func(string) error) *ProjectService {
 	wd, _ := os.Getwd()
-	return &ProjectService{project: s.Project(), store: s, isRegisteredFn: isRegisteredFn, addRecentFile: addRecentFile, workDir: wd}
+	return &ProjectService{project: s.Project(), store: s, addRecentFile: addRecentFile, workDir: wd}
 }
 
 // getProject returns the current project. When backed by a store, always returns the
@@ -70,10 +69,6 @@ func (s ProjectService) GetInfo() ProjectInfo {
 		filePath = s.store.FilePath()
 		isDemo = s.store.IsDemo()
 	}
-	var isRegistered bool
-	if s.isRegisteredFn != nil {
-		isRegistered = s.isRegisteredFn()
-	}
 	return ProjectInfo{
 		Name:            p.ProjectMeta.Name,
 		PgVersion:       p.PgVersion,
@@ -84,7 +79,6 @@ func (s ProjectService) GetInfo() ProjectInfo {
 		Schemas:         schemaNames,
 		DefaultNullable: p.ProjectMeta.Settings.Defaults.Nullable != "false",
 		IsDemo:          isDemo,
-		IsRegistered:    isRegistered,
 		FilePath:        filePath,
 		WorkDir:         s.workDir,
 	}

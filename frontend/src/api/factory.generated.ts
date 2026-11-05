@@ -41,10 +41,6 @@ export interface IAppOpenFileParams {
   path: string
 }
 
-export interface IAppRegisterParams {
-  email: string
-}
-
 export interface IAppRemoveRecentFileParams {
   path: string
 }
@@ -448,7 +444,6 @@ export interface IProjectInfo {
   defaultNullable: boolean,
   isDemo: boolean,
   isReadOnly: boolean,
-  isRegistered: boolean,
   filePath: string,
   workDir: string
 }
@@ -704,12 +699,6 @@ zenrpc
      */
     quit(): Promise<void> {
       return send('app.Quit')
-    },
-    /**
-     * Register sets the registered email (honor system, no validation).
-     */
-    register(params: IAppRegisterParams): Promise<boolean> {
-      return send('app.Register', params)
     },
     /**
      * RemoveRecentFile removes a path from the recent files list.
