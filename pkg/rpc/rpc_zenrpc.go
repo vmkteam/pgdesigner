@@ -11,10 +11,10 @@ import (
 )
 
 var RPC = struct {
-	AppService     struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, GetHomePath, ListDirectory, RemoveRecentFile, GetRecentFilesInfo, ListDiffExamples, RunDiffExample, CheckForUpdate, DismissUpdate, IntrospectDSN, ImportDSN string }
+	AppService     struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, GetRecentFiles, GetHomePath, ListDirectory, RemoveRecentFile, GetRecentFilesInfo, ListDiffExamples, RunDiffExample, CheckForUpdate, DismissUpdate, IntrospectDSN, ImportDSN string }
 	ProjectService struct{ GetInfo, GetSchema, GetDDL, GetTableDDL, GenerateTestData, Lint, ListObjects, GetTable, SaveProject, SaveProjectAs, SaveTextFile, SaveLayout, IsDirty, GetAutoSave, SetAutoSave, ListTypes, UpdateTable, PreviewDiff, DiffUnsaved, FixLintIssues, IgnoreLintRules, GetIgnoredRules, UnignoreLintRules, CreateTable, DeleteTable, CreateSchema, DeleteSchema, MoveTable, GetProjectSettings, UpdateProjectSettings, LintTable, Singularize string }
 }{
-	AppService: struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, Register, GetRecentFiles, GetHomePath, ListDirectory, RemoveRecentFile, GetRecentFilesInfo, ListDiffExamples, RunDiffExample, CheckForUpdate, DismissUpdate, IntrospectDSN, ImportDSN string }{
+	AppService: struct{ Quit, Ping, About, ListDemoSchemas, OpenDemo, OpenFile, NewProject, CloseProject, GetRecentFiles, GetHomePath, ListDirectory, RemoveRecentFile, GetRecentFilesInfo, ListDiffExamples, RunDiffExample, CheckForUpdate, DismissUpdate, IntrospectDSN, ImportDSN string }{
 		Quit:               "quit",
 		Ping:               "ping",
 		About:              "about",
@@ -23,7 +23,6 @@ var RPC = struct {
 		OpenFile:           "openfile",
 		NewProject:         "newproject",
 		CloseProject:       "closeproject",
-		Register:           "register",
 		GetRecentFiles:     "getrecentfiles",
 		GetHomePath:        "gethomepath",
 		ListDirectory:      "listdirectory",
@@ -211,20 +210,6 @@ zenrpc`,
 			"CloseProject": {
 				Description: `CloseProject replaces current project with empty one (returns to welcome screen).`,
 				Parameters:  []smd.JSONSchema{},
-				Returns: smd.JSONSchema{
-					Description: `bool`,
-					Type:        smd.Boolean,
-				},
-			},
-			"Register": {
-				Description: `Register sets the registered email (honor system, no validation).`,
-				Parameters: []smd.JSONSchema{
-					{
-						Name:        "email",
-						Description: `registered email`,
-						Type:        smd.String,
-					},
-				},
 				Returns: smd.JSONSchema{
 					Description: `bool`,
 					Type:        smd.Boolean,
@@ -817,25 +802,6 @@ func (s AppService) Invoke(ctx context.Context, method string, params json.RawMe
 	case RPC.AppService.CloseProject:
 		resp.Set(s.CloseProject())
 
-	case RPC.AppService.Register:
-		var args = struct {
-			Email string `json:"email"`
-		}{}
-
-		if zenrpc.IsArray(params) {
-			if params, err = zenrpc.ConvertToObject([]string{"email"}, params); err != nil {
-				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
-			}
-		}
-
-		if len(params) > 0 {
-			if err := json.Unmarshal(params, &args); err != nil {
-				return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
-			}
-		}
-
-		resp.Set(s.Register(args.Email))
-
 	case RPC.AppService.GetRecentFiles:
 		resp.Set(s.GetRecentFiles())
 
@@ -1028,10 +994,6 @@ func (ProjectService) SMD() smd.ServiceInfo {
 						},
 						{
 							Name: "isReadOnly",
-							Type: smd.Boolean,
-						},
-						{
-							Name: "isRegistered",
 							Type: smd.Boolean,
 						},
 						{

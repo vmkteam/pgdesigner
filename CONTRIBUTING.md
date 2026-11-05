@@ -2,17 +2,19 @@
 
 Thank you for your interest in contributing to PgDesigner!
 
-## Contributor License Agreement (CLA)
+## License
 
-By submitting a pull request or otherwise contributing code to this repository, you agree to the following terms:
+PgDesigner is licensed under the [Apache License 2.0](LICENSE). By submitting a pull request, you agree that your contribution is licensed under the same terms (Section 5 of the License).
 
-1. You grant **vmkteam** and the project maintainers a perpetual, worldwide, non-exclusive, royalty-free, irrevocable license to use, reproduce, modify, distribute, sublicense, and otherwise exploit your contribution in any form, including under the project's commercial license.
+## Developer Certificate of Origin (DCO)
 
-2. You confirm that you are the original author of the contribution, or that you have the right to submit it under these terms.
+Sign off every commit to certify that you wrote the code or have the right to submit it under the project's license ([developercertificate.org](https://developercertificate.org/)):
 
-3. You understand that your contribution will be licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE) for public use, and may also be distributed under a separate [commercial license](LICENSE-COMMERCIAL.md).
+```bash
+git commit -s -m "Fix FK rename in diff"
+```
 
-4. You are not expected to provide support for your contribution, but you may be asked to clarify or improve it during the review process.
+This adds a `Signed-off-by: Your Name <you@example.com>` line to the commit message.
 
 ## How to Contribute
 
@@ -23,8 +25,8 @@ By submitting a pull request or otherwise contributing code to this repository, 
 ## Code Style
 
 - Go: simple, clear, no magic. Prefer stdlib over third-party. Error handling with context wrapping.
-- Commit messages: concise, English, lowercase.
+- Commit messages: concise, English.
 
 ## Questions?
 
-If you have any questions about contributing, feel free to open an issue or contact us at [sergeyfast@gmail.com](mailto:sergeyfast@gmail.com).
+If you have any questions about contributing, feel free to open an issue or a [discussion](https://github.com/vmkteam/pgdesigner/discussions), or contact us at [support@pgdesigner.io](mailto:support@pgdesigner.io).

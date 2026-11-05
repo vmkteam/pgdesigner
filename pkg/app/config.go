@@ -16,7 +16,6 @@ const (
 
 // Config holds application-level settings stored in ~/.config/pgdesigner/config.json.
 type Config struct {
-	RegisteredEmail     string    `json:"registeredEmail,omitempty"`
 	RecentFiles         []string  `json:"recentFiles,omitempty"`
 	LastUpdateCheck     time.Time `json:"lastUpdateCheck,omitempty"`
 	CachedLatestVersion string    `json:"cachedLatestVersion,omitempty"`
@@ -73,11 +72,6 @@ func (c *Config) Save() error {
 	}
 
 	return os.WriteFile(p, data, 0o644)
-}
-
-// IsRegistered returns true when a registered email is set.
-func (c *Config) IsRegistered() bool {
-	return c.RegisteredEmail != ""
 }
 
 // AddRecentFile prepends path to the recent files list, removes duplicates,

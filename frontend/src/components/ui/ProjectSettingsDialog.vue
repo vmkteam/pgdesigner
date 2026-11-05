@@ -71,90 +71,96 @@ const hints: Record<string, string> = {
       <DialogTitle class="psd-title">Project Settings</DialogTitle>
 
       <div v-if="form" class="psd-form">
-        <!-- General -->
-        <div class="psd-section">General</div>
-        <label class="psd-field">
-          <span class="psd-label">Name</span>
-          <input v-model="form.name" class="psd-input" />
-          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.name }}</span></span>
-        </label>
-        <label class="psd-field">
-          <span class="psd-label">Description</span>
-          <input v-model="form.description" class="psd-input" />
-          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.description }}</span></span>
-        </label>
-        <label class="psd-field">
-          <span class="psd-label">PG Version</span>
-          <select v-model="form.pgVersion" class="psd-select">
-            <option v-for="v in pgVersions" :key="v" :value="v">PostgreSQL {{ v }}</option>
-          </select>
-          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.pgVersion }}</span></span>
-        </label>
-        <label class="psd-field">
-          <span class="psd-label">Default Schema</span>
-          <select v-model="form.defaultSchema" class="psd-select">
-            <option v-for="s in store.info?.schemas || ['public']" :key="s" :value="s">{{ s }}</option>
-          </select>
-          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.defaultSchema }}</span></span>
-        </label>
+        <div class="psd-cols">
+          <div class="psd-col">
+            <!-- General -->
+            <div class="psd-section">General</div>
+            <label class="psd-field">
+              <span class="psd-label">Name</span>
+              <input v-model="form.name" class="psd-input" />
+              <span class="psd-hint"><span class="psd-hint-popup">{{ hints.name }}</span></span>
+            </label>
+            <label class="psd-field">
+              <span class="psd-label">Description</span>
+              <input v-model="form.description" class="psd-input" />
+              <span class="psd-hint"><span class="psd-hint-popup">{{ hints.description }}</span></span>
+            </label>
+            <label class="psd-field">
+              <span class="psd-label">PG Version</span>
+              <select v-model="form.pgVersion" class="psd-select">
+                <option v-for="v in pgVersions" :key="v" :value="v">PostgreSQL {{ v }}</option>
+              </select>
+              <span class="psd-hint"><span class="psd-hint-popup">{{ hints.pgVersion }}</span></span>
+            </label>
+            <label class="psd-field">
+              <span class="psd-label">Default Schema</span>
+              <select v-model="form.defaultSchema" class="psd-select">
+                <option v-for="s in store.info?.schemas || ['public']" :key="s" :value="s">{{ s }}</option>
+              </select>
+              <span class="psd-hint"><span class="psd-hint-popup">{{ hints.defaultSchema }}</span></span>
+            </label>
 
-        <!-- Naming -->
-        <div class="psd-section">Naming</div>
-        <label class="psd-field">
-          <span class="psd-label">Convention</span>
-          <select v-model="form.namingConvention" class="psd-select">
-            <option v-for="c in namingConventions" :key="c.value" :value="c.value">{{ c.label }}</option>
-          </select>
-          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.namingConvention }}</span></span>
-        </label>
-        <label class="psd-field">
-          <span class="psd-label">Tables</span>
-          <select v-model="form.namingTables" class="psd-select">
-            <option v-for="t in tableNaming" :key="t.value" :value="t.value">{{ t.label }}</option>
-          </select>
-          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.namingTables }}</span></span>
-        </label>
+            <!-- Naming -->
+            <div class="psd-section">Naming</div>
+            <label class="psd-field">
+              <span class="psd-label">Convention</span>
+              <select v-model="form.namingConvention" class="psd-select">
+                <option v-for="c in namingConventions" :key="c.value" :value="c.value">{{ c.label }}</option>
+              </select>
+              <span class="psd-hint"><span class="psd-hint-popup">{{ hints.namingConvention }}</span></span>
+            </label>
+            <label class="psd-field">
+              <span class="psd-label">Tables</span>
+              <select v-model="form.namingTables" class="psd-select">
+                <option v-for="t in tableNaming" :key="t.value" :value="t.value">{{ t.label }}</option>
+              </select>
+              <span class="psd-hint"><span class="psd-hint-popup">{{ hints.namingTables }}</span></span>
+            </label>
+          </div>
 
-        <!-- Defaults -->
-        <div class="psd-section">Defaults</div>
-        <label class="psd-field">
-          <span class="psd-label">Nullable</span>
-          <select v-model="form.defaultNullable" class="psd-select">
-            <option value="true">true</option>
-            <option value="false">false</option>
-          </select>
-          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.defaultNullable }}</span></span>
-        </label>
-        <label class="psd-field">
-          <span class="psd-label">ON DELETE</span>
-          <select v-model="form.defaultOnDelete" class="psd-select">
-            <option v-for="a in fkActions" :key="a" :value="a">{{ a }}</option>
-          </select>
-          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.defaultOnDelete }}</span></span>
-        </label>
-        <label class="psd-field">
-          <span class="psd-label">ON UPDATE</span>
-          <select v-model="form.defaultOnUpdate" class="psd-select">
-            <option v-for="a in fkActions" :key="a" :value="a">{{ a }}</option>
-          </select>
-          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.defaultOnUpdate }}</span></span>
-        </label>
+          <div class="psd-col">
+            <!-- Defaults -->
+            <div class="psd-section">Defaults</div>
+            <label class="psd-field">
+              <span class="psd-label">Nullable</span>
+              <select v-model="form.defaultNullable" class="psd-select">
+                <option value="true">true</option>
+                <option value="false">false</option>
+              </select>
+              <span class="psd-hint"><span class="psd-hint-popup">{{ hints.defaultNullable }}</span></span>
+            </label>
+            <label class="psd-field">
+              <span class="psd-label">ON DELETE</span>
+              <select v-model="form.defaultOnDelete" class="psd-select">
+                <option v-for="a in fkActions" :key="a" :value="a">{{ a }}</option>
+              </select>
+              <span class="psd-hint"><span class="psd-hint-popup">{{ hints.defaultOnDelete }}</span></span>
+            </label>
+            <label class="psd-field">
+              <span class="psd-label">ON UPDATE</span>
+              <select v-model="form.defaultOnUpdate" class="psd-select">
+                <option v-for="a in fkActions" :key="a" :value="a">{{ a }}</option>
+              </select>
+              <span class="psd-hint"><span class="psd-hint-popup">{{ hints.defaultOnUpdate }}</span></span>
+            </label>
 
-        <!-- Lint -->
-        <div class="psd-section">Lint</div>
-        <label class="psd-field">
-          <span class="psd-label">Ignore Rules</span>
-          <input v-model="form.lintIgnoreRules" class="psd-input" placeholder="W015,I009" />
-          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.lintIgnoreRules }}</span></span>
-        </label>
+            <!-- Lint -->
+            <div class="psd-section">Lint</div>
+            <label class="psd-field">
+              <span class="psd-label">Ignore Rules</span>
+              <input v-model="form.lintIgnoreRules" class="psd-input" placeholder="W015,I009" />
+              <span class="psd-hint"><span class="psd-hint-popup">{{ hints.lintIgnoreRules }}</span></span>
+            </label>
 
-        <!-- Export -->
-        <div class="psd-section">Export</div>
-        <label class="psd-field">
-          <span class="psd-label psd-label-check"><input type="checkbox" :checked="form.autoSaveDDL !== 'false'" @change="form.autoSaveDDL = ($event.target as HTMLInputElement).checked ? '' : 'false'" /></span>
-          <span class="psd-check-text">Auto-save .sql on save</span>
-          <span class="psd-hint"><span class="psd-hint-popup">{{ hints.autoSaveDDL }}</span></span>
-        </label>
+            <!-- Export -->
+            <div class="psd-section">Export</div>
+            <label class="psd-field">
+              <span class="psd-label psd-label-check"><input type="checkbox" :checked="form.autoSaveDDL !== 'false'" @change="form.autoSaveDDL = ($event.target as HTMLInputElement).checked ? '' : 'false'" /></span>
+              <span class="psd-check-text">Auto-save .sql on save</span>
+              <span class="psd-hint"><span class="psd-hint-popup">{{ hints.autoSaveDDL }}</span></span>
+            </label>
+          </div>
+        </div>
 
         <!-- Actions -->
         <div class="psd-actions">
@@ -172,7 +178,7 @@ const hints: Record<string, string> = {
 .psd-box {
   position: fixed; z-index: 50;
   top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: 28rem; max-height: 85vh; overflow-y: auto;
+  width: 52rem; max-width: calc(100vw - 2rem); max-height: 85vh; overflow-y: auto;
   background: var(--color-bg-surface);
   border: 1px solid var(--color-menu-border);
   box-shadow: 0 4px 16px rgba(0,0,0,.25);
@@ -187,6 +193,12 @@ const hints: Record<string, string> = {
 .psd-close:hover { background: var(--color-bg-hover); }
 .psd-title { font-size: 1.154rem; font-weight: 700; color: var(--color-text-primary); margin: 0 0 1rem; }
 .psd-form { display: flex; flex-direction: column; gap: 0.462rem; }
+.psd-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.538rem; align-items: start; }
+.psd-col { display: flex; flex-direction: column; gap: 0.462rem; min-width: 0; }
+@media (max-width: 56rem) {
+  .psd-box { width: 28rem; }
+  .psd-cols { grid-template-columns: 1fr; }
+}
 .psd-section {
   font-size: 0.846rem; font-weight: 600; color: var(--color-text-secondary);
   margin-top: 0.615rem; padding-bottom: 0.231rem; border-bottom: 1px solid var(--color-border-subtle);

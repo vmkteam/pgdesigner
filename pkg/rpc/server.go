@@ -40,7 +40,6 @@ var blockedMethods = map[string]bool{
 	// App methods dangerous for public demo
 	RPC.AppService.Quit:               true, // kills server
 	RPC.AppService.OpenFile:           true, // arbitrary file read + DB connect
-	RPC.AppService.Register:           true, // writes to disk
 	RPC.AppService.GetRecentFiles:     true, // leaks server paths
 	RPC.AppService.GetRecentFilesInfo: true, // leaks server paths
 	RPC.AppService.RemoveRecentFile:   true, // writes to disk
@@ -66,12 +65,11 @@ func readOnlyMiddleware(next zenrpc.InvokeFunc) zenrpc.InvokeFunc {
 
 // ServerOptions configures the RPC server.
 type ServerOptions struct {
-	Store          *store.ProjectStore
-	QuitCh         chan struct{}
-	IsRegisteredFn func() bool
-	Config         ConfigCallbacks
-	ReadOnly       bool
-	Version        string
+	Store    *store.ProjectStore
+	QuitCh   chan struct{}
+	Config   ConfigCallbacks
+	ReadOnly bool
+	Version  string
 }
 
 // New returns a new zenrpc Server with ProjectService (read-only).
@@ -90,7 +88,7 @@ func New(project *pgd.Project, quitCh chan struct{}) *zenrpc.Server {
 
 // NewWithStore returns a new zenrpc Server with ProjectService backed by a ProjectStore.
 func NewWithStore(opts ServerOptions) *zenrpc.Server {
-	ps := NewProjectServiceWithStore(opts.Store, opts.IsRegisteredFn, opts.Config.AddRecentFile)
+	ps := NewProjectServiceWithStore(opts.Store, opts.Config.AddRecentFile)
 	srv := zenrpc.NewServer(zenrpc.Options{
 		ExposeSMD: true,
 		AllowCORS: true,

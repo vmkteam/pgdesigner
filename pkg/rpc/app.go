@@ -15,8 +15,6 @@ const quitGracePeriod = 3 * time.Second
 
 // ConfigCallbacks provides access to app config without circular imports.
 type ConfigCallbacks struct {
-	Register         func(email string) error
-	IsRegistered     func() bool
 	GetRecentFiles   func() []string
 	AddRecentFile    func(path string) error
 	RemoveRecentFile func(path string) error
@@ -102,7 +100,7 @@ func (s *AppService) About() AboutInfo {
 		GoVersion:   runtime.Version(),
 		Target:      "PostgreSQL 18",
 		Author:      "Sergey Bykov (sergeyfast)",
-		License:     "PolyForm Noncommercial 1.0.0",
+		License:     "Apache-2.0",
 		Website:     "https://pgdesigner.io",
 		GitHub:      "https://github.com/vmkteam/pgdesigner",
 	}
@@ -170,20 +168,6 @@ func (s *AppService) CloseProject() (bool, error) {
 		return false, errors.New("store not available")
 	}
 	s.store.ReplaceProject(s.mgr.NewProject(), "")
-	return true, nil
-}
-
-// Register sets the registered email (honor system, no validation).
-//
-//zenrpc:email registered email
-//zenrpc:return bool
-func (s *AppService) Register(email string) (bool, error) {
-	if s.config.Register == nil {
-		return false, errors.New("registration not available")
-	}
-	if err := s.config.Register(email); err != nil {
-		return false, err
-	}
 	return true, nil
 }
 
