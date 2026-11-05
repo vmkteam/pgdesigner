@@ -15,7 +15,7 @@ For teams that depend on PgDesigner:
 
 | Plan | Price | Details |
 |------|-------|---------|
-| **Priority Support** | $149/year per company | Private email support, response within 2 business days, your bug reports go first, help with migration from pgModeler, MicroOLAP or DbSchema |
+| **Priority Support** | $149/year per company | Private email support, response within 2 business days, your bug reports go first, help with migration from MicroOLAP, DbSchema, Toad Data Modeler or a live database |
 | **Enterprise Support** | from $990/year | Response within 1 business day, private chat channel, onboarding call, roadmap priority, invoice/PO |
 | **Sponsored development** | custom quote | A feature or importer you need, built into the open-source release |
 
